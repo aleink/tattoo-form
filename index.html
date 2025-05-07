@@ -49,7 +49,7 @@
 <body>
   <h1>Tattoo Booking Form</h1>
   
-  <!-- Added 'enctype="multipart/form-data"' below -->
+  <!-- We use enctype="multipart/form-data" to properly send files -->
   <form id="tattoo-form" enctype="multipart/form-data">
     <!-- Personal Info -->
     <div class="form-section">
@@ -90,9 +90,15 @@
       <label for="description">Brief Description *</label>
       <textarea id="description" name="description" rows="4" required></textarea>
 
-      <!-- Changed name to "reference-images[]" to handle multiple files as an array -->
-      <label for="reference-images">Reference Images</label>
-      <input type="file" id="reference-images" name="reference-images[]" accept="image/*" multiple>
+      <!-- Three separate file inputs for reference images -->
+      <label for="reference-image1">Reference Image 1</label>
+      <input type="file" id="reference-image1" name="reference-image1" accept="image/*">
+
+      <label for="reference-image2">Reference Image 2</label>
+      <input type="file" id="reference-image2" name="reference-image2" accept="image/*">
+
+      <label for="reference-image3">Reference Image 3</label>
+      <input type="file" id="reference-image3" name="reference-image3" accept="image/*">
       
       <label for="requested-date">Requested Date *</label>
       <input type="date" id="requested-date" name="requested-date" required>
@@ -100,7 +106,6 @@
       <label for="preferred-location">Preferred Location *</label>
       <select id="preferred-location" name="preferred-location" required>
         <option value="">-- Select Location --</option>
-        <!-- We'll add real options dynamically from a database later -->
         <option value="locationA">Location A</option>
         <option value="locationB">Location B</option>
         <option value="locationC">Location C</option>
@@ -109,7 +114,6 @@
       <label for="preferred-artist">Preferred Artist</label>
       <select id="preferred-artist" name="preferred-artist">
         <option value="">No preference / First available</option>
-        <!-- Dynamically updated based on chosen location later -->
         <option value="artist1">Artist 1</option>
         <option value="artist2">Artist 2</option>
       </select>
@@ -117,7 +121,6 @@
 
     <!-- Marketing and Consent -->
     <div class="form-section">
-      <!-- 'required' makes the checkbox mandatory for form submission -->
       <label>
         <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required>
         I agree to receive emails and SMS regarding my appointment and marketing.
@@ -149,7 +152,6 @@
 
         if (response.ok) {
           alert('Form submitted successfully! We will contact you soon via SMS or email.');
-          // Optionally reset the form
           form.reset();
         } else {
           alert('Error submitting form, please try again later.');
