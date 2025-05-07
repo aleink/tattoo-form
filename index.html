@@ -129,5 +129,34 @@
     <button type="submit">Submit</button>
   </form>
 
+  <script>
+    const form = document.getElementById('tattoo-form');
+
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault(); // Prevent page reload
+
+      // Create a FormData object from the form
+      const formData = new FormData(form);
+
+      // Send form data to Make webhook
+      try {
+        const response = await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          alert('Form submitted successfully! We will contact you soon via SMS or email.');
+          // Optionally reset the form
+          form.reset();
+        } else {
+          alert('Error submitting form, please try again later.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Error submitting form, please check console for details.');
+      }
+    });
+  </script>
 </body>
 </html>
