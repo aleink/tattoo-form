@@ -49,7 +49,8 @@
 <body>
   <h1>Tattoo Booking Form</h1>
   
-  <form id="tattoo-form">
+  <!-- Added 'enctype="multipart/form-data"' below -->
+  <form id="tattoo-form" enctype="multipart/form-data">
     <!-- Personal Info -->
     <div class="form-section">
       <h2>Personal Info</h2>
@@ -89,8 +90,9 @@
       <label for="description">Brief Description *</label>
       <textarea id="description" name="description" rows="4" required></textarea>
 
+      <!-- Changed name to "reference-images[]" to handle multiple files as an array -->
       <label for="reference-images">Reference Images</label>
-      <input type="file" id="reference-images" name="reference-images" accept="image/*" multiple>
+      <input type="file" id="reference-images" name="reference-images[]" accept="image/*" multiple>
       
       <label for="requested-date">Requested Date *</label>
       <input type="date" id="requested-date" name="requested-date" required>
