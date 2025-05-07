@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tattoo Booking Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Basic styling -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      box-sizing: border-box;
+    }
+    .form-section {
+      margin: 20px 0;
+    }
+    button {
+      background: #333;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tattoo Booking Form</h1>
+  
+  <form id="tattoo-form">
+    <!-- Personal Info -->
+    <div class="form-section">
+      <h2>Personal Info</h2>
+      <label for="name">Name *</label>
+      <input type="text" id="name" name="name" required>
+      
+      <label for="phone">Phone Number *</label>
+      <input type="tel" id="phone" name="phone" required>
+      
+      <label for="email">Email *</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+
+    <!-- Tattoo Info -->
+    <div class="form-section">
+      <h2>Tattoo Info</h2>
+      <label for="placement">Placement *</label>
+      <input type="text" id="placement" name="placement" placeholder="e.g., forearm, shoulder, etc." required>
+      
+      <label for="size">Size (inches) *</label>
+      <input type="number" id="size" name="size" required>
+
+      <label>Color or Black & Grey? *</label>
+      <select id="colorOrBlack" name="colorOrBlack" required>
+        <option value="color">Color</option>
+        <option value="black-and-grey">Black and Grey</option>
+      </select>
+      
+      <label for="description">Brief Description *</label>
+      <textarea id="description" name="description" rows="4" required></textarea>
+
+      <label for="reference-images">Reference Images</label>
+      <input type="file" id="reference-images" name="reference-images" accept="image/*" multiple>
+      
+      <label for="requested-date">Requested Date *</label>
+      <input type="date" id="requested-date" name="requested-date" required>
+      
+      <label for="preferred-location">Preferred Location *</label>
+      <select id="preferred-location" name="preferred-location" required>
+        <option value="">-- Select Location --</option>
+        <!-- We'll add real options later -->
+        <option value="locationA">Location A</option>
+        <option value="locationB">Location B</option>
+        <option value="locationC">Location C</option>
+      </select>
+
+      <label for="preferred-artist">Preferred Artist</label>
+      <select id="preferred-artist" name="preferred-artist">
+        <option value="">No preference / First available</option>
+        <!-- We will dynamically change these based on location if needed -->
+        <option value="artist1">Artist 1</option>
+        <option value="artist2">Artist 2</option>
+      </select>
+    </div>
+
+    <!-- Marketing and Consent -->
+    <div class="form-section">
+      <label>
+        <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing">
+        I agree to receive emails and SMS regarding my appointment and marketing.
+      </label>
+      <p style="font-size: 0.9em;">
+        By opting in, you consent to be contacted in compliance with local regulations. 
+        We aim to follow all applicable ADA and privacy rules.
+      </p>
+    </div>
+
+    <!-- Submit -->
+    <button type="submit">Submit</button>
+  </form>
+
+</body>
+</html>
