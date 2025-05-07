@@ -15,6 +15,8 @@
     }
     label {
       font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
     }
     input, select, textarea {
       width: 100%;
@@ -34,6 +36,13 @@
     }
     button:hover {
       background: #555;
+    }
+    .size-container {
+      display: flex;
+      gap: 10px;
+    }
+    .size-container > div {
+      flex: 1;
     }
   </style>
 </head>
@@ -60,8 +69,16 @@
       <label for="placement">Placement *</label>
       <input type="text" id="placement" name="placement" placeholder="e.g., forearm, shoulder, etc." required>
       
-      <label for="size">Size (height x width in inches) *</label>
-      <input type="text" id="size" name="size" placeholder="e.g. 5 x 2" required>
+      <div class="size-container">
+        <div>
+          <label for="heightInches">Height (inches) *</label>
+          <input type="number" id="heightInches" name="heightInches" required>
+        </div>
+        <div>
+          <label for="widthInches">Width (inches) *</label>
+          <input type="number" id="widthInches" name="widthInches" required>
+        </div>
+      </div>
 
       <label>Color or Black & Grey? *</label>
       <select id="colorOrBlack" name="colorOrBlack" required>
@@ -81,7 +98,7 @@
       <label for="preferred-location">Preferred Location *</label>
       <select id="preferred-location" name="preferred-location" required>
         <option value="">-- Select Location --</option>
-        <!-- We'll add real options later -->
+        <!-- We'll add real options dynamically from a database later -->
         <option value="locationA">Location A</option>
         <option value="locationB">Location B</option>
         <option value="locationC">Location C</option>
@@ -90,7 +107,7 @@
       <label for="preferred-artist">Preferred Artist</label>
       <select id="preferred-artist" name="preferred-artist">
         <option value="">No preference / First available</option>
-        <!-- We will dynamically change these based on location if needed -->
+        <!-- Dynamically updated based on chosen location later -->
         <option value="artist1">Artist 1</option>
         <option value="artist2">Artist 2</option>
       </select>
