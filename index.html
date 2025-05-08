@@ -5,7 +5,6 @@
   <title>Club Tattoo Management Tool</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Simple dark/modern styling reminiscent of clubtattoo.com -->
   <style>
     /* Basic reset / body styling */
     * {
@@ -15,7 +14,7 @@
     }
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #111; /* dark background */
+      background: #111;
       color: #fff;
       line-height: 1.5;
       min-height: 100vh;
@@ -23,9 +22,8 @@
       flex-direction: column;
     }
 
-    /* Header / hero area */
     header {
-      background: #000; /* slightly darker header */
+      background: #000;
       padding: 20px;
       text-align: center;
       border-bottom: 2px solid #444;
@@ -44,7 +42,6 @@
       margin: 0 auto;
     }
 
-    /* Main content container */
     main {
       flex: 1;
       display: flex;
@@ -83,7 +80,6 @@
       color: #aaa;
       margin-bottom: 20px;
       height: 40px;
-      /* to keep consistent card heights */
     }
     .link-card a {
       display: inline-block;
@@ -98,7 +94,6 @@
       background: #999;
     }
 
-    /* Footer */
     footer {
       background: #000;
       color: #666;
@@ -110,10 +105,9 @@
       font-size: 0.85rem;
     }
 
-    /* Responsive design for smaller screens */
     @media (max-width: 600px) {
       .link-card p {
-        height: auto; /* let text wrap fully */
+        height: auto;
         margin-bottom: 10px;
       }
     }
@@ -144,7 +138,7 @@
       <!-- Manage Artists -->
       <div class="link-card">
         <h2>Artists</h2>
-        <p>Add, edit, or remove tattoo artists in the system.</p>
+        <p>Add, edit, or remove tattoo artists.</p>
         <a href="manage_artists.html" target="_blank">Manage Artists</a>
       </div>
       <!-- Manage Schedules -->
@@ -156,8 +150,14 @@
       <!-- Manage Vacations -->
       <div class="link-card">
         <h2>Vacations</h2>
-        <p>Block out specific dates for artist vacations.</p>
+        <p>Block out dates for artist vacations.</p>
         <a href="manage_vacations.html" target="_blank">Manage Vacations</a>
+      </div>
+      <!-- Payroll -->
+      <div class="link-card" id="payroll-card" style="display:none;">
+        <h2>Payroll</h2>
+        <p>Calculate earnings and manage accounting tasks.</p>
+        <a href="artists_payroll.html" target="_blank">Open Payroll</a>
       </div>
     </div>
   </main>
@@ -167,8 +167,16 @@
   </footer>
 
   <script>
-    // Simple year auto-update in footer
+    // Show current year in footer
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Role-based link display
+    // Suppose we stored currentUserRole in localStorage at login
+    const role = localStorage.getItem('currentUserRole');
+    // If 'ad' (accounting) or 'gm', show payroll card
+    if (role === 'ad' || role === 'gm') {
+      document.getElementById('payroll-card').style.display = 'block';
+    }
   </script>
 </body>
 </html>
