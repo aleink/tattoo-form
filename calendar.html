@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calendar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-bar h1 {
+      margin: 0;
+    }
+    .view-buttons button {
+      margin-right: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    /* Year/Month/Day containers */
+    #yearly-view, #monthly-view, #daily-view {
+      display: none;
+      margin-top: 20px;
+    }
+    .calendar-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    /* For monthly view, 7 columns (Sun-Sat) */
+    .month-grid {
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .calendar-cell {
+      border: 1px solid #ccc;
+      padding: 8px;
+      min-height: 80px;
+      position: relative;
+    }
+    .day-label {
+      font-weight: bold;
+    }
+    /* For daily 24-hour view in 5 min increments => 12 blocks per hour => 288 blocks,
+       but we'll build them dynamically in JS for clarity. */
+    #daily-slot-container {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .time-slot {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed #ccc;
+      padding: 4px 0;
+    }
+    .time-slot:hover {
+      background: #f2f2f2;
+      cursor: pointer;
+    }
+    .appointment-block {
+      background: rgba(0, 128, 255, 0.3);
+      margin: 2px 0;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    /* Modal for adding/editing appointments */
+    #appt-modal {
+      display: none;
+      position: fixed;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 2px solid #ccc;
+      padding: 20px;
+      width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .modal-field {
+      margin-bottom: 10px;
+    }
+    .modal-buttons {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .modal-buttons button {
+      margin-left: 8px;
+    }
+    #logout-btn {
+      margin-left: 20px;
+      background: #f44336;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>Calendar</h1>
+    <div>
+      <button id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <div class="view-buttons">
+    <button id="year-btn">Yearly View</button>
+    <button id="month-btn">Monthly View</button>
+    <button id="day-btn">Daily View</button>
+  </div>
+
+  <!-- YEARLY VIEW -->
+  <div id="yearly-view">
+    <h2>Yearly View (Placeholder)</h2>
+    <!-- We could add a real year calendar here if needed -->
+    <p>Switch to Month or Day for detailed scheduling.</p>
+  </div>
+
+  <!-- MONTHLY VIEW -->
+  <div id="monthly-view">
+    <h2>Monthly View</h2>
+    <div>
+      <input type="month" id="month-input" />
+      <button id="load-month">Load Month</button>
+    </div>
+    <div class="calendar-grid month-grid" id="month-grid">
+      <!-- Days will be generated dynamically -->
+    </div>
+  </div>
+
+  <!-- DAILY VIEW -->
+  <div id="daily-view">
+    <h2>Daily View</h2>
+    <div>
+      <input type="date" id="day-input" />
+      <button id="load-day">Load Day</button>
+    </div>
+    <div id="daily-slot-container">
+      <!-- 5-minute slots from 00:00 to 23:59 generated dynamically -->
+    </div>
+  </div>
+
+  <!-- Appointment Modal -->
+  <div id="appt-modal">
+    <h3 id="modal-title">New Appointment</h3>
+    <div class="modal-field">
+      <label for="modal-start-time">Start Time:</label>
+      <input type="time" id="modal-start-time" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-end-time">End Time:</label>
+      <input type="time" id="modal-end-time" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-artist">Artist:</label>
+      <select id="modal-artist"></select>
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-name">Client Name:</label>
+      <input type="text" id="modal-client-name" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-phone">Client Phone:</label>
+      <input type="text" id="modal-client-phone" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-email">Client Email:</label>
+      <input type="email" id="modal-email" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-description">Tattoo Description:</label>
+      <textarea id="modal-description"></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="modal-deposit">Deposit:</label>
+      <input type="number" id="modal-deposit" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-price">Price:</label>
+      <input type="number" id="modal-price" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-tip">Tip:</label>
+      <input type="number" id="modal-tip" />
+    </div>
+    <div class="modal-field">
+      <label>Appointment Type:</label>
+      <select id="modal-appt-type">
+        <option value="walk-in">Walk-in</option>
+        <option value="appointment">Appointment</option>
+      </select>
+    </div>
+    <div class="modal-buttons">
+      <button id="save-appt-btn">Save</button>
+      <button id="cancel-appt-btn">Cancel</button>
+      <button id="delete-appt-btn" style="display: none;">Delete</button>
+      <button id="complete-appt-btn" style="display: none;">Mark Completed</button>
+    </div>
+  </div>
+
+  <!-- Supabase JS (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // We'll store user info from localStorage
+    let currentUserId = null;
+    let currentLocationId = null;
+    let currentUserRole = null;
+
+    // DOM references
+    const yearBtn = document.getElementById('year-btn');
+    const monthBtn = document.getElementById('month-btn');
+    const dayBtn = document.getElementById('day-btn');
+
+    const yearlyView = document.getElementById('yearly-view');
+    const monthlyView = document.getElementById('monthly-view');
+    const dailyView = document.getElementById('daily-view');
+
+    const monthInput = document.getElementById('month-input');
+    const loadMonthBtn = document.getElementById('load-month');
+    const monthGrid = document.getElementById('month-grid');
+
+    const dayInput = document.getElementById('day-input');
+    const loadDayBtn = document.getElementById('load-day');
+    const dailySlotContainer = document.getElementById('daily-slot-container');
+
+    const apptModal = document.getElementById('appt-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalStartTime = document.getElementById('modal-start-time');
+    const modalEndTime = document.getElementById('modal-end-time');
+    const modalArtist = document.getElementById('modal-artist');
+    const modalClientName = document.getElementById('modal-client-name');
+    const modalClientPhone = document.getElementById('modal-client-phone');
+    const modalEmail = document.getElementById('modal-email');
+    const modalDescription = document.getElementById('modal-description');
+    const modalDeposit = document.getElementById('modal-deposit');
+    const modalPrice = document.getElementById('modal-price');
+    const modalTip = document.getElementById('modal-tip');
+    const modalApptType = document.getElementById('modal-appt-type');
+    const saveApptBtn = document.getElementById('save-appt-btn');
+    const cancelApptBtn = document.getElementById('cancel-appt-btn');
+    const deleteApptBtn = document.getElementById('delete-appt-btn');
+    const completeApptBtn = document.getElementById('complete-appt-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    let currentApptId = null;
+    let currentDateSelected = null;
+
+    // Basic nav between views
+    function showYearly() {
+      yearlyView.style.display = 'block';
+      monthlyView.style.display = 'none';
+      dailyView.style.display = 'none';
+    }
+    function showMonthly() {
+      yearlyView.style.display = 'none';
+      monthlyView.style.display = 'block';
+      dailyView.style.display = 'none';
+    }
+    function showDaily() {
+      yearlyView.style.display = 'none';
+      monthlyView.style.display = 'none';
+      dailyView.style.display = 'block';
+    }
+
+    yearBtn.addEventListener('click', showYearly);
+    monthBtn.addEventListener('click', showMonthly);
+    dayBtn.addEventListener('click', showDaily);
+
+    // Check if user is logged in
+    function checkAuth() {
+      currentUserId = localStorage.getItem('currentUserId');
+      currentLocationId = localStorage.getItem('currentLocationId');
+      currentUserRole = localStorage.getItem('currentUserRole');
+
+      if (!currentUserId) {
+        window.location.href = 'login.html';
+      }
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('currentUserId');
+      localStorage.removeItem('currentLocationId');
+      localStorage.removeItem('currentUserRole');
+      window.location.href = 'login.html';
+    });
+
+    // Load all artists for the user’s location
+    async function loadArtists() {
+      // If there's a location_id, we filter by that
+      let { data, error } = await supabase
+        .from('artists')
+        .select('*')
+        .eq('location_id', currentLocationId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      modalArtist.innerHTML = '';
+      data.forEach(artist => {
+        const opt = document.createElement('option');
+        opt.value = artist.id;
+        opt.textContent = artist.artist_name;
+        modalArtist.appendChild(opt);
+      });
+    }
+
+    /********** MONTH VIEW **********/
+    loadMonthBtn.addEventListener('click', async () => {
+      monthGrid.innerHTML = '';
+      const monthVal = monthInput.value; // format "YYYY-MM"
+      if (!monthVal) return;
+
+      // We'll parse the year/month, then build a basic calendar
+      const [yyyy, mm] = monthVal.split('-').map(Number);
+      const firstDay = new Date(yyyy, mm-1, 1);
+      const lastDay = new Date(yyyy, mm, 0); // day 0 of next month
+      const totalDays = lastDay.getDate();
+
+      // Create day squares
+      for (let day = 1; day <= totalDays; day++) {
+        const dayDate = new Date(yyyy, mm-1, day);
+        const cell = document.createElement('div');
+        cell.classList.add('calendar-cell');
+        cell.innerHTML = `<div class="day-label">${day}</div>`;
+        cell.addEventListener('click', () => openDay(yyyy, mm-1, day));
+        monthGrid.appendChild(cell);
+      }
+    });
+
+    function openDay(year, month, day) {
+      // Switch to daily view
+      showDaily();
+      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+      dayInput.value = dateStr;
+      loadDay();
+    }
+
+    /********** DAY VIEW **********/
+    loadDayBtn.addEventListener('click', loadDay);
+
+    async function loadDay() {
+      dailySlotContainer.innerHTML = '';
+      const dayVal = dayInput.value; 
+      if (!dayVal) return;
+      currentDateSelected = dayVal;
+
+      // We create 5-min intervals from 00:00 to 23:59
+      const dayStart = new Date(`${dayVal}T00:00:00`);
+      const dayEnd = new Date(`${dayVal}T23:59:59`);
+
+      function* fiveMinSlots(start, end) {
+        let current = new Date(start);
+        while (current <= end) {
+          yield new Date(current);
+          current.setMinutes(current.getMinutes() + 5);
+        }
+      }
+
+      // Fetch appointments for that day in the user’s location
+      let { data: appts, error } = await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('date', dayVal);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // Filter out appointments that do NOT belong to the user’s location
+      // We'll cross-check with the `artists` table if needed
+      const artistIds = await getArtistIdsForLocation(currentLocationId);
+      appts = appts.filter(a => artistIds.includes(a.artist_id));
+
+      // Render time slots
+      for (let slotTime of fiveMinSlots(dayStart, dayEnd)) {
+        const hh = slotTime.getHours().toString().padStart(2,'0');
+        const mm = slotTime.getMinutes().toString().padStart(2,'0');
+        const slotStr = `${hh}:${mm}`;
+
+        const slotDiv = document.createElement('div');
+        slotDiv.classList.add('time-slot');
+        slotDiv.innerHTML = `
+          <div>${slotStr}</div>
+          <div class="appointments"></div>
+        `;
+        slotDiv.addEventListener('click', (e) => {
+          if (e.target.classList.contains('appointment-block')) {
+            // If clicked on existing appt block
+            return;
+          }
+          // If empty slot clicked
+          openNewApptModal(slotStr, dayVal);
+        });
+
+        // Check which appointments fall in this 5-min slot
+        // We'll display them as small blocks
+        for (let ap of appts) {
+          if (isSlotInAppointment(slotStr, ap.start_time, ap.end_time)) {
+            const apBlock = document.createElement('div');
+            apBlock.classList.add('appointment-block');
+            apBlock.textContent = `${ap.client_name || 'N/A'} - ${ap.appointment_type}`;
+            // When clicked, open Appt modal
+            apBlock.addEventListener('click', (evt) => {
+              evt.stopPropagation();
+              openExistingApptModal(ap.id);
+            });
+            slotDiv.querySelector('.appointments').appendChild(apBlock);
+          }
+        }
+
+        dailySlotContainer.appendChild(slotDiv);
+      }
+    }
+
+    // Helper to get all artist IDs for a location
+    async function getArtistIdsForLocation(locationId) {
+      const { data, error } = await supabase
+        .from('artists')
+        .select('id')
+        .eq('location_id', locationId);
+      if (error) {
+        console.error(error);
+        return [];
+      }
+      return data.map(a => a.id);
+    }
+
+    // Helper to see if a 5-min slot is inside an appointment range
+    function isSlotInAppointment(slotStr, start, end) {
+      const slotNum = parseInt(slotStr.replace(':',''));
+      const startNum = parseInt(start.replace(':',''));
+      const endNum = parseInt(end.replace(':',''));
+      return (slotNum >= startNum && slotNum < endNum);
+    }
+
+    // Open modal for new appt
+    function openNewApptModal(slot, dateStr) {
+      currentApptId = null;
+      modalTitle.textContent = 'New Appointment';
+      modalStartTime.value = slot;
+      modalEndTime.value = slot; // user can adjust
+      modalArtist.value = '';
+      modalClientName.value = '';
+      modalClientPhone.value = '';
+      modalEmail.value = '';
+      modalDescription.value = '';
+      modalDeposit.value = '';
+      modalPrice.value = '';
+      modalTip.value = '';
+      modalApptType.value = 'walk-in';
+
+      deleteApptBtn.style.display = 'none';
+      completeApptBtn.style.display = 'none';
+
+      apptModal.style.display = 'block';
+    }
+
+    // Open modal for existing appt
+    async function openExistingApptModal(apptId) {
+      currentApptId = apptId;
+      const { data, error } = await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('id', apptId);
+
+      if (error || !data || data.length===0) {
+        console.error(error);
+        alert('Error loading appointment.');
+        return;
+      }
+      const ap = data[0];
+
+      modalTitle.textContent = `Edit Appointment (ID: ${ap.id.slice(0,6)})`;
+      modalStartTime.value = ap.start_time;
+      modalEndTime.value = ap.end_time;
+      modalArtist.value = ap.artist_id;
+      modalClientName.value = ap.client_name || '';
+      modalClientPhone.value = ap.client_phone || '';
+      modalEmail.value = ap.email || '';
+      modalDescription.value = ap.notes || '';
+      modalDeposit.value = ap.deposit || '';
+      modalPrice.value = ap.price || '';
+      modalTip.value = ap.tip || '';
+      modalApptType.value = ap.appointment_type || 'walk-in';
+
+      deleteApptBtn.style.display = 'inline-block';
+      completeApptBtn.style.display = 'inline-block';
+
+      apptModal.style.display = 'block';
+    }
+
+    // Save or update appointment
+    saveApptBtn.addEventListener('click', async () => {
+      const startVal = modalStartTime.value;
+      const endVal = modalEndTime.value;
+      const artistVal = modalArtist.value;
+      const clientNameVal = modalClientName.value;
+      const clientPhoneVal = modalClientPhone.value;
+      const emailVal = modalEmail.value;
+      const descVal = modalDescription.value;
+      const depositVal = modalDeposit.value ? parseFloat(modalDeposit.value) : null;
+      const priceVal = modalPrice.value ? parseFloat(modalPrice.value) : null;
+      const tipVal = modalTip.value ? parseFloat(modalTip.value) : null;
+      const apptTypeVal = modalApptType.value;
+
+      if (!startVal || !endVal) {
+        alert('Start and End time are required.');
+        return;
+      }
+
+      // Overlap check (simple version)
+      let { data: existingAppts, error } = await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('date', currentDateSelected)
+        .eq('artist_id', artistVal);
+
+      if (error) {
+        console.error(error);
+        alert('Error checking existing appointments.');
+        return;
+      }
+
+      const newStartNum = parseInt(startVal.replace(':',''));
+      const newEndNum   = parseInt(endVal.replace(':',''));
+
+      for (let ap of existingAppts) {
+        if (ap.id !== currentApptId) {
+          const apStartNum = parseInt(ap.start_time.replace(':',''));
+          const apEndNum   = parseInt(ap.end_time.replace(':',''));
+          if (newStartNum < apEndNum && newEndNum > apStartNum) {
+            alert('That slot overlaps an existing appointment.');
+            return;
+          }
+        }
+      }
+
+      if (!currentApptId) {
+        // Insert new
+        const { data, error } = await supabase
+          .from('artist_appointments')
+          .insert([{
+            artist_id: artistVal,
+            date: currentDateSelected,
+            start_time: startVal,
+            end_time: endVal,
+            appointment_type: apptTypeVal,
+            client_name: clientNameVal,
+            client_phone: clientPhoneVal,
+            email: emailVal,
+            notes: descVal,
+            deposit: depositVal,
+            price: priceVal,
+            tip: tipVal
+          }]);
+
+        if (error) {
+          console.error(error);
+          alert('Error inserting appointment.');
+          return;
+        }
+      } else {
+        // Update existing
+        const { data, error } = await supabase
+          .from('artist_appointments')
+          .update({
+            artist_id: artistVal,
+            start_time: startVal,
+            end_time: endVal,
+            appointment_type: apptTypeVal,
+            client_name: clientNameVal,
+            client_phone: clientPhoneVal,
+            email: emailVal,
+            notes: descVal,
+            deposit: depositVal,
+            price: priceVal,
+            tip: tipVal
+          })
+          .eq('id', currentApptId);
+
+        if (error) {
+          console.error(error);
+          alert('Error updating appointment.');
+          return;
+        }
+      }
+
+      apptModal.style.display = 'none';
+      loadDay(); 
+    });
+
+    // Delete appointment
+    deleteApptBtn.addEventListener('click', async () => {
+      if (!currentApptId) return;
+      const confirmDel = confirm('Are you sure you want to delete this appointment?');
+      if (!confirmDel) return;
+
+      const { data, error } = await supabase
+        .from('artist_appointments')
+        .delete()
+        .eq('id', currentApptId);
+
+      if (error) {
+        console.error(error);
+        alert('Error deleting appointment.');
+        return;
+      }
+      apptModal.style.display = 'none';
+      loadDay();
+    });
+
+    // Mark completed
+    completeApptBtn.addEventListener('click', async () => {
+      if (!currentApptId) return;
+      const { data, error } = await supabase
+        .from('artist_appointments')
+        .update({ appointment_type: 'completed' })
+        .eq('id', currentApptId);
+
+      if (error) {
+        console.error(error);
+        alert('Error marking appointment completed.');
+        return;
+      }
+      apptModal.style.display = 'none';
+      loadDay();
+    });
+
+    // Cancel
+    cancelApptBtn.addEventListener('click', () => {
+      apptModal.style.display = 'none';
+    });
+
+    // On load
+    window.addEventListener('DOMContentLoaded', async () => {
+      checkAuth();
+      showMonthly(); // default to monthly view
+      await loadArtists();
+    });
+  </script>
+</body>
+</html>
