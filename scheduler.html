@@ -211,6 +211,9 @@
         .select('*')
         .eq('artist_id', currentArtistId)
         .eq('date', currentDate);
+        console.log('Appointments data:', appts);
+console.log('Appointments error:', apptError);
+
 
       if (apptError) {
         console.error(apptError);
