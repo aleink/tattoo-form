@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tattoo Scheduler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+    select, input {
+      padding: 5px;
+      margin-right: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      text-align: center;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tattoo Scheduler</h1>
+
+  <div class="controls">
+    <div>
+      <label for="artist-select">Artist:</label>
+      <select id="artist-select">
+        <option value="">-- Select Artist --</option>
+      </select>
+
+      <label for="scheduler-date">Date:</label>
+      <input type="date" id="scheduler-date" />
+      <button id="load-schedule">Load Schedule</button>
+    </div>
+    <div>
+      <button id="new-appointment">New Appointment</button>
+    </div>
+  </div>
+
+  <table id="schedule-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be populated via JS -->
+    </tbody>
+  </table>
+
+  <div id="appointment-modal" style="display:none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
+    <h2>New Appointment</h2>
+    <div>
+      <label for="modal-start-time">Start Time:</label>
+      <input type="time" id="modal-start-time" />
+    </div>
+    <div>
+      <label for="modal-end-time">End Time:</label>
+      <input type="time" id="modal-end-time" />
+    </div>
+    <div>
+      <label for="modal-client-name">Client Name:</label>
+      <input type="text" id="modal-client-name" />
+    </div>
+    <div>
+      <label for="modal-client-phone">Client Phone:</label>
+      <input type="text" id="modal-client-phone" />
+    </div>
+    <div>
+      <label for="modal-notes">Notes:</label>
+      <textarea id="modal-notes"></textarea>
+    </div>
+    <br />
+    <button id="save-appointment">Save</button>
+    <button id="cancel-modal">Cancel</button>
+  </div>
+
+  <!-- Supabase JS (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const artistSelect = document.getElementById('artist-select');
+    const schedulerDate = document.getElementById('scheduler-date');
+    const loadBtn = document.getElementById('load-schedule');
+    const scheduleTableBody = document.querySelector('#schedule-table tbody');
+
+    const newApptBtn = document.getElementById('new-appointment');
+    const apptModal = document.getElementById('appointment-modal');
+    const saveApptBtn = document.getElementById('save-appointment');
+    const cancelModalBtn = document.getElementById('cancel-modal');
+    let currentArtistId = null;
+    let currentDate = null;
+
+    // 1. Load artists into dropdown
+    async function loadArtists() {
+      const { data, error } = await supabase
+        .from('artists')
+        .select('id, artist_name');
+
+      if (error) {
+        console.error('Error fetching artists:', error);
+        return;
+      }
+
+      data.forEach(artist => {
+        const opt = document.createElement('option');
+        opt.value = artist.id;
+        opt.textContent = artist.artist_name;
+        artistSelect.appendChild(opt);
+      });
+    }
+
+    // 2. Load schedule data
+    async function loadSchedule() {
+      currentArtistId = artistSelect.value;
+      currentDate = schedulerDate.value;
+      if (!currentArtistId || !currentDate) {
+        alert('Select an artist and a date first.');
+        return;
+      }
+
+      // Clear table
+      scheduleTableBody.innerHTML = '';
+
+      // Step A: Get the artist's schedule for the chosen day of the week
+      const chosenDay = new Date(currentDate).getDay(); // 0 = Sunday, 1=Monday, etc.
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const dayOfWeekName = dayNames[chosenDay]; 
+      
+      // This assumes your artist_schedules table stores day_of_week as 'Monday', 'Tuesday', etc.
+      const { data: scheduleData, error: scheduleError } = await supabase
+        .from('artist_schedules')
+        .select('*')
+        .eq('artist_id', currentArtistId)
+        .eq('day_of_week', dayOfWeekName);
+
+      if (scheduleError) {
+        console.error(scheduleError);
+        return;
+      }
+      if (!scheduleData || scheduleData.length === 0) {
+        // No schedule found for that day
+        scheduleTableBody.innerHTML = '<tr><td colspan="2">No schedule found for this artist on '+dayOfWeekName+'</td></tr>';
+        return;
+      }
+
+      const schedule = scheduleData[0];
+      // e.g., { start_time: "10:00", end_time: "18:00", break_start: "13:00", break_end: "14:00" }
+
+      // Step B: Get existing appointments
+      const { data: appts, error: apptError } = await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('artist_id', currentArtistId)
+        .eq('date', currentDate);
+
+      if (apptError) {
+        console.error(apptError);
+        return;
+      }
+
+      // Step C: Build time slots in 30-min increments
+      function* timeSlots(start, end, stepMinutes=30) {
+        const [startH, startM] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+
+        let current = new Date(2000,0,1,startH,startM);
+        let finish = new Date(2000,0,1,endH,endM);
+
+        while(current < finish) {
+          const hh = current.getHours().toString().padStart(2,'0');
+          const mm = current.getMinutes().toString().padStart(2,'0');
+          yield `${hh}:${mm}`;
+          current.setMinutes(current.getMinutes() + stepMinutes);
+        }
+      }
+
+      // Step D: For each timeslot, check if it’s during break or occupied by an appointment
+      for (let t of timeSlots(schedule.start_time, schedule.end_time, 30)) {
+        // Convert "hh:mm" to a numeric for comparison
+        const slotNumeric = parseInt(t.replace(':',''));
+        let slotStatus = 'Available';
+
+        // Check break
+        if (schedule.break_start && schedule.break_end) {
+          const breakStartNum = parseInt(schedule.break_start.replace(':',''));
+          const breakEndNum = parseInt(schedule.break_end.replace(':',''));
+          if (slotNumeric >= breakStartNum && slotNumeric < breakEndNum) {
+            slotStatus = 'Break';
+          }
+        }
+
+        // Check appointments
+        if (slotStatus === 'Available') {
+          // If appointment covers a range that includes slot
+          appts.forEach(a => {
+            const apptStartNum = parseInt(a.start_time.replace(':',''));
+            const apptEndNum = parseInt(a.end_time.replace(':',''));
+            if (slotNumeric >= apptStartNum && slotNumeric < apptEndNum) {
+              slotStatus = `Occupied (${a.client_name || 'N/A'})`;
+            }
+          });
+        }
+
+        // Render row
+        const tr = document.createElement('tr');
+        const tdTime = document.createElement('td');
+        const tdStatus = document.createElement('td');
+
+        tdTime.textContent = t;
+        tdStatus.textContent = slotStatus;
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdStatus);
+        scheduleTableBody.appendChild(tr);
+      }
+    }
+
+    // 3. Show modal for new appointment
+    newApptBtn.addEventListener('click', () => {
+      if (!artistSelect.value || !schedulerDate.value) {
+        alert('Select an artist and a date first.');
+        return;
+      }
+      apptModal.style.display = 'block';
+    });
+
+    // 4. Save new appointment
+    saveApptBtn.addEventListener('click', async () => {
+      const startTime = document.getElementById('modal-start-time').value;
+      const endTime = document.getElementById('modal-end-time').value;
+      const clientName = document.getElementById('modal-client-name').value;
+      const clientPhone = document.getElementById('modal-client-phone').value;
+      const notes = document.getElementById('modal-notes').value;
+
+      if (!startTime || !endTime) {
+        alert('Start Time and End Time required.');
+        return;
+      }
+
+      // Insert into artist_appointments
+      const { data, error } = await supabase
+        .from('artist_appointments')
+        .insert([
+          {
+            artist_id: artistSelect.value,
+            date: schedulerDate.value,
+            start_time: startTime,
+            end_time: endTime,
+            appointment_type: 'walk-in',
+            client_name: clientName,
+            client_phone: clientPhone,
+            notes: notes
+          }
+        ]);
+
+      if (error) {
+        console.error(error);
+        alert('Error saving appointment.');
+        return;
+      }
+      // Close modal
+      apptModal.style.display = 'none';
+      // Reload schedule
+      loadSchedule();
+    });
+
+    // Cancel modal
+    cancelModalBtn.addEventListener('click', () => {
+      apptModal.style.display = 'none';
+    });
+
+    // On clicking "Load Schedule"
+    loadBtn.addEventListener('click', loadSchedule);
+
+    // On page load
+    window.addEventListener('DOMContentLoaded', loadArtists);
+  </script>
+</body>
+</html>
