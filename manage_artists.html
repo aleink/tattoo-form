@@ -349,11 +349,15 @@
             location_id: locVal
           })
           .eq('id', currentArtistId);
-        if (error) {
-          console.error(error);
-          artistMessage.textContent = 'Error updating artist.';
-          return;
-        }
+       if (error) {
+  console.error('Update Artist Error:', error);
+  artistMessage.textContent = 'Error updating artist. Check console.';
+  return;
+}
+else {
+  console.log('Update success:', data);
+}
+
         artistMessage.textContent = 'Artist updated!';
       }
       loadAllArtists();
