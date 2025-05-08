@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Artists Payroll</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .login-section, .payroll-section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 7px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .message {
+      color: red;
+      margin-top: 8px;
+    }
+    .hidden {
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Artists Payroll</h1>
+
+  <!-- GM Login -->
+  <div class="login-section" id="login-section">
+    <label for="gm-email">GM Email</label>
+    <input type="email" id="gm-email" />
+
+    <label for="gm-password">GM Password</label>
+    <input type="password" id="gm-password" />
+
+    <button id="gm-login-btn">Login</button>
+    <div class="message" id="login-message"></div>
+  </div>
+
+  <!-- Payroll Section -->
+  <div class="payroll-section hidden" id="payroll-section">
+    <h2>Generate Payroll</h2>
+
+    <label for="location-select">Filter by Location</label>
+    <select id="location-select">
+      <!-- We'll load all locations here -->
+      <option value="">-- All Locations --</option>
+    </select>
+
+    <label for="start-date">Start Date</label>
+    <input type="date" id="start-date" />
+
+    <label for="end-date">End Date</label>
+    <input type="date" id="end-date" />
+
+    <button id="generate-payroll-btn">Generate Payroll</button>
+    <div class="message" id="payroll-message"></div>
+
+    <div class="table-container">
+      <table id="payroll-table">
+        <thead>
+          <tr>
+            <th>Artist</th>
+            <th>Total Price</th>
+            <th>Total Tip</th>
+            <th>Split (%)</th>
+            <th>Artist Earnings</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filled dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Supabase JS (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // DOM references
+    const loginSection = document.getElementById('login-section');
+    const payrollSection = document.getElementById('payroll-section');
+    const gmEmailInput = document.getElementById('gm-email');
+    const gmPasswordInput = document.getElementById('gm-password');
+    const gmLoginBtn = document.getElementById('gm-login-btn');
+    const loginMessage = document.getElementById('login-message');
+
+    const locationSelect = document.getElementById('location-select');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput   = document.getElementById('end-date');
+    const generateBtn    = document.getElementById('generate-payroll-btn');
+    const payrollMessage = document.getElementById('payroll-message');
+    const payrollTableBody = document.querySelector('#payroll-table tbody');
+
+    let currentGM = null;
+
+    // 1. GM login
+    gmLoginBtn.addEventListener('click', async () => {
+      loginMessage.textContent = '';
+      const emailVal = gmEmailInput.value.trim();
+      const passVal  = gmPasswordInput.value.trim();
+      if (!emailVal || !passVal) {
+        loginMessage.textContent = 'Email and Password required.';
+        return;
+      }
+      // check user role = 'gm'
+      let { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', emailVal)
+        .eq('role', 'gm');
+      if (error) {
+        console.error(error);
+        loginMessage.textContent = 'Error checking GM credentials.';
+        return;
+      }
+      if (!users || users.length === 0) {
+        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
+        return;
+      }
+      const user = users[0];
+      if (user.password_hash !== passVal) {
+        loginMessage.textContent = 'Invalid credentials.';
+        return;
+      }
+      // success
+      currentGM = user;
+      loginSection.classList.add('hidden');
+      payrollSection.classList.remove('hidden');
+      loadLocations();
+    });
+
+    // 2. Load locations into locationSelect
+    async function loadLocations() {
+      locationSelect.innerHTML = '<option value="">-- All Locations --</option>';
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*');
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.location_name;
+        locationSelect.appendChild(opt);
+      });
+    }
+
+    // 3. Generate payroll
+    generateBtn.addEventListener('click', async () => {
+      payrollMessage.textContent = '';
+      payrollTableBody.innerHTML = '';
+      const locVal = locationSelect.value;
+      const startVal = startDateInput.value;
+      const endVal   = endDateInput.value;
+
+      if (!startVal || !endVal) {
+        payrollMessage.textContent = 'Start Date and End Date are required.';
+        return;
+      }
+      if (endVal < startVal) {
+        payrollMessage.textContent = 'End Date cannot be before Start Date.';
+        return;
+      }
+
+      // We'll query completed or walk-in appointments within the date range
+      // then group by artist to sum up price, tip
+      // appointment_type in ('completed', 'walk-in')
+      let query = supabase
+        .from('artist_appointments')
+        .select('price, tip, artist_id, artists!inner(artist_name, percentage_split, location_id)')
+        .gte('date', startVal)
+        .lte('date', endVal)
+        .in('appointment_type', ['completed','walk-in']);
+
+      if (locVal) {
+        // Filter by location if chosen
+        query = query.eq('artists.location_id', locVal);
+      }
+
+      const { data: appts, error } = await query;
+      if (error) {
+        console.error(error);
+        payrollMessage.textContent = 'Error fetching appointments.';
+        return;
+      }
+      if (!appts || appts.length === 0) {
+        payrollMessage.textContent = 'No completed or walk-in appointments found in this range.';
+        return;
+      }
+
+      // Let's group by artist_id
+      // structure: { artist_id: { name, split, totalPrice, totalTip } }
+      let artistTotals = {};
+      appts.forEach(ap => {
+        const aId = ap.artist_id;
+        if (!artistTotals[aId]) {
+          artistTotals[aId] = {
+            name: ap.artists.artist_name,
+            split: ap.artists.percentage_split || 0,
+            totalPrice: 0,
+            totalTip: 0
+          };
+        }
+        // Accumulate
+        artistTotals[aId].totalPrice += ap.price || 0;
+        artistTotals[aId].totalTip   += ap.tip || 0;
+      });
+
+      // Now build table rows
+      for (let aId in artistTotals) {
+        const row = artistTotals[aId];
+        const splitVal = row.split; // e.g. 60 means 60%
+        // The artist takes (price * split%) + 100% of tip
+        const fromPrice = (row.totalPrice * (splitVal/100));
+        const fromTip   = row.totalTip;
+        const artistEarnings = fromPrice + fromTip;
+
+        const tr = document.createElement('tr');
+        const tdName  = document.createElement('td');
+        const tdPrice = document.createElement('td');
+        const tdTip   = document.createElement('td');
+        const tdSplit = document.createElement('td');
+        const tdTotal = document.createElement('td');
+
+        tdName.textContent  = row.name;
+        tdPrice.textContent = row.totalPrice.toFixed(2);
+        tdTip.textContent   = row.totalTip.toFixed(2);
+        tdSplit.textContent = splitVal + '%';
+        tdTotal.textContent = artistEarnings.toFixed(2);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdPrice);
+        tr.appendChild(tdTip);
+        tr.appendChild(tdSplit);
+        tr.appendChild(tdTotal);
+        payrollTableBody.appendChild(tr);
+      }
+    });
+
+  </script>
+</body>
+</html>
