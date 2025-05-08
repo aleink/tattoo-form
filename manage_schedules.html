@@ -10,6 +10,7 @@
       max-width: 600px;
       margin: 20px auto;
       padding: 10px;
+      overflow-y: auto; /* Global scroll if needed */
     }
     h1 {
       text-align: center;
@@ -35,22 +36,28 @@
       cursor: pointer;
       margin-right: 10px;
     }
+    .message {
+      color: red;
+      margin-top: 8px;
+    }
+    .hidden {
+      display: none;
+    }
+    /* Make table container scrollable if content is too large */
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
     }
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: left;
-    }
-    .hidden {
-      display: none;
-    }
-    .message {
-      color: red;
-      margin-top: 8px;
     }
   </style>
 </head>
@@ -82,7 +89,7 @@
     <label for="artist-email">Email</label>
     <input type="email" id="artist-email" />
 
-    <label for="artist-calendar">Calendar ID (optional for now)</label>
+    <label for="artist-calendar">Calendar ID (optional)</label>
     <input type="text" id="artist-calendar" />
 
     <label for="artist-split">Percentage Split</label>
@@ -101,7 +108,7 @@
 
     <label for="artist-location">Location</label>
     <select id="artist-location">
-      <!-- We’ll load locations from DB -->
+      <!-- We'll load all locations here -->
     </select>
 
     <div>
@@ -110,23 +117,33 @@
       <div class="message" id="artist-message"></div>
     </div>
 
-    <h2>All Artists</h2>
-    <table id="artists-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Email</th>
-          <th>Split</th>
-          <th>Color</th>
-          <th>Location</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Will populate via JS -->
-      </tbody>
-    </table>
+    <hr />
+
+    <!-- Filter by location at the top of the table -->
+    <label for="filter-location">Filter by Location</label>
+    <select id="filter-location">
+      <!-- We'll load the same set of locations -->
+      <option value="">-- All Locations --</option>
+    </select>
+
+    <div class="table-container">
+      <table id="artists-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Split</th>
+            <th>Color</th>
+            <th>Location</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Will populate via JS -->
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Supabase (v1.35.7) -->
@@ -155,10 +172,12 @@
     const artistMessage = document.getElementById('artist-message');
     const artistsTableBody = document.querySelector('#artists-table tbody');
 
+    const filterLocationSelect = document.getElementById('filter-location');
+
     let currentGM = null;
     let currentArtistId = null; // if editing existing
 
-    // 1. GM login
+    // GM login
     gmLoginBtn.addEventListener('click', async () => {
       const emailVal = gmEmailInput.value.trim();
       const passVal = gmPasswordInput.value.trim();
@@ -166,13 +185,12 @@
         loginMessage.textContent = 'Email and Password required.';
         return;
       }
-      // Check if there's a user with role = 'gm' or 'manager'
+      // check user with role='gm'
       let { data: users, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', emailVal)
         .eq('role', 'gm');
-      
       if (error) {
         console.error(error);
         loginMessage.textContent = 'Error checking GM credentials.';
@@ -187,7 +205,7 @@
         loginMessage.textContent = 'Invalid credentials.';
         return;
       }
-      // Logged in
+      // logged in
       currentGM = user;
       loginSection.classList.add('hidden');
       manageSection.classList.remove('hidden');
@@ -195,9 +213,10 @@
       loadAllArtists();
     });
 
-    // 2. Load all locations
+    // load all locations in both "artistLocationSelect" and "filterLocationSelect"
     async function loadLocations() {
       artistLocationSelect.innerHTML = '';
+      filterLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
       const { data, error } = await supabase
         .from('locations')
         .select('*');
@@ -206,28 +225,37 @@
         return;
       }
       data.forEach(loc => {
-        const opt = document.createElement('option');
-        opt.value = loc.id;
-        opt.textContent = loc.location_name;
-        artistLocationSelect.appendChild(opt);
+        const opt1 = document.createElement('option');
+        opt1.value = loc.id;
+        opt1.textContent = loc.location_name;
+        artistLocationSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = loc.id;
+        opt2.textContent = loc.location_name;
+        filterLocationSelect.appendChild(opt2);
       });
     }
 
-    // 3. Load all artists
+    // load artists with optional location filter
     async function loadAllArtists() {
       artistsTableBody.innerHTML = '';
-      const { data, error } = await supabase
+      let filterVal = filterLocationSelect.value;
+      let query = supabase
         .from('artists')
         .select('*, locations(location_name)')
         .order('artist_name', { ascending: true });
 
+      if (filterVal) {
+        query = query.eq('location_id', filterVal);
+      }
+      let { data, error } = await query;
       if (error) {
         console.error(error);
         return;
       }
       data.forEach(artist => {
         const tr = document.createElement('tr');
-        // columns: name, phone, email, split, color, location, actions
         const tdName = document.createElement('td');
         const tdPhone = document.createElement('td');
         const tdEmail = document.createElement('td');
@@ -269,7 +297,10 @@
       });
     }
 
-    // 4. Edit existing artist
+    filterLocationSelect.addEventListener('change', () => {
+      loadAllArtists();
+    });
+
     function editArtist(artist) {
       currentArtistId = artist.id;
       artistNameInput.value = artist.artist_name || '';
@@ -282,7 +313,6 @@
       artistMessage.textContent = 'Editing existing artist. Save to update.';
     }
 
-    // 5. Delete artist
     async function deleteArtist(artistId) {
       const confirmDel = confirm('Are you sure you want to delete this artist?');
       if (!confirmDel) return;
@@ -300,7 +330,6 @@
       clearArtistForm();
     }
 
-    // 6. Save new or update existing artist
     saveArtistBtn.addEventListener('click', async () => {
       artistMessage.textContent = '';
       const nameVal = artistNameInput.value.trim();
@@ -312,12 +341,12 @@
       const emailVal = artistEmailInput.value.trim() || null;
       const calVal   = artistCalendarInput.value.trim() || null;
       const splitVal = artistSplitInput.value.trim() ? parseFloat(artistSplitInput.value) : null;
-      let colorVal = artistColorSelect.value;
-      if (!colorVal) colorVal = null; // random will be assigned on insert if not set
+      let colorVal   = artistColorSelect.value;
+      if (!colorVal) colorVal = null;
       const locVal   = artistLocationSelect.value || null;
 
       if (!currentArtistId) {
-        // Insert new
+        // Insert
         const { data, error } = await supabase
           .from('artists')
           .insert([{
@@ -336,7 +365,7 @@
         }
         artistMessage.textContent = 'New artist added!';
       } else {
-        // Update existing
+        // Update
         const { data, error } = await supabase
           .from('artists')
           .update({
@@ -349,23 +378,19 @@
             location_id: locVal
           })
           .eq('id', currentArtistId);
-        console.log('Update result:', { data, error });
-       if (error) {
-  console.error('Update Artist Error:', error);
-  artistMessage.textContent = 'Error updating artist. Check console.';
-  return;
-}
-else {
-  console.log('Update success:', data);
-}
 
+        console.log('Update result:', { data, error });
+        if (error) {
+          console.error(error);
+          artistMessage.textContent = 'Error updating artist.';
+          return;
+        }
         artistMessage.textContent = 'Artist updated!';
       }
       loadAllArtists();
       clearArtistForm();
     });
 
-    // 7. Clear form
     clearArtistBtn.addEventListener('click', () => {
       clearArtistForm();
     });
@@ -382,7 +407,6 @@ else {
       artistMessage.textContent = '';
     }
 
-    // On page load
     window.addEventListener('DOMContentLoaded', () => {
       // Hide manage section until GM logs in
       manageSection.classList.add('hidden');
