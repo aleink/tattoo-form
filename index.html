@@ -105,17 +105,14 @@
       
       <label for="preferred-location">Preferred Location *</label>
       <select id="preferred-location" name="preferred-location" required>
+        <!-- Option for no selection -->
         <option value="">-- Select Location --</option>
-        <option value="locationA">Location A</option>
-        <option value="locationB">Location B</option>
-        <option value="locationC">Location C</option>
       </select>
 
       <label for="preferred-artist">Preferred Artist</label>
       <select id="preferred-artist" name="preferred-artist">
+        <!-- Keep "No preference / First available" by default -->
         <option value="">No preference / First available</option>
-        <option value="artist1">Artist 1</option>
-        <option value="artist2">Artist 2</option>
       </select>
     </div>
 
@@ -141,6 +138,79 @@
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Load locations into "preferred-location" dropdown
+    async function loadLocations() {
+      const { data, error } = await supabase
+        .from('locations')
+        .select('id, location_name');
+      
+      if (error) {
+        console.error('Error loading locations:', error);
+        return;
+      }
+
+      const locationSelect = document.getElementById('preferred-location');
+
+      // Clear any existing dynamic options (leaving the first placeholder)
+      while (locationSelect.options.length > 1) {
+        locationSelect.remove(1);
+      }
+
+      // Populate the dropdown with locations from DB
+      data.forEach(loc => {
+        const option = document.createElement('option');
+        option.value = loc.id;  // We'll store location ID
+        option.textContent = loc.location_name;
+        locationSelect.appendChild(option);
+      });
+    }
+
+    // Load artists based on chosen location
+    async function loadArtistsByLocation(locationId) {
+      const { data, error } = await supabase
+        .from('artists')
+        .select('id, artist_name')
+        .eq('location_id', locationId);
+
+      if (error) {
+        console.error('Error loading artists:', error);
+        return;
+      }
+
+      const artistSelect = document.getElementById('preferred-artist');
+
+      // Keep the first "No preference / First available" option
+      while (artistSelect.options.length > 1) {
+        artistSelect.remove(1);
+      }
+
+      // Populate with artists belonging to selected location
+      data.forEach(artist => {
+        const option = document.createElement('option');
+        option.value = artist.id; 
+        option.textContent = artist.artist_name;
+        artistSelect.appendChild(option);
+      });
+    }
+
+    // Event: When user changes location dropdown
+    document.getElementById('preferred-location').addEventListener('change', (event) => {
+      const locationId = event.target.value;
+      if (locationId) {
+        // Load artists for that location
+        loadArtistsByLocation(locationId);
+      } else {
+        // Reset to "No preference / First available" only
+        const artistSelect = document.getElementById('preferred-artist');
+        while (artistSelect.options.length > 1) {
+          artistSelect.remove(1);
+        }
+      }
+    });
+
+    // On page load, fetch the locations
+    window.addEventListener('DOMContentLoaded', loadLocations);
   </script>
 
   <script>
