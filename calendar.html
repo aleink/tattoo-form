@@ -53,10 +53,10 @@
       position: relative;
       cursor: pointer;
     }
-    /* Daily container from 8 AM (08:00) to 11:59 PM => 16 hours total */
+    /* Daily container from 8:00 AM to midnight => 16 hours => 960 minutes */
     #daily-container {
       position: relative;
-      height: 960px; /* 1px per minute from 8:00-24:00 => 16 hours * 60 = 960 */
+      height: 960px;
       border: 1px solid #ccc;
       overflow-y: auto;
       margin-top: 20px;
@@ -72,11 +72,27 @@
       font-size: 12px;
       padding-left: 5px;
     }
-    /* Appointment block */
+    /* Artist schedule block (translucent background) */
+    .schedule-block {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.05);
+      color: #000;
+      padding: 2px;
+      font-size: 0.75em;
+      box-sizing: border-box;
+      border-left: 4px solid #aaa;
+      pointer-events: none; /* so clicks pass through to time-slot/appointments */
+    }
+    .schedule-artist-name {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 2px;
+    }
+    /* Appointment block (solid) */
     .appointment-block {
       position: absolute;
-      left: 90px; /* some offset so hour labels can show on left */
-      right: 10px;
       background: #ddd;
       color: #000;
       border-radius: 4px;
@@ -85,7 +101,9 @@
       box-sizing: border-box;
       cursor: pointer;
     }
-    /* Appointment modal */
+    /* Overlapping columns */
+    /* We set left base at 90, then each column is ~110px wide. */
+    /* Modal */
     #appt-modal {
       display: none;
       position: fixed;
@@ -115,6 +133,14 @@
       color: #fff;
       padding: 6px 12px;
       border-radius: 4px;
+    }
+    /* Artist filter container */
+    #artist-filter-container {
+      margin-top: 10px;
+    }
+    .artist-filter-item {
+      display: inline-block;
+      margin-right: 10px;
     }
   </style>
 </head>
@@ -156,6 +182,10 @@
       <input type="date" id="day-input" />
       <button id="load-day">Load Day</button>
     </div>
+
+    <!-- Artist Filter -->
+    <div id="artist-filter-container"></div>
+
     <div id="daily-container"></div>
   </div>
 
@@ -238,6 +268,7 @@
     const dayInput = document.getElementById('day-input');
     const loadDayBtn = document.getElementById('load-day');
     const dailyContainer = document.getElementById('daily-container');
+    const artistFilterContainer = document.getElementById('artist-filter-container');
 
     // Modal references
     const apptModal = document.getElementById('appt-modal');
@@ -299,9 +330,10 @@
       window.location.href = 'login.html';
     });
 
-    // Load artists for this location, fill artistMap and modalArtist
+    // Load artists for this location, fill artistMap + modalArtist + filter
     async function loadArtists() {
       modalArtist.innerHTML = '';
+      artistFilterContainer.innerHTML = '';
       let { data: artists, error } = await supabase
         .from('artists')
         .select('id, artist_name, color')
@@ -312,12 +344,41 @@
         return;
       }
       artists.forEach(art => {
-        artistMap[art.id] = { name: art.artist_name, color: art.color || '#ccc' };
+        artistMap[art.id] = { name: art.artist_name, color: art.color || '#ddd' };
+
+        // Populate the appointment modal select
         const opt = document.createElement('option');
         opt.value = art.id;
         opt.textContent = art.artist_name;
         modalArtist.appendChild(opt);
+
+        // Create filter checkbox
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('artist-filter-item');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = 'artist-filter-' + art.id;
+        cb.value = art.id;
+        cb.checked = true; // default to show
+
+        const label = document.createElement('label');
+        label.htmlFor = cb.id;
+        label.textContent = art.artist_name;
+
+        wrapper.appendChild(cb);
+        wrapper.appendChild(label);
+        artistFilterContainer.appendChild(wrapper);
       });
+    }
+
+    function getFilteredArtistIds() {
+      // Return array of artist IDs that are checked
+      const checks = artistFilterContainer.querySelectorAll('input[type="checkbox"]');
+      let arr = [];
+      checks.forEach(ch => {
+        if (ch.checked) arr.push(ch.value);
+      });
+      return arr;
     }
 
     /********** MONTH VIEW **********/
@@ -351,31 +412,74 @@
 
     async function loadDay() {
       dailyContainer.innerHTML = '';
-      const dayVal = dayInput.value; 
+      const dayVal = dayInput.value;
       if (!dayVal) return;
       currentDateSelected = dayVal;
 
       // Show hour lines from 8:00 to midnight
       for (let hr = 8; hr <= 24; hr++) {
-        const minutesFrom8 = (hr - 8) * 60; 
-        const topPx = minutesFrom8; // 1 px per minute
+        const minutesFrom8 = (hr - 8) * 60;
         const line = document.createElement('div');
         line.classList.add('hour-line');
-        line.style.top = topPx + 'px';
+        line.style.top = minutesFrom8 + 'px';
 
         let labelHr = hr;
         let ampm = 'AM';
         if (labelHr >= 12) ampm = 'PM';
-        if (labelHr > 12) labelHr = labelHr - 12;
+        if (labelHr > 12) labelHr -= 12;
         if (labelHr === 24) {
           labelHr = 12;
           ampm = 'AM';
         }
         line.textContent = `${labelHr}:00 ${ampm}`;
+        line.style.left = '0px';
         dailyContainer.appendChild(line);
       }
 
-      // Fetch appointments for that day in this location
+      // Render each artist's schedule as a translucent block
+      // We'll match day_of_week to today's weekday
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const dayIndex = new Date(dayVal).getDay();
+      const dayName = dayNames[dayIndex];
+
+      const { data: schedules, error: scheduleErr } = await supabase
+        .from('artist_schedules')
+        .select('*')
+        .eq('day_of_week', dayName);
+
+      if (scheduleErr) {
+        console.error(scheduleErr);
+      } else {
+        const filteredIds = getFilteredArtistIds();
+        schedules.forEach(sch => {
+          // Check if this schedule belongs to an artist we want to see
+          if (!filteredIds.includes(sch.artist_id)) return;
+
+          const startNum = toMinutes(sch.start_time);
+          const endNum   = toMinutes(sch.end_time);
+          if (!startNum || !endNum) return;
+          // Place block from startNum-8:00 to endNum-8:00
+          const top = startNum - (8*60);
+          const height = endNum - startNum;
+          const scheduleDiv = document.createElement('div');
+          scheduleDiv.classList.add('schedule-block');
+          scheduleDiv.style.top = top + 'px';
+          scheduleDiv.style.height = height + 'px';
+
+          const artColor = artistMap[sch.artist_id]?.color || '#aaa';
+          // Add a border color maybe
+          scheduleDiv.style.borderLeftColor = artColor;
+          const artName = artistMap[sch.artist_id]?.name || 'Unknown';
+
+          scheduleDiv.innerHTML = `
+            <span class="schedule-artist-name">${artName}</span>
+            Working ${sch.start_time} - ${sch.end_time}
+          `;
+          dailyContainer.appendChild(scheduleDiv);
+        });
+      }
+
+      // Load appointments for that day
       let { data: appts, error } = await supabase
         .from('artist_appointments')
         .select('*')
@@ -385,92 +489,85 @@
         console.error(error);
         return;
       }
+      // Filter out artists user doesn't want to see
+      const filteredArtistIds = getFilteredArtistIds();
+      appts = appts.filter(a => filteredArtistIds.includes(a.artist_id));
 
-      const artistIds = Object.keys(artistMap);
-      appts = appts.filter(a => artistIds.includes(a.artist_id));
+      // Sort by start time
+      appts.sort((a,b) => toMinutes(a.start_time) - toMinutes(b.start_time));
 
-     // Group overlapping appointments by checking each time range
-// We'll build an array "columns" where each column is an array of appts that don't overlap.
-let columns = []; // array of arrays
+      // Group into columns to avoid overlap
+      let columns = []; // array of arrays of appts
 
-// Sort appts by start time so we place them in columns consistently
-appts.sort((a,b) => toMinutes(a.start_time) - toMinutes(b.start_time));
+      for (let ap of appts) {
+        let placed = false;
+        for (let col of columns) {
+          let lastInCol = col[col.length-1];
+          if (!appointmentsOverlap(lastInCol, ap)) {
+            col.push(ap);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) columns.push([ap]);
+      }
 
-for (let ap of appts) {
-  let placed = false;
-  for (let col of columns) {
-    // Compare with the last item in this column; if no overlap, place it here
-    let lastInCol = col[col.length-1];
-    if (!overlap(lastInCol, ap)) {
-      col.push(ap);
-      placed = true;
-      break;
-    }
-  }
-  if (!placed) {
-    // Create a new column for this appointment
-    columns.push([ap]);
-  }
-}
+      // Render columns side by side
+      columns.forEach((col, colIndex) => {
+        col.forEach(ap => {
+          const startNum = toMinutes(ap.start_time);
+          const endNum   = toMinutes(ap.end_time);
+          const blockTop = startNum - (8 * 60);
+          const blockHeight = Math.max(endNum - startNum, 5);
 
-// Now render each column side by side
-columns.forEach((col, colIndex) => {
-  col.forEach(ap => {
-    const startNum = toMinutes(ap.start_time);
-    const endNum   = toMinutes(ap.end_time);
-    const blockTop    = startNum - (8 * 60);
-    const blockHeight = Math.max(endNum - startNum, 5);
+          const block = document.createElement('div');
+          block.classList.add('appointment-block');
+          const artColor = artistMap[ap.artist_id]?.color || '#ddd';
+          block.style.backgroundColor = artColor;
+          // Each column ~110px wide
+          const leftBase = 90;
+          const colWidth = 110;
+          block.style.left = (leftBase + colIndex * colWidth) + 'px';
+          block.style.width = (colWidth - 10) + 'px';
+          block.style.top = blockTop + 'px';
+          block.style.height = blockHeight + 'px';
 
-    const block = document.createElement('div');
-    block.classList.add('appointment-block');
-    const artColor = artistMap[ap.artist_id]?.color || '#ddd';
-    block.style.backgroundColor = artColor;
-    block.style.top = blockTop + 'px';
-    block.style.height = blockHeight + 'px';
-    
-    // Shift the block horizontally based on the column index
-    // Each column gets ~100px width; you can adjust as needed
-    const leftBase = 90;   // same offset as before
-    const colWidth = 110;  // width space per column
-    block.style.left = (leftBase + colIndex * colWidth) + 'px';
-    block.style.width = (colWidth - 10) + 'px';
+          const artName = artistMap[ap.artist_id]?.name || 'Unknown';
+          const who = `${artName} - ${ap.client_name || 'N/A'} (${ap.appointment_type})`;
+          block.textContent = who;
 
-    const artName = artistMap[ap.artist_id]?.name || 'Unknown';
-    const who = `${artName} - ${ap.client_name || 'N/A'} (${ap.appointment_type})`;
-    block.textContent = who;
+          block.addEventListener('click', (evt) => {
+            evt.stopPropagation();
+            openExistingApptModal(ap.id);
+          });
+          dailyContainer.appendChild(block);
+        });
+      });
 
-    block.addEventListener('click', (evt) => {
-      evt.stopPropagation();
-      openExistingApptModal(ap.id);
-    });
-    dailyContainer.appendChild(block);
-  });
-});
-
-// Helper function to check if two appointments overlap
-function overlap(a, b) {
-  const aStart = toMinutes(a.start_time);
-  const aEnd   = toMinutes(a.end_time);
-  const bStart = toMinutes(b.start_time);
-  const bEnd   = toMinutes(b.end_time);
-  // Overlap if times cross
-  return (aStart < bEnd && bStart < aEnd);
-}
-
-
-      // If user clicks an empty spot
+      // If user clicks empty space => new Appt
       dailyContainer.addEventListener('click', onDailyContainerClick);
     }
 
+    function appointmentsOverlap(a, b) {
+      const aStart = toMinutes(a.start_time);
+      const aEnd   = toMinutes(a.end_time);
+      const bStart = toMinutes(b.start_time);
+      const bEnd   = toMinutes(b.end_time);
+      return (aStart < bEnd && bStart < aEnd);
+    }
+
     function onDailyContainerClick(e) {
-      // If clicked an existing appointment block, ignore
-      if (e.target.classList.contains('appointment-block') 
-          || e.target.classList.contains('hour-line')) {
+      // if clicked an existing appointment block or schedule block or hour-line, ignore
+      if (
+        e.target.classList.contains('appointment-block') ||
+        e.target.classList.contains('schedule-block') ||
+        e.target.classList.contains('hour-line')
+      ) {
         return;
       }
       // Calculate time from click Y
       const containerRect = dailyContainer.getBoundingClientRect();
-      const clickY = e.clientY - containerRect.top; 
+      const clickY = e.clientY - containerRect.top;
       const minutesFrom8 = Math.floor(clickY);
       const hr = Math.floor(minutesFrom8 / 60) + 8;
       const min = minutesFrom8 % 60;
@@ -481,12 +578,12 @@ function overlap(a, b) {
     }
 
     function toMinutes(hhmm) {
-      // "08:30" => 8*60 + 30 = 510
-      const [h,m] = hhmm.split(':').map(Number);
-      return (h * 60) + m;
+      if (!hhmm) return null;
+      const [h, m] = hhmm.split(':').map(Number);
+      return (h*60) + m;
     }
 
-    // Open new
+    // New Appt
     function openNewApptModal(slot, dateStr) {
       currentApptId = null;
       modalTitle.textContent = 'New Appointment';
@@ -506,7 +603,7 @@ function overlap(a, b) {
       apptModal.style.display = 'block';
     }
 
-    // Open existing
+    // Existing Appt
     async function openExistingApptModal(apptId) {
       currentApptId = apptId;
       const { data, error } = await supabase
@@ -521,8 +618,8 @@ function overlap(a, b) {
       }
       const ap = data[0];
       modalTitle.textContent = `Edit Appointment`;
-      modalStartTime.value = ap.start_time;
-      modalEndTime.value = ap.end_time;
+      modalStartTime.value = ap.start_time || '';
+      modalEndTime.value = ap.end_time || '';
       modalArtist.value = ap.artist_id;
       modalClientName.value = ap.client_name || '';
       modalClientPhone.value = ap.client_phone || '';
@@ -537,7 +634,7 @@ function overlap(a, b) {
       apptModal.style.display = 'block';
     }
 
-    // Save
+    // Save / Update
     saveApptBtn.addEventListener('click', async () => {
       const startVal = modalStartTime.value;
       const endVal = modalEndTime.value;
@@ -571,18 +668,21 @@ function overlap(a, b) {
 
       const newStartNum = toMinutes(startVal);
       const newEndNum   = toMinutes(endVal);
+      // if it overlaps any appointment except itself
       for (let ap of existingAppts) {
         if (ap.id !== currentApptId) {
-          const apStartNum = toMinutes(ap.start_time);
-          const apEndNum   = toMinutes(ap.end_time);
-          if (newStartNum < apEndNum && newEndNum > apStartNum) {
-            alert('That slot overlaps an existing appointment.');
+          if (appointmentsOverlap(ap, {
+            start_time: startVal,
+            end_time: endVal
+          })) {
+            alert('That slot overlaps an existing appointment for this artist.');
             return;
           }
         }
       }
 
       if (!currentApptId) {
+        // Insert
         const { data, error } = await supabase
           .from('artist_appointments')
           .insert([{
@@ -605,6 +705,7 @@ function overlap(a, b) {
           return;
         }
       } else {
+        // Update
         const { data, error } = await supabase
           .from('artist_appointments')
           .update({
@@ -627,14 +728,15 @@ function overlap(a, b) {
           return;
         }
       }
-      apptModal.style.display = 'none';
       reloadDay();
     });
 
     function reloadDay() {
       apptModal.style.display = 'none';
       dailyContainer.removeEventListener('click', onDailyContainerClick, false);
-      loadDay();
+      loadDay().then(() => {
+        dailyContainer.addEventListener('click', onDailyContainerClick);
+      });
     }
 
     // Delete
