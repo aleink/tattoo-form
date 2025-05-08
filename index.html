@@ -134,6 +134,15 @@
     <button type="submit">Submit</button>
   </form>
 
+  <!-- Supabase JS library -->
+  <script src="https://unpkg.com/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <script>
+    // Initialize Supabase
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  </script>
+
   <script>
     const form = document.getElementById('tattoo-form');
 
