@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>Login</h1>
+  <div>
+    <label for="email">Email</label>
+    <input type="email" id="email" />
+    
+    <label for="password">Password</label>
+    <input type="password" id="password" />
+
+    <button id="login-btn">Login</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <!-- Supabase JS v1.35.7 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('login-btn');
+    const messageDiv = document.getElementById('message');
+
+    loginBtn.addEventListener('click', async () => {
+      const emailVal = emailInput.value.trim();
+      const passwordVal = passwordInput.value.trim();
+
+      if (!emailVal || !passwordVal) {
+        messageDiv.textContent = 'Email and Password are required.';
+        return;
+      }
+
+      // Fetch user by email
+      let { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', emailVal);
+
+      if (error) {
+        console.error(error);
+        messageDiv.textContent = 'Error fetching user.';
+        return;
+      }
+
+      if (!users || users.length === 0) {
+        messageDiv.textContent = 'Invalid credentials.';
+        return;
+      }
+
+      const user = users[0];
+      // For now, compare plain text (NOT SECURE in production)
+      if (user.password_hash !== passwordVal) {
+        messageDiv.textContent = 'Invalid credentials.';
+        return;
+      }
+
+      // If valid, store user data in localStorage (or sessionStorage)
+      localStorage.setItem('currentUserId', user.id);
+      localStorage.setItem('currentLocationId', user.location_id);
+      localStorage.setItem('currentUserRole', user.role);
+
+      // Redirect to main calendar page
+      window.location.href = 'calendar.html';
+    });
+  </script>
+</body>
+</html>
