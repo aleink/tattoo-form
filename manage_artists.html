@@ -1,1 +1,387 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Manage Artists</title></head><body></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Artists</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .login-section, .manage-section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 7px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    .hidden {
+      display: none;
+    }
+    .message {
+      color: red;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Artists</h1>
+
+  <!-- Login Section for GM -->
+  <div class="login-section" id="login-section">
+    <label for="gm-email">GM Email</label>
+    <input type="email" id="gm-email">
+
+    <label for="gm-password">GM Password</label>
+    <input type="password" id="gm-password">
+
+    <button id="gm-login-btn">Login</button>
+    <div class="message" id="login-message"></div>
+  </div>
+
+  <!-- Artist Management Section -->
+  <div class="manage-section hidden" id="manage-section">
+    <h2>Add / Edit Artist</h2>
+    <!-- Form for new or existing artist -->
+    <label for="artist-name">Artist Name</label>
+    <input type="text" id="artist-name" />
+
+    <label for="artist-phone">Phone</label>
+    <input type="text" id="artist-phone" />
+
+    <label for="artist-email">Email</label>
+    <input type="email" id="artist-email" />
+
+    <label for="artist-calendar">Calendar ID (optional for now)</label>
+    <input type="text" id="artist-calendar" />
+
+    <label for="artist-split">Percentage Split</label>
+    <input type="number" id="artist-split" />
+
+    <label for="artist-color">Color</label>
+    <select id="artist-color">
+      <option value="">-- Random on Insert --</option>
+      <option value="#FF0000">Red</option>
+      <option value="#00FF00">Green</option>
+      <option value="#0000FF">Blue</option>
+      <option value="#FFA500">Orange</option>
+      <option value="#1abc9c">Teal</option>
+      <option value="#ddd">Gray</option>
+    </select>
+
+    <label for="artist-location">Location</label>
+    <select id="artist-location">
+      <!-- We’ll load locations from DB -->
+    </select>
+
+    <div>
+      <button id="save-artist-btn">Save Artist</button>
+      <button id="clear-artist-btn">Clear Fields</button>
+      <div class="message" id="artist-message"></div>
+    </div>
+
+    <h2>All Artists</h2>
+    <table id="artists-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Split</th>
+          <th>Color</th>
+          <th>Location</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Will populate via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Supabase (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const loginSection = document.getElementById('login-section');
+    const manageSection = document.getElementById('manage-section');
+    const gmEmailInput = document.getElementById('gm-email');
+    const gmPasswordInput = document.getElementById('gm-password');
+    const gmLoginBtn = document.getElementById('gm-login-btn');
+    const loginMessage = document.getElementById('login-message');
+
+    const artistNameInput = document.getElementById('artist-name');
+    const artistPhoneInput = document.getElementById('artist-phone');
+    const artistEmailInput = document.getElementById('artist-email');
+    const artistCalendarInput = document.getElementById('artist-calendar');
+    const artistSplitInput = document.getElementById('artist-split');
+    const artistColorSelect = document.getElementById('artist-color');
+    const artistLocationSelect = document.getElementById('artist-location');
+    const saveArtistBtn = document.getElementById('save-artist-btn');
+    const clearArtistBtn = document.getElementById('clear-artist-btn');
+    const artistMessage = document.getElementById('artist-message');
+    const artistsTableBody = document.querySelector('#artists-table tbody');
+
+    let currentGM = null;
+    let currentArtistId = null; // if editing existing
+
+    // 1. GM login
+    gmLoginBtn.addEventListener('click', async () => {
+      const emailVal = gmEmailInput.value.trim();
+      const passVal = gmPasswordInput.value.trim();
+      if (!emailVal || !passVal) {
+        loginMessage.textContent = 'Email and Password required.';
+        return;
+      }
+      // Check if there's a user with role = 'gm' or 'manager'
+      let { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', emailVal)
+        .eq('role', 'gm');
+      
+      if (error) {
+        console.error(error);
+        loginMessage.textContent = 'Error checking GM credentials.';
+        return;
+      }
+      if (!users || users.length === 0) {
+        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
+        return;
+      }
+      const user = users[0];
+      if (user.password_hash !== passVal) {
+        loginMessage.textContent = 'Invalid credentials.';
+        return;
+      }
+      // Logged in
+      currentGM = user;
+      loginSection.classList.add('hidden');
+      manageSection.classList.remove('hidden');
+      loadLocations();
+      loadAllArtists();
+    });
+
+    // 2. Load all locations
+    async function loadLocations() {
+      artistLocationSelect.innerHTML = '';
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*');
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.location_name;
+        artistLocationSelect.appendChild(opt);
+      });
+    }
+
+    // 3. Load all artists
+    async function loadAllArtists() {
+      artistsTableBody.innerHTML = '';
+      const { data, error } = await supabase
+        .from('artists')
+        .select('*, locations(location_name)')
+        .order('artist_name', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(artist => {
+        const tr = document.createElement('tr');
+        // columns: name, phone, email, split, color, location, actions
+        const tdName = document.createElement('td');
+        const tdPhone = document.createElement('td');
+        const tdEmail = document.createElement('td');
+        const tdSplit = document.createElement('td');
+        const tdColor = document.createElement('td');
+        const tdLoc   = document.createElement('td');
+        const tdActions = document.createElement('td');
+
+        tdName.textContent = artist.artist_name;
+        tdPhone.textContent = artist.phone || '';
+        tdEmail.textContent = artist.email || '';
+        tdSplit.textContent = artist.percentage_split || '';
+        tdColor.textContent = artist.color || '';
+        tdLoc.textContent   = artist.locations ? artist.locations.location_name : '';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          editArtist(artist);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => {
+          deleteArtist(artist.id);
+        });
+
+        tdActions.appendChild(editBtn);
+        tdActions.appendChild(delBtn);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdPhone);
+        tr.appendChild(tdEmail);
+        tr.appendChild(tdSplit);
+        tr.appendChild(tdColor);
+        tr.appendChild(tdLoc);
+        tr.appendChild(tdActions);
+        artistsTableBody.appendChild(tr);
+      });
+    }
+
+    // 4. Edit existing artist
+    function editArtist(artist) {
+      currentArtistId = artist.id;
+      artistNameInput.value = artist.artist_name || '';
+      artistPhoneInput.value = artist.phone || '';
+      artistEmailInput.value = artist.email || '';
+      artistCalendarInput.value = artist.calendar_id || '';
+      artistSplitInput.value = artist.percentage_split || '';
+      artistColorSelect.value = artist.color || '';
+      artistLocationSelect.value = artist.location_id || '';
+      artistMessage.textContent = 'Editing existing artist. Save to update.';
+    }
+
+    // 5. Delete artist
+    async function deleteArtist(artistId) {
+      const confirmDel = confirm('Are you sure you want to delete this artist?');
+      if (!confirmDel) return;
+      const { data, error } = await supabase
+        .from('artists')
+        .delete()
+        .eq('id', artistId);
+      if (error) {
+        console.error(error);
+        artistMessage.textContent = 'Error deleting artist.';
+        return;
+      }
+      artistMessage.textContent = 'Artist deleted.';
+      loadAllArtists();
+      clearArtistForm();
+    }
+
+    // 6. Save new or update existing artist
+    saveArtistBtn.addEventListener('click', async () => {
+      artistMessage.textContent = '';
+      const nameVal = artistNameInput.value.trim();
+      if (!nameVal) {
+        artistMessage.textContent = 'Artist name is required.';
+        return;
+      }
+      const phoneVal = artistPhoneInput.value.trim() || null;
+      const emailVal = artistEmailInput.value.trim() || null;
+      const calVal   = artistCalendarInput.value.trim() || null;
+      const splitVal = artistSplitInput.value.trim() ? parseFloat(artistSplitInput.value) : null;
+      let colorVal = artistColorSelect.value;
+      if (!colorVal) colorVal = null; // random will be assigned on insert if not set
+      const locVal   = artistLocationSelect.value || null;
+
+      if (!currentArtistId) {
+        // Insert new
+        const { data, error } = await supabase
+          .from('artists')
+          .insert([{
+            artist_name: nameVal,
+            phone: phoneVal,
+            email: emailVal,
+            calendar_id: calVal,
+            percentage_split: splitVal,
+            color: colorVal,
+            location_id: locVal
+          }]);
+        if (error) {
+          console.error(error);
+          artistMessage.textContent = 'Error inserting artist.';
+          return;
+        }
+        artistMessage.textContent = 'New artist added!';
+      } else {
+        // Update existing
+        const { data, error } = await supabase
+          .from('artists')
+          .update({
+            artist_name: nameVal,
+            phone: phoneVal,
+            email: emailVal,
+            calendar_id: calVal,
+            percentage_split: splitVal,
+            color: colorVal,
+            location_id: locVal
+          })
+          .eq('id', currentArtistId);
+        if (error) {
+          console.error(error);
+          artistMessage.textContent = 'Error updating artist.';
+          return;
+        }
+        artistMessage.textContent = 'Artist updated!';
+      }
+      loadAllArtists();
+      clearArtistForm();
+    });
+
+    // 7. Clear form
+    clearArtistBtn.addEventListener('click', () => {
+      clearArtistForm();
+    });
+
+    function clearArtistForm() {
+      currentArtistId = null;
+      artistNameInput.value = '';
+      artistPhoneInput.value = '';
+      artistEmailInput.value = '';
+      artistCalendarInput.value = '';
+      artistSplitInput.value = '';
+      artistColorSelect.value = '';
+      artistLocationSelect.value = '';
+      artistMessage.textContent = '';
+    }
+
+    // On page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Hide manage section until GM logs in
+      manageSection.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
