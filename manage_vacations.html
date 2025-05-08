@@ -2,11 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Add this meta tag to allow 'unsafe-eval' -->
-  <meta
-    http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-eval'; object-src 'none'; style-src 'self' 'unsafe-inline';"
-  >
   <title>Manage Vacations</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -296,7 +291,7 @@
     function editVacation(vac) {
       currentVacationId = vac.id;
       vacationStartInput.value = vac.vacation_start || '';
-      vacationEndInput.value   = vac.vacation_end || vac.vacation_start;
+      vacationEndInput.value   = vac.vacation_end || vac.vacation_start || '';
       vacationNotesInput.value = vac.notes || '';
       vacationMessage.textContent = 'Editing existing vacation range. Save to update.';
     }
