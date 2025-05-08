@@ -349,6 +349,7 @@
             location_id: locVal
           })
           .eq('id', currentArtistId);
+        console.log('Update result:', { data, error });
        if (error) {
   console.error('Update Artist Error:', error);
   artistMessage.textContent = 'Error updating artist. Check console.';
