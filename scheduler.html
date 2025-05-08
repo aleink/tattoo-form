@@ -18,6 +18,7 @@
     .controls {
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap;
       margin-bottom: 20px;
     }
     label {
@@ -39,6 +40,36 @@
     th, td {
       text-align: center;
       padding: 8px;
+    }
+    /* Modal styling */
+    #appointment-modal {
+      display: none;
+      position: fixed;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 2px solid #ccc;
+      padding: 20px;
+      width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    #appointment-modal h2 {
+      margin-top: 0;
+    }
+    .modal-field {
+      margin-bottom: 10px;
+    }
+    .modal-field label {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .modal-buttons {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .modal-buttons button {
+      margin-left: 8px;
     }
   </style>
 </head>
@@ -73,31 +104,32 @@
     </tbody>
   </table>
 
-  <div id="appointment-modal" style="display:none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: #f9f9f9; border: 1px solid #ccc; padding: 20px;">
+  <div id="appointment-modal">
     <h2>New Appointment</h2>
-    <div>
+    <div class="modal-field">
       <label for="modal-start-time">Start Time:</label>
       <input type="time" id="modal-start-time" />
     </div>
-    <div>
+    <div class="modal-field">
       <label for="modal-end-time">End Time:</label>
       <input type="time" id="modal-end-time" />
     </div>
-    <div>
+    <div class="modal-field">
       <label for="modal-client-name">Client Name:</label>
       <input type="text" id="modal-client-name" />
     </div>
-    <div>
+    <div class="modal-field">
       <label for="modal-client-phone">Client Phone:</label>
       <input type="text" id="modal-client-phone" />
     </div>
-    <div>
+    <div class="modal-field">
       <label for="modal-notes">Notes:</label>
       <textarea id="modal-notes"></textarea>
     </div>
-    <br />
-    <button id="save-appointment">Save</button>
-    <button id="cancel-modal">Cancel</button>
+    <div class="modal-buttons">
+      <button id="save-appointment">Save</button>
+      <button id="cancel-modal">Cancel</button>
+    </div>
   </div>
 
   <!-- Supabase JS (v1.35.7) -->
@@ -155,7 +187,6 @@
       const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       const dayOfWeekName = dayNames[chosenDay]; 
       
-      // This assumes your artist_schedules table stores day_of_week as 'Monday', 'Tuesday', etc.
       const { data: scheduleData, error: scheduleError } = await supabase
         .from('artist_schedules')
         .select('*')
@@ -167,7 +198,6 @@
         return;
       }
       if (!scheduleData || scheduleData.length === 0) {
-        // No schedule found for that day
         scheduleTableBody.innerHTML = '<tr><td colspan="2">No schedule found for this artist on '+dayOfWeekName+'</td></tr>';
         return;
       }
@@ -203,9 +233,8 @@
         }
       }
 
-      // Step D: For each timeslot, check if it’s during break or occupied by an appointment
+      // Step D: For each timeslot, check break or existing appointment
       for (let t of timeSlots(schedule.start_time, schedule.end_time, 30)) {
-        // Convert "hh:mm" to a numeric for comparison
         const slotNumeric = parseInt(t.replace(':',''));
         let slotStatus = 'Available';
 
@@ -220,7 +249,6 @@
 
         // Check appointments
         if (slotStatus === 'Available') {
-          // If appointment covers a range that includes slot
           appts.forEach(a => {
             const apptStartNum = parseInt(a.start_time.replace(':',''));
             const apptEndNum = parseInt(a.end_time.replace(':',''));
@@ -244,7 +272,7 @@
       }
     }
 
-    // 3. Show modal for new appointment
+    // Show modal for new appointment
     newApptBtn.addEventListener('click', () => {
       if (!artistSelect.value || !schedulerDate.value) {
         alert('Select an artist and a date first.');
@@ -253,7 +281,7 @@
       apptModal.style.display = 'block';
     });
 
-    // 4. Save new appointment
+    // Save new appointment, ensuring slot is free
     saveApptBtn.addEventListener('click', async () => {
       const startTime = document.getElementById('modal-start-time').value;
       const endTime = document.getElementById('modal-end-time').value;
@@ -266,8 +294,36 @@
         return;
       }
 
-      // Insert into artist_appointments
-      const { data, error } = await supabase
+      // Check if this slot is already occupied
+      const { data: existingAppts, error } = await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('artist_id', artistSelect.value)
+        .eq('date', schedulerDate.value);
+
+      if (error) {
+        console.error(error);
+        alert('Error checking existing appointments.');
+        return;
+      }
+
+      // Convert to numeric for overlap check
+      const newStartNum = parseInt(startTime.replace(':',''));
+      const newEndNum   = parseInt(endTime.replace(':',''));
+
+      for (let ap of existingAppts) {
+        const apStart = parseInt(ap.start_time.replace(':',''));
+        const apEnd   = parseInt(ap.end_time.replace(':',''));
+
+        // Overlap check: newStart < apEnd && newEnd > apStart
+        if (newStartNum < apEnd && newEndNum > apStart) {
+          alert('That slot is not available.');
+          return;
+        }
+      }
+
+      // If free, insert
+      const { data, error: insertErr } = await supabase
         .from('artist_appointments')
         .insert([
           {
@@ -278,15 +334,16 @@
             appointment_type: 'walk-in',
             client_name: clientName,
             client_phone: clientPhone,
-            notes: notes
+            notes
           }
         ]);
 
-      if (error) {
-        console.error(error);
+      if (insertErr) {
+        console.error(insertErr);
         alert('Error saving appointment.');
         return;
       }
+
       // Close modal
       apptModal.style.display = 'none';
       // Reload schedule
