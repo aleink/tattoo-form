@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Vacations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .login-section, .vacations-section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 7px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .message {
+      color: red;
+      margin-top: 8px;
+    }
+    .hidden {
+      display: none;
+    }
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Vacations</h1>
+
+  <!-- GM Login -->
+  <div class="login-section" id="login-section">
+    <label for="gm-email">GM Email</label>
+    <input type="email" id="gm-email" />
+
+    <label for="gm-password">GM Password</label>
+    <input type="password" id="gm-password" />
+
+    <button id="gm-login-btn">Login</button>
+    <div class="message" id="login-message"></div>
+  </div>
+
+  <!-- Vacations section -->
+  <div class="vacations-section hidden" id="vacations-section">
+    <h2>Manage Artist Vacations</h2>
+
+    <!-- Filter by location -->
+    <label for="location-filter">Filter by Location</label>
+    <select id="location-filter">
+      <option value="">-- Select Location --</option>
+    </select>
+
+    <!-- Filter by artist -->
+    <label for="artist-filter">Filter by Artist</label>
+    <select id="artist-filter">
+      <option value="">-- Select Artist --</option>
+    </select>
+
+    <hr />
+
+    <h3>Add / Edit Vacation</h3>
+    <label for="vacation-start">Vacation Start</label>
+    <input type="date" id="vacation-start" />
+
+    <label for="vacation-end">Vacation End</label>
+    <input type="date" id="vacation-end" />
+
+    <label for="vacation-notes">Notes</label>
+    <input type="text" id="vacation-notes" placeholder="Reason, or any extra notes" />
+
+    <button id="save-vacation-btn">Save / Update Vacation</button>
+    <button id="clear-form-btn">Clear Form</button>
+    <div class="message" id="vacation-message"></div>
+
+    <hr />
+
+    <h3>Existing Vacations</h3>
+    <div class="table-container">
+      <table id="vacations-table">
+        <thead>
+          <tr>
+            <th>Start</th>
+            <th>End</th>
+            <th>Notes</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filled dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Supabase JS (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // GM login
+    const loginSection = document.getElementById('login-section');
+    const vacationsSection = document.getElementById('vacations-section');
+    const gmEmailInput = document.getElementById('gm-email');
+    const gmPasswordInput = document.getElementById('gm-password');
+    const gmLoginBtn = document.getElementById('gm-login-btn');
+    const loginMessage = document.getElementById('login-message');
+
+    // Filters
+    const locationFilter = document.getElementById('location-filter');
+    const artistFilter   = document.getElementById('artist-filter');
+
+    // Form fields
+    const vacationStartInput = document.getElementById('vacation-start');
+    const vacationEndInput   = document.getElementById('vacation-end');
+    const vacationNotesInput = document.getElementById('vacation-notes');
+    const saveVacationBtn    = document.getElementById('save-vacation-btn');
+    const clearFormBtn       = document.getElementById('clear-form-btn');
+    const vacationMessage    = document.getElementById('vacation-message');
+
+    // Table
+    const vacationsTableBody = document.querySelector('#vacations-table tbody');
+
+    let currentGM = null;
+    let currentVacationId = null; // for editing an existing vacation
+
+    // 1. GM login
+    gmLoginBtn.addEventListener('click', async () => {
+      loginMessage.textContent = '';
+      const emailVal = gmEmailInput.value.trim();
+      const passVal  = gmPasswordInput.value.trim();
+      if (!emailVal || !passVal) {
+        loginMessage.textContent = 'Email and Password required.';
+        return;
+      }
+      let { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', emailVal)
+        .eq('role', 'gm'); // only GM
+      if (error) {
+        console.error(error);
+        loginMessage.textContent = 'Error checking GM credentials.';
+        return;
+      }
+      if (!data || data.length === 0) {
+        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
+        return;
+      }
+      const user = data[0];
+      if (user.password_hash !== passVal) {
+        loginMessage.textContent = 'Invalid credentials.';
+        return;
+      }
+      // success
+      currentGM = user;
+      loginSection.classList.add('hidden');
+      vacationsSection.classList.remove('hidden');
+      loadLocations();
+    });
+
+    // 2. Load all locations
+    async function loadLocations() {
+      locationFilter.innerHTML = '<option value="">-- Select Location --</option>';
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*');
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.location_name;
+        locationFilter.appendChild(opt);
+      });
+    }
+
+    // 3. When location changes, load artists in that location
+    locationFilter.addEventListener('change', async () => {
+      artistFilter.innerHTML = '<option value="">-- Select Artist --</option>';
+      if (!locationFilter.value) return;
+      const { data, error } = await supabase
+        .from('artists')
+        .select('id, artist_name')
+        .eq('location_id', locationFilter.value);
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(art => {
+        const opt = document.createElement('option');
+        opt.value = art.id;
+        opt.textContent = art.artist_name;
+        artistFilter.appendChild(opt);
+      });
+    });
+
+    // 4. When artist changes, load vacations
+    artistFilter.addEventListener('change', () => {
+      loadVacations();
+    });
+
+    // 5. Load the `artist_vacations` for selected artist
+    async function loadVacations() {
+      vacationsTableBody.innerHTML = '';
+      currentVacationId = null;
+      if (!artistFilter.value) return;
+
+      const { data, error } = await supabase
+        .from('artist_vacations')
+        .select('*')
+        .eq('artist_id', artistFilter.value)
+        .order('vacation_start', { ascending: true });
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(vac => {
+        const tr = document.createElement('tr');
+        const tdStart = document.createElement('td');
+        const tdEnd   = document.createElement('td');
+        const tdNotes = document.createElement('td');
+        const tdAction= document.createElement('td');
+
+        tdStart.textContent = vac.vacation_start;
+        tdEnd.textContent   = vac.vacation_end || vac.vacation_start;
+        tdNotes.textContent = vac.notes || '';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          editVacation(vac);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => {
+          deleteVacation(vac.id);
+        });
+
+        tdAction.appendChild(editBtn);
+        tdAction.appendChild(delBtn);
+
+        tr.appendChild(tdStart);
+        tr.appendChild(tdEnd);
+        tr.appendChild(tdNotes);
+        tr.appendChild(tdAction);
+        vacationsTableBody.appendChild(tr);
+      });
+    }
+
+    // 6. Edit existing vacation
+    function editVacation(vac) {
+      currentVacationId = vac.id;
+      vacationStartInput.value = vac.vacation_start || '';
+      vacationEndInput.value   = vac.vacation_end || vac.vacation_start || '';
+      vacationNotesInput.value = vac.notes || '';
+      vacationMessage.textContent = 'Editing existing vacation range. Save to update.';
+    }
+
+    // 7. Delete
+    async function deleteVacation(vacId) {
+      const confirmDel = confirm('Are you sure you want to delete this vacation?');
+      if (!confirmDel) return;
+      const { data, error } = await supabase
+        .from('artist_vacations')
+        .delete()
+        .eq('id', vacId);
+      if (error) {
+        console.error(error);
+        vacationMessage.textContent = 'Error deleting vacation.';
+        return;
+      }
+      vacationMessage.textContent = 'Vacation deleted.';
+      loadVacations();
+      clearForm();
+    }
+
+    // 8. Save or update
+    saveVacationBtn.addEventListener('click', async () => {
+      vacationMessage.textContent = '';
+      if (!artistFilter.value) {
+        vacationMessage.textContent = 'Select an artist.';
+        return;
+      }
+      const startVal = vacationStartInput.value;
+      if (!startVal) {
+        vacationMessage.textContent = 'Vacation start date required.';
+        return;
+      }
+      let endVal = vacationEndInput.value || startVal;
+      const notesVal = vacationNotesInput.value.trim() || null;
+
+      if (!currentVacationId) {
+        // Insert
+        const { data, error } = await supabase
+          .from('artist_vacations')
+          .insert([{
+            artist_id: artistFilter.value,
+            vacation_start: startVal,
+            vacation_end: endVal,
+            notes: notesVal
+          }]);
+        if (error) {
+          console.error(error);
+          vacationMessage.textContent = 'Error inserting vacation.';
+          return;
+        }
+        vacationMessage.textContent = 'New vacation added!';
+      } else {
+        // Update
+        const { data, error } = await supabase
+          .from('artist_vacations')
+          .update({
+            vacation_start: startVal,
+            vacation_end: endVal,
+            notes: notesVal
+          })
+          .eq('id', currentVacationId);
+        if (error) {
+          console.error(error);
+          vacationMessage.textContent = 'Error updating vacation.';
+          return;
+        }
+        vacationMessage.textContent = 'Vacation updated!';
+      }
+      loadVacations();
+      clearForm();
+    });
+
+    // 9. Clear
+    clearFormBtn.addEventListener('click', () => {
+      clearForm();
+    });
+
+    function clearForm() {
+      currentVacationId = null;
+      vacationStartInput.value = '';
+      vacationEndInput.value   = '';
+      vacationNotesInput.value = '';
+      vacationMessage.textContent = '';
+    }
+
+    // On load
+    window.addEventListener('DOMContentLoaded', () => {
+      vacationsSection.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
