@@ -19,12 +19,19 @@
     .top-bar h1 {
       margin: 0;
     }
+    #logout-btn {
+      margin-left: 20px;
+      background: #f44336;
+      color: #fff;
+      cursor: pointer;
+      padding: 6px 12px;
+      border: none;
+    }
     .view-buttons button {
       margin-right: 8px;
       padding: 6px 12px;
       cursor: pointer;
     }
-    /* Year/Month/Day containers */
     #yearly-view, #monthly-view, #daily-view {
       display: none;
       margin-top: 20px;
@@ -36,7 +43,6 @@
       border: 1px solid #ccc;
       padding: 10px;
     }
-    /* For monthly view, 7 columns (Sun-Sat) */
     .month-grid {
       grid-template-columns: repeat(7, 1fr);
     }
@@ -45,36 +51,41 @@
       padding: 8px;
       min-height: 80px;
       position: relative;
-    }
-    .day-label {
-      font-weight: bold;
-    }
-    /* For daily 24-hour view in 5 min increments => 12 blocks per hour => 288 blocks,
-       but we'll build them dynamically in JS for clarity. */
-    #daily-slot-container {
-      margin-top: 20px;
-      border: 1px solid #ccc;
-      padding: 10px;
-      max-height: 600px;
-      overflow-y: auto;
-    }
-    .time-slot {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px dashed #ccc;
-      padding: 4px 0;
-    }
-    .time-slot:hover {
-      background: #f2f2f2;
       cursor: pointer;
     }
-    .appointment-block {
-      background: rgba(0, 128, 255, 0.3);
-      margin: 2px 0;
-      padding: 2px 4px;
-      border-radius: 4px;
+    /* Daily container from 8 AM (08:00) to 11:59 PM => 16 hours total */
+    #daily-container {
+      position: relative;
+      height: 960px; /* 1px per minute from 8:00-24:00 => 16 hours * 60 = 960 */
+      border: 1px solid #ccc;
+      overflow-y: auto;
+      margin-top: 20px;
+      background: #f9f9f9;
     }
-    /* Modal for adding/editing appointments */
+    /* Hour lines */
+    .hour-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      border-top: 1px dashed #ccc;
+      color: #777;
+      font-size: 12px;
+      padding-left: 5px;
+    }
+    /* Appointment block */
+    .appointment-block {
+      position: absolute;
+      left: 90px; /* some offset so hour labels can show on left */
+      right: 10px;
+      background: #ddd;
+      color: #000;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 0.85em;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+    /* Appointment modal */
     #appt-modal {
       display: none;
       position: fixed;
@@ -97,10 +108,13 @@
     .modal-buttons button {
       margin-left: 8px;
     }
-    #logout-btn {
-      margin-left: 20px;
-      background: #f44336;
+    #manage-schedules-link {
+      margin-left: 15px;
+      text-decoration: none;
+      background: #1b8adb;
       color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -108,6 +122,7 @@
   <div class="top-bar">
     <h1>Calendar</h1>
     <div>
+      <a id="manage-schedules-link" href="manage_schedules.html">Manage Schedules</a>
       <button id="logout-btn">Logout</button>
     </div>
   </div>
@@ -121,7 +136,6 @@
   <!-- YEARLY VIEW -->
   <div id="yearly-view">
     <h2>Yearly View (Placeholder)</h2>
-    <!-- We could add a real year calendar here if needed -->
     <p>Switch to Month or Day for detailed scheduling.</p>
   </div>
 
@@ -132,9 +146,7 @@
       <input type="month" id="month-input" />
       <button id="load-month">Load Month</button>
     </div>
-    <div class="calendar-grid month-grid" id="month-grid">
-      <!-- Days will be generated dynamically -->
-    </div>
+    <div class="calendar-grid month-grid" id="month-grid"></div>
   </div>
 
   <!-- DAILY VIEW -->
@@ -144,9 +156,7 @@
       <input type="date" id="day-input" />
       <button id="load-day">Load Day</button>
     </div>
-    <div id="daily-slot-container">
-      <!-- 5-minute slots from 00:00 to 23:59 generated dynamically -->
-    </div>
+    <div id="daily-container"></div>
   </div>
 
   <!-- Appointment Modal -->
@@ -214,28 +224,22 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // We'll store user info from localStorage
-    let currentUserId = null;
-    let currentLocationId = null;
-    let currentUserRole = null;
-
-    // DOM references
+    // Basic references
+    const logoutBtn = document.getElementById('logout-btn');
     const yearBtn = document.getElementById('year-btn');
     const monthBtn = document.getElementById('month-btn');
     const dayBtn = document.getElementById('day-btn');
-
     const yearlyView = document.getElementById('yearly-view');
     const monthlyView = document.getElementById('monthly-view');
     const dailyView = document.getElementById('daily-view');
-
     const monthInput = document.getElementById('month-input');
     const loadMonthBtn = document.getElementById('load-month');
     const monthGrid = document.getElementById('month-grid');
-
     const dayInput = document.getElementById('day-input');
     const loadDayBtn = document.getElementById('load-day');
-    const dailySlotContainer = document.getElementById('daily-slot-container');
+    const dailyContainer = document.getElementById('daily-container');
 
+    // Modal references
     const apptModal = document.getElementById('appt-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalStartTime = document.getElementById('modal-start-time');
@@ -253,12 +257,14 @@
     const cancelApptBtn = document.getElementById('cancel-appt-btn');
     const deleteApptBtn = document.getElementById('delete-appt-btn');
     const completeApptBtn = document.getElementById('complete-appt-btn');
-    const logoutBtn = document.getElementById('logout-btn');
 
+    let currentUserId = null;
+    let currentLocationId = null;
+    let currentUserRole = null;
     let currentApptId = null;
     let currentDateSelected = null;
+    let artistMap = {}; // { artist_id: { name, color }, ... }
 
-    // Basic nav between views
     function showYearly() {
       yearlyView.style.display = 'block';
       monthlyView.style.display = 'none';
@@ -279,62 +285,52 @@
     monthBtn.addEventListener('click', showMonthly);
     dayBtn.addEventListener('click', showDaily);
 
-    // Check if user is logged in
     function checkAuth() {
       currentUserId = localStorage.getItem('currentUserId');
       currentLocationId = localStorage.getItem('currentLocationId');
       currentUserRole = localStorage.getItem('currentUserRole');
-
       if (!currentUserId) {
         window.location.href = 'login.html';
       }
     }
 
-    // Logout
     logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('currentUserId');
-      localStorage.removeItem('currentLocationId');
-      localStorage.removeItem('currentUserRole');
+      localStorage.clear();
       window.location.href = 'login.html';
     });
 
-    // Load all artists for the user’s location
+    // Load artists for this location, fill artistMap and modalArtist
     async function loadArtists() {
-      // If there's a location_id, we filter by that
-      let { data, error } = await supabase
+      modalArtist.innerHTML = '';
+      let { data: artists, error } = await supabase
         .from('artists')
-        .select('*')
+        .select('id, artist_name, color')
         .eq('location_id', currentLocationId);
 
       if (error) {
         console.error(error);
         return;
       }
-
-      modalArtist.innerHTML = '';
-      data.forEach(artist => {
+      artists.forEach(art => {
+        artistMap[art.id] = { name: art.artist_name, color: art.color || '#ccc' };
         const opt = document.createElement('option');
-        opt.value = artist.id;
-        opt.textContent = artist.artist_name;
+        opt.value = art.id;
+        opt.textContent = art.artist_name;
         modalArtist.appendChild(opt);
       });
     }
 
     /********** MONTH VIEW **********/
-    loadMonthBtn.addEventListener('click', async () => {
+    loadMonthBtn.addEventListener('click', () => {
       monthGrid.innerHTML = '';
-      const monthVal = monthInput.value; // format "YYYY-MM"
+      const monthVal = monthInput.value;
       if (!monthVal) return;
-
-      // We'll parse the year/month, then build a basic calendar
       const [yyyy, mm] = monthVal.split('-').map(Number);
       const firstDay = new Date(yyyy, mm-1, 1);
-      const lastDay = new Date(yyyy, mm, 0); // day 0 of next month
+      const lastDay = new Date(yyyy, mm, 0);
       const totalDays = lastDay.getDate();
 
-      // Create day squares
       for (let day = 1; day <= totalDays; day++) {
-        const dayDate = new Date(yyyy, mm-1, day);
         const cell = document.createElement('div');
         cell.classList.add('calendar-cell');
         cell.innerHTML = `<div class="day-label">${day}</div>`;
@@ -344,7 +340,6 @@
     });
 
     function openDay(year, month, day) {
-      // Switch to daily view
       showDaily();
       const dateStr = new Date(year, month, day).toISOString().split('T')[0];
       dayInput.value = dateStr;
@@ -355,24 +350,32 @@
     loadDayBtn.addEventListener('click', loadDay);
 
     async function loadDay() {
-      dailySlotContainer.innerHTML = '';
+      dailyContainer.innerHTML = '';
       const dayVal = dayInput.value; 
       if (!dayVal) return;
       currentDateSelected = dayVal;
 
-      // We create 5-min intervals from 00:00 to 23:59
-      const dayStart = new Date(`${dayVal}T00:00:00`);
-      const dayEnd = new Date(`${dayVal}T23:59:59`);
+      // Show hour lines from 8:00 to midnight
+      for (let hr = 8; hr <= 24; hr++) {
+        const minutesFrom8 = (hr - 8) * 60; 
+        const topPx = minutesFrom8; // 1 px per minute
+        const line = document.createElement('div');
+        line.classList.add('hour-line');
+        line.style.top = topPx + 'px';
 
-      function* fiveMinSlots(start, end) {
-        let current = new Date(start);
-        while (current <= end) {
-          yield new Date(current);
-          current.setMinutes(current.getMinutes() + 5);
+        let labelHr = hr;
+        let ampm = 'AM';
+        if (labelHr >= 12) ampm = 'PM';
+        if (labelHr > 12) labelHr = labelHr - 12;
+        if (labelHr === 24) {
+          labelHr = 12;
+          ampm = 'AM';
         }
+        line.textContent = `${labelHr}:00 ${ampm}`;
+        dailyContainer.appendChild(line);
       }
 
-      // Fetch appointments for that day in the user’s location
+      // Fetch appointments for that day in this location
       let { data: appts, error } = await supabase
         .from('artist_appointments')
         .select('*')
@@ -383,79 +386,67 @@
         return;
       }
 
-      // Filter out appointments that do NOT belong to the user’s location
-      // We'll cross-check with the `artists` table if needed
-      const artistIds = await getArtistIdsForLocation(currentLocationId);
+      const artistIds = Object.keys(artistMap);
       appts = appts.filter(a => artistIds.includes(a.artist_id));
 
-      // Render time slots
-      for (let slotTime of fiveMinSlots(dayStart, dayEnd)) {
-        const hh = slotTime.getHours().toString().padStart(2,'0');
-        const mm = slotTime.getMinutes().toString().padStart(2,'0');
-        const slotStr = `${hh}:${mm}`;
+      // Render each appointment as a single block
+      for (let ap of appts) {
+        const startNum = toMinutes(ap.start_time);
+        const endNum = toMinutes(ap.end_time);
+        const blockTop = startNum - (8 * 60); // offset from 8:00 AM
+        const blockHeight = Math.max(endNum - startNum, 5); // min height
+        const block = document.createElement('div');
+        block.classList.add('appointment-block');
+        const artColor = artistMap[ap.artist_id]?.color || '#ddd';
+        block.style.backgroundColor = artColor;
+        block.style.top = blockTop + 'px';
+        block.style.height = blockHeight + 'px';
 
-        const slotDiv = document.createElement('div');
-        slotDiv.classList.add('time-slot');
-        slotDiv.innerHTML = `
-          <div>${slotStr}</div>
-          <div class="appointments"></div>
-        `;
-        slotDiv.addEventListener('click', (e) => {
-          if (e.target.classList.contains('appointment-block')) {
-            // If clicked on existing appt block
-            return;
-          }
-          // If empty slot clicked
-          openNewApptModal(slotStr, dayVal);
+        const artName = artistMap[ap.artist_id]?.name || 'Unknown';
+        const who = `${artName} - ${ap.client_name || 'N/A'} (${ap.appointment_type})`;
+        block.textContent = who;
+
+        block.addEventListener('click', (evt) => {
+          evt.stopPropagation();
+          openExistingApptModal(ap.id);
         });
-
-        // Check which appointments fall in this 5-min slot
-        // We'll display them as small blocks
-        for (let ap of appts) {
-          if (isSlotInAppointment(slotStr, ap.start_time, ap.end_time)) {
-            const apBlock = document.createElement('div');
-            apBlock.classList.add('appointment-block');
-            apBlock.textContent = `${ap.client_name || 'N/A'} - ${ap.appointment_type}`;
-            // When clicked, open Appt modal
-            apBlock.addEventListener('click', (evt) => {
-              evt.stopPropagation();
-              openExistingApptModal(ap.id);
-            });
-            slotDiv.querySelector('.appointments').appendChild(apBlock);
-          }
-        }
-
-        dailySlotContainer.appendChild(slotDiv);
+        dailyContainer.appendChild(block);
       }
+
+      // If user clicks an empty spot
+      dailyContainer.addEventListener('click', onDailyContainerClick);
     }
 
-    // Helper to get all artist IDs for a location
-    async function getArtistIdsForLocation(locationId) {
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id')
-        .eq('location_id', locationId);
-      if (error) {
-        console.error(error);
-        return [];
+    function onDailyContainerClick(e) {
+      // If clicked an existing appointment block, ignore
+      if (e.target.classList.contains('appointment-block') 
+          || e.target.classList.contains('hour-line')) {
+        return;
       }
-      return data.map(a => a.id);
+      // Calculate time from click Y
+      const containerRect = dailyContainer.getBoundingClientRect();
+      const clickY = e.clientY - containerRect.top; 
+      const minutesFrom8 = Math.floor(clickY);
+      const hr = Math.floor(minutesFrom8 / 60) + 8;
+      const min = minutesFrom8 % 60;
+      const hh = hr.toString().padStart(2,'0');
+      const mm = min.toString().padStart(2,'0');
+      const slotStr = `${hh}:${mm}`;
+      openNewApptModal(slotStr, currentDateSelected);
     }
 
-    // Helper to see if a 5-min slot is inside an appointment range
-    function isSlotInAppointment(slotStr, start, end) {
-      const slotNum = parseInt(slotStr.replace(':',''));
-      const startNum = parseInt(start.replace(':',''));
-      const endNum = parseInt(end.replace(':',''));
-      return (slotNum >= startNum && slotNum < endNum);
+    function toMinutes(hhmm) {
+      // "08:30" => 8*60 + 30 = 510
+      const [h,m] = hhmm.split(':').map(Number);
+      return (h * 60) + m;
     }
 
-    // Open modal for new appt
+    // Open new
     function openNewApptModal(slot, dateStr) {
       currentApptId = null;
       modalTitle.textContent = 'New Appointment';
       modalStartTime.value = slot;
-      modalEndTime.value = slot; // user can adjust
+      modalEndTime.value = slot;
       modalArtist.value = '';
       modalClientName.value = '';
       modalClientPhone.value = '';
@@ -465,14 +456,12 @@
       modalPrice.value = '';
       modalTip.value = '';
       modalApptType.value = 'walk-in';
-
       deleteApptBtn.style.display = 'none';
       completeApptBtn.style.display = 'none';
-
       apptModal.style.display = 'block';
     }
 
-    // Open modal for existing appt
+    // Open existing
     async function openExistingApptModal(apptId) {
       currentApptId = apptId;
       const { data, error } = await supabase
@@ -486,8 +475,7 @@
         return;
       }
       const ap = data[0];
-
-      modalTitle.textContent = `Edit Appointment (ID: ${ap.id.slice(0,6)})`;
+      modalTitle.textContent = `Edit Appointment`;
       modalStartTime.value = ap.start_time;
       modalEndTime.value = ap.end_time;
       modalArtist.value = ap.artist_id;
@@ -499,14 +487,12 @@
       modalPrice.value = ap.price || '';
       modalTip.value = ap.tip || '';
       modalApptType.value = ap.appointment_type || 'walk-in';
-
       deleteApptBtn.style.display = 'inline-block';
       completeApptBtn.style.display = 'inline-block';
-
       apptModal.style.display = 'block';
     }
 
-    // Save or update appointment
+    // Save
     saveApptBtn.addEventListener('click', async () => {
       const startVal = modalStartTime.value;
       const endVal = modalEndTime.value;
@@ -525,7 +511,7 @@
         return;
       }
 
-      // Overlap check (simple version)
+      // Overlap check for same artist
       let { data: existingAppts, error } = await supabase
         .from('artist_appointments')
         .select('*')
@@ -538,13 +524,12 @@
         return;
       }
 
-      const newStartNum = parseInt(startVal.replace(':',''));
-      const newEndNum   = parseInt(endVal.replace(':',''));
-
+      const newStartNum = toMinutes(startVal);
+      const newEndNum   = toMinutes(endVal);
       for (let ap of existingAppts) {
         if (ap.id !== currentApptId) {
-          const apStartNum = parseInt(ap.start_time.replace(':',''));
-          const apEndNum   = parseInt(ap.end_time.replace(':',''));
+          const apStartNum = toMinutes(ap.start_time);
+          const apEndNum   = toMinutes(ap.end_time);
           if (newStartNum < apEndNum && newEndNum > apStartNum) {
             alert('That slot overlaps an existing appointment.');
             return;
@@ -553,7 +538,6 @@
       }
 
       if (!currentApptId) {
-        // Insert new
         const { data, error } = await supabase
           .from('artist_appointments')
           .insert([{
@@ -570,14 +554,12 @@
             price: priceVal,
             tip: tipVal
           }]);
-
         if (error) {
           console.error(error);
           alert('Error inserting appointment.');
           return;
         }
       } else {
-        // Update existing
         const { data, error } = await supabase
           .from('artist_appointments')
           .update({
@@ -594,53 +576,52 @@
             tip: tipVal
           })
           .eq('id', currentApptId);
-
         if (error) {
           console.error(error);
           alert('Error updating appointment.');
           return;
         }
       }
-
       apptModal.style.display = 'none';
-      loadDay(); 
+      reloadDay();
     });
 
-    // Delete appointment
+    function reloadDay() {
+      apptModal.style.display = 'none';
+      dailyContainer.removeEventListener('click', onDailyContainerClick, false);
+      loadDay();
+    }
+
+    // Delete
     deleteApptBtn.addEventListener('click', async () => {
       if (!currentApptId) return;
       const confirmDel = confirm('Are you sure you want to delete this appointment?');
       if (!confirmDel) return;
-
       const { data, error } = await supabase
         .from('artist_appointments')
         .delete()
         .eq('id', currentApptId);
-
       if (error) {
         console.error(error);
         alert('Error deleting appointment.');
         return;
       }
-      apptModal.style.display = 'none';
-      loadDay();
+      reloadDay();
     });
 
-    // Mark completed
+    // Complete
     completeApptBtn.addEventListener('click', async () => {
       if (!currentApptId) return;
       const { data, error } = await supabase
         .from('artist_appointments')
         .update({ appointment_type: 'completed' })
         .eq('id', currentApptId);
-
       if (error) {
         console.error(error);
         alert('Error marking appointment completed.');
         return;
       }
-      apptModal.style.display = 'none';
-      loadDay();
+      reloadDay();
     });
 
     // Cancel
@@ -651,7 +632,7 @@
     // On load
     window.addEventListener('DOMContentLoaded', async () => {
       checkAuth();
-      showMonthly(); // default to monthly view
+      showMonthly(); // default
       await loadArtists();
     });
   </script>
