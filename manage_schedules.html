@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Schedules</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .login-section, .schedules-section {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 7px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .message {
+      color: red;
+      margin-top: 8px;
+    }
+    .hidden {
+      display: none;
+    }
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Artist Schedules</h1>
+
+  <!-- GM Login -->
+  <div class="login-section" id="login-section">
+    <label for="gm-email">GM Email</label>
+    <input type="email" id="gm-email" />
+
+    <label for="gm-password">GM Password</label>
+    <input type="password" id="gm-password" />
+
+    <button id="gm-login-btn">Login</button>
+    <div class="message" id="login-message"></div>
+  </div>
+
+  <!-- Main schedules section -->
+  <div class="schedules-section hidden" id="schedules-section">
+    <h2>Manage Schedules</h2>
+
+    <!-- Filter by location -->
+    <label for="location-filter">Filter by Location</label>
+    <select id="location-filter">
+      <option value="">-- Select Location --</option>
+    </select>
+
+    <!-- Filter by artist -->
+    <label for="artist-filter">Filter by Artist</label>
+    <select id="artist-filter">
+      <option value="">-- Select Artist --</option>
+    </select>
+
+    <hr />
+
+    <h3>Add / Edit Schedule</h3>
+    <label for="day-of-week">Day of Week</label>
+    <select id="day-of-week">
+      <option value="">-- Choose Day --</option>
+      <option value="Sunday">Sunday</option>
+      <option value="Monday">Monday</option>
+      <option value="Tuesday">Tuesday</option>
+      <option value="Wednesday">Wednesday</option>
+      <option value="Thursday">Thursday</option>
+      <option value="Friday">Friday</option>
+      <option value="Saturday">Saturday</option>
+    </select>
+
+    <label for="start-time">Start Time</label>
+    <input type="time" id="start-time" />
+
+    <label for="end-time">End Time</label>
+    <input type="time" id="end-time" />
+
+    <label for="break-start">Break Start</label>
+    <input type="time" id="break-start" />
+
+    <label for="break-end">Break End</label>
+    <input type="time" id="break-end" />
+
+    <button id="save-schedule-btn">Save / Update Schedule</button>
+    <button id="clear-form-btn">Clear Form</button>
+    <div class="message" id="schedule-message"></div>
+
+    <hr />
+
+    <h3>Existing Schedules</h3>
+    <div class="table-container">
+      <table id="schedules-table">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Break Start</th>
+            <th>Break End</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filled dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Supabase JS (v1.35.7) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+  <script>
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'YOUR_ANON_KEY';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // GM login
+    const loginSection = document.getElementById('login-section');
+    const schedulesSection = document.getElementById('schedules-section');
+    const gmEmailInput = document.getElementById('gm-email');
+    const gmPasswordInput = document.getElementById('gm-password');
+    const gmLoginBtn = document.getElementById('gm-login-btn');
+    const loginMessage = document.getElementById('login-message');
+
+    // Filters
+    const locationFilter = document.getElementById('location-filter');
+    const artistFilter = document.getElementById('artist-filter');
+
+    // Form fields
+    const dayOfWeekSelect = document.getElementById('day-of-week');
+    const startTimeInput  = document.getElementById('start-time');
+    const endTimeInput    = document.getElementById('end-time');
+    const breakStartInput = document.getElementById('break-start');
+    const breakEndInput   = document.getElementById('break-end');
+    const saveScheduleBtn = document.getElementById('save-schedule-btn');
+    const clearFormBtn    = document.getElementById('clear-form-btn');
+    const scheduleMessage = document.getElementById('schedule-message');
+
+    // Table
+    const schedulesTableBody = document.querySelector('#schedules-table tbody');
+
+    let currentGM = null;
+    let currentScheduleId = null; // for editing existing schedules
+
+    gmLoginBtn.addEventListener('click', async () => {
+      loginMessage.textContent = '';
+      const emailVal = gmEmailInput.value.trim();
+      const passVal  = gmPasswordInput.value.trim();
+      if (!emailVal || !passVal) {
+        loginMessage.textContent = 'Email and Password required.';
+        return;
+      }
+
+      let { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', emailVal)
+        .eq('role', 'gm');  // only GM can access
+      if (error) {
+        console.error(error);
+        loginMessage.textContent = 'Error checking GM credentials.';
+        return;
+      }
+      if (!data || data.length === 0) {
+        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
+        return;
+      }
+      const user = data[0];
+      if (user.password_hash !== passVal) {
+        loginMessage.textContent = 'Invalid credentials.';
+        return;
+      }
+      // success
+      currentGM = user;
+      loginSection.classList.add('hidden');
+      schedulesSection.classList.remove('hidden');
+      loadLocations();
+    });
+
+    // 1. Load all locations into locationFilter
+    async function loadLocations() {
+      locationFilter.innerHTML = '<option value="">-- Select Location --</option>';
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*');
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.location_name;
+        locationFilter.appendChild(opt);
+      });
+    }
+
+    // 2. When location changes, load artists from that location
+    locationFilter.addEventListener('change', async () => {
+      artistFilter.innerHTML = '<option value="">-- Select Artist --</option>';
+      if (!locationFilter.value) return; // no location selected
+
+      const { data, error } = await supabase
+        .from('artists')
+        .select('id, artist_name')
+        .eq('location_id', locationFilter.value);
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(art => {
+        const opt = document.createElement('option');
+        opt.value = art.id;
+        opt.textContent = art.artist_name;
+        artistFilter.appendChild(opt);
+      });
+    });
+
+    // 3. When artist changes, load their schedules
+    artistFilter.addEventListener('change', () => {
+      loadSchedules();
+    });
+
+    // 4. Load schedules for the selected artist
+    async function loadSchedules() {
+      schedulesTableBody.innerHTML = '';
+      currentScheduleId = null;
+      if (!artistFilter.value) return; // no artist selected
+
+      const { data, error } = await supabase
+        .from('artist_schedules')
+        .select('*')
+        .eq('artist_id', artistFilter.value);
+      if (error) {
+        console.error(error);
+        return;
+      }
+      data.forEach(sch => {
+        const tr = document.createElement('tr');
+        const tdDay = document.createElement('td');
+        const tdStart = document.createElement('td');
+        const tdEnd = document.createElement('td');
+        const tdBreakStart = document.createElement('td');
+        const tdBreakEnd   = document.createElement('td');
+        const tdAction = document.createElement('td');
+
+        tdDay.textContent = sch.day_of_week;
+        tdStart.textContent = sch.start_time || '';
+        tdEnd.textContent   = sch.end_time || '';
+        tdBreakStart.textContent = sch.break_start || '';
+        tdBreakEnd.textContent   = sch.break_end || '';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          editSchedule(sch);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => {
+          deleteSchedule(sch.id);
+        });
+
+        tdAction.appendChild(editBtn);
+        tdAction.appendChild(delBtn);
+
+        tr.appendChild(tdDay);
+        tr.appendChild(tdStart);
+        tr.appendChild(tdEnd);
+        tr.appendChild(tdBreakStart);
+        tr.appendChild(tdBreakEnd);
+        tr.appendChild(tdAction);
+        schedulesTableBody.appendChild(tr);
+      });
+    }
+
+    // 5. Edit existing schedule
+    function editSchedule(sch) {
+      currentScheduleId = sch.id;
+      dayOfWeekSelect.value = sch.day_of_week || '';
+      startTimeInput.value  = sch.start_time || '';
+      endTimeInput.value    = sch.end_time || '';
+      breakStartInput.value = sch.break_start || '';
+      breakEndInput.value   = sch.break_end || '';
+      scheduleMessage.textContent = 'Editing existing schedule. Save to update.';
+    }
+
+    // 6. Delete schedule
+    async function deleteSchedule(scheduleId) {
+      const confirmDel = confirm('Are you sure you want to delete this schedule?');
+      if (!confirmDel) return;
+
+      const { data, error } = await supabase
+        .from('artist_schedules')
+        .delete()
+        .eq('id', scheduleId);
+      if (error) {
+        console.error(error);
+        scheduleMessage.textContent = 'Error deleting schedule.';
+        return;
+      }
+      scheduleMessage.textContent = 'Schedule deleted.';
+      loadSchedules();
+      clearForm();
+    }
+
+    // 7. Save or update schedule
+    saveScheduleBtn.addEventListener('click', async () => {
+      scheduleMessage.textContent = '';
+      if (!artistFilter.value) {
+        scheduleMessage.textContent = 'Select an artist first.';
+        return;
+      }
+      const dayVal   = dayOfWeekSelect.value;
+      if (!dayVal) {
+        scheduleMessage.textContent = 'Choose a day of the week.';
+        return;
+      }
+      const startVal = startTimeInput.value || null;
+      const endVal   = endTimeInput.value || null;
+      const bStart   = breakStartInput.value || null;
+      const bEnd     = breakEndInput.value || null;
+
+      // check if there's an existing row for that day/artist if we are inserting anew
+      if (!currentScheduleId) {
+        // Insert
+        // We can decide if we want multiple schedules for same day, or only one.
+        // For now we allow multiple, so no check. If you want only 1, you'd query here.
+
+        const { data, error } = await supabase
+          .from('artist_schedules')
+          .insert([{
+            artist_id: artistFilter.value,
+            day_of_week: dayVal,
+            start_time: startVal,
+            end_time: endVal,
+            break_start: bStart,
+            break_end: bEnd
+          }]);
+        if (error) {
+          console.error(error);
+          scheduleMessage.textContent = 'Error inserting schedule.';
+          return;
+        }
+        scheduleMessage.textContent = 'New schedule added!';
+      } else {
+        // Update existing
+        const { data, error } = await supabase
+          .from('artist_schedules')
+          .update({
+            day_of_week: dayVal,
+            start_time: startVal,
+            end_time: endVal,
+            break_start: bStart,
+            break_end: bEnd
+          })
+          .eq('id', currentScheduleId);
+
+        if (error) {
+          console.error(error);
+          scheduleMessage.textContent = 'Error updating schedule.';
+          return;
+        }
+        scheduleMessage.textContent = 'Schedule updated!';
+      }
+      loadSchedules();
+      clearForm();
+    });
+
+    // 8. Clear form
+    clearFormBtn.addEventListener('click', () => {
+      clearForm();
+    });
+
+    function clearForm() {
+      currentScheduleId = null;
+      dayOfWeekSelect.value   = '';
+      startTimeInput.value    = '';
+      endTimeInput.value      = '';
+      breakStartInput.value   = '';
+      breakEndInput.value     = '';
+      scheduleMessage.textContent = '';
+    }
+
+    // On page load
+    window.addEventListener('DOMContentLoaded', () => {
+      schedulesSection.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
