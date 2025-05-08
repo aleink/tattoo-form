@@ -389,29 +389,74 @@
       const artistIds = Object.keys(artistMap);
       appts = appts.filter(a => artistIds.includes(a.artist_id));
 
-      // Render each appointment as a single block
-      for (let ap of appts) {
-        const startNum = toMinutes(ap.start_time);
-        const endNum = toMinutes(ap.end_time);
-        const blockTop = startNum - (8 * 60); // offset from 8:00 AM
-        const blockHeight = Math.max(endNum - startNum, 5); // min height
-        const block = document.createElement('div');
-        block.classList.add('appointment-block');
-        const artColor = artistMap[ap.artist_id]?.color || '#ddd';
-        block.style.backgroundColor = artColor;
-        block.style.top = blockTop + 'px';
-        block.style.height = blockHeight + 'px';
+     // Group overlapping appointments by checking each time range
+// We'll build an array "columns" where each column is an array of appts that don't overlap.
+let columns = []; // array of arrays
 
-        const artName = artistMap[ap.artist_id]?.name || 'Unknown';
-        const who = `${artName} - ${ap.client_name || 'N/A'} (${ap.appointment_type})`;
-        block.textContent = who;
+// Sort appts by start time so we place them in columns consistently
+appts.sort((a,b) => toMinutes(a.start_time) - toMinutes(b.start_time));
 
-        block.addEventListener('click', (evt) => {
-          evt.stopPropagation();
-          openExistingApptModal(ap.id);
-        });
-        dailyContainer.appendChild(block);
-      }
+for (let ap of appts) {
+  let placed = false;
+  for (let col of columns) {
+    // Compare with the last item in this column; if no overlap, place it here
+    let lastInCol = col[col.length-1];
+    if (!overlap(lastInCol, ap)) {
+      col.push(ap);
+      placed = true;
+      break;
+    }
+  }
+  if (!placed) {
+    // Create a new column for this appointment
+    columns.push([ap]);
+  }
+}
+
+// Now render each column side by side
+columns.forEach((col, colIndex) => {
+  col.forEach(ap => {
+    const startNum = toMinutes(ap.start_time);
+    const endNum   = toMinutes(ap.end_time);
+    const blockTop    = startNum - (8 * 60);
+    const blockHeight = Math.max(endNum - startNum, 5);
+
+    const block = document.createElement('div');
+    block.classList.add('appointment-block');
+    const artColor = artistMap[ap.artist_id]?.color || '#ddd';
+    block.style.backgroundColor = artColor;
+    block.style.top = blockTop + 'px';
+    block.style.height = blockHeight + 'px';
+    
+    // Shift the block horizontally based on the column index
+    // Each column gets ~100px width; you can adjust as needed
+    const leftBase = 90;   // same offset as before
+    const colWidth = 110;  // width space per column
+    block.style.left = (leftBase + colIndex * colWidth) + 'px';
+    block.style.width = (colWidth - 10) + 'px';
+
+    const artName = artistMap[ap.artist_id]?.name || 'Unknown';
+    const who = `${artName} - ${ap.client_name || 'N/A'} (${ap.appointment_type})`;
+    block.textContent = who;
+
+    block.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      openExistingApptModal(ap.id);
+    });
+    dailyContainer.appendChild(block);
+  });
+});
+
+// Helper function to check if two appointments overlap
+function overlap(a, b) {
+  const aStart = toMinutes(a.start_time);
+  const aEnd   = toMinutes(a.end_time);
+  const bStart = toMinutes(b.start_time);
+  const bEnd   = toMinutes(b.end_time);
+  // Overlap if times cross
+  return (aStart < bEnd && bStart < aEnd);
+}
+
 
       // If user clicks an empty spot
       dailyContainer.addEventListener('click', onDailyContainerClick);
