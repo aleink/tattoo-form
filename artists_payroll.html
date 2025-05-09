@@ -15,7 +15,7 @@
     h1 {
       text-align: center;
     }
-    .login-section, .payroll-section {
+    .payroll-section {
       border: 1px solid #ccc;
       padding: 15px;
       margin-bottom: 20px;
@@ -59,30 +59,25 @@
       border: 1px solid #ccc;
       margin-top: 10px;
     }
+    .no-access {
+      border: 1px solid #f44336;
+      color: #f44336;
+      padding: 15px;
+      text-align: center;
+      margin-top: 30px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h1>Artists Payroll</h1>
 
-  <!-- GM Login -->
-  <div class="login-section" id="login-section">
-    <label for="gm-email">GM Email</label>
-    <input type="email" id="gm-email" />
-
-    <label for="gm-password">GM Password</label>
-    <input type="password" id="gm-password" />
-
-    <button id="gm-login-btn">Login</button>
-    <div class="message" id="login-message"></div>
-  </div>
-
-  <!-- Payroll Section -->
+  <!-- The payroll section (hidden by default, shown if role is 'gm' or 'ad') -->
   <div class="payroll-section hidden" id="payroll-section">
     <h2>Generate Payroll</h2>
 
     <label for="location-select">Filter by Location</label>
     <select id="location-select">
-      <!-- We'll load all locations here -->
       <option value="">-- All Locations --</option>
     </select>
 
@@ -113,6 +108,11 @@
     </div>
   </div>
 
+  <!-- No-access message for FD or SM roles -->
+  <div id="no-access" class="no-access hidden">
+    You do not have access to the Payroll page.
+  </div>
+
   <!-- Supabase JS (v1.35.7) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
@@ -120,14 +120,8 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // DOM references
-    const loginSection = document.getElementById('login-section');
     const payrollSection = document.getElementById('payroll-section');
-    const gmEmailInput = document.getElementById('gm-email');
-    const gmPasswordInput = document.getElementById('gm-password');
-    const gmLoginBtn = document.getElementById('gm-login-btn');
-    const loginMessage = document.getElementById('login-message');
-
+    const noAccessDiv = document.getElementById('no-access');
     const locationSelect = document.getElementById('location-select');
     const startDateInput = document.getElementById('start-date');
     const endDateInput   = document.getElementById('end-date');
@@ -135,45 +129,21 @@
     const payrollMessage = document.getElementById('payroll-message');
     const payrollTableBody = document.querySelector('#payroll-table tbody');
 
-    let currentGM = null;
-
-    // 1. GM login
-    gmLoginBtn.addEventListener('click', async () => {
-      loginMessage.textContent = '';
-      const emailVal = gmEmailInput.value.trim();
-      const passVal  = gmPasswordInput.value.trim();
-      if (!emailVal || !passVal) {
-        loginMessage.textContent = 'Email and Password required.';
-        return;
+    // On page load, check role from localStorage
+    window.addEventListener('DOMContentLoaded', async () => {
+      const currentUserRole = localStorage.getItem('currentUserRole');
+      if (currentUserRole === 'gm' || currentUserRole === 'ad') {
+        // show payroll
+        payrollSection.classList.remove('hidden');
+        // load locations
+        await loadLocations();
+      } else {
+        // no access
+        noAccessDiv.classList.remove('hidden');
       }
-      // check user role = 'gm'
-      let { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', emailVal)
-        .eq('role', 'gm');
-      if (error) {
-        console.error(error);
-        loginMessage.textContent = 'Error checking GM credentials.';
-        return;
-      }
-      if (!users || users.length === 0) {
-        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
-        return;
-      }
-      const user = users[0];
-      if (user.password_hash !== passVal) {
-        loginMessage.textContent = 'Invalid credentials.';
-        return;
-      }
-      // success
-      currentGM = user;
-      loginSection.classList.add('hidden');
-      payrollSection.classList.remove('hidden');
-      loadLocations();
     });
 
-    // 2. Load locations into locationSelect
+    // Load all locations into locationSelect
     async function loadLocations() {
       locationSelect.innerHTML = '<option value="">-- All Locations --</option>';
       const { data, error } = await supabase
@@ -191,7 +161,7 @@
       });
     }
 
-    // 3. Generate payroll
+    // Generate payroll
     generateBtn.addEventListener('click', async () => {
       payrollMessage.textContent = '';
       payrollTableBody.innerHTML = '';
@@ -210,7 +180,6 @@
 
       // We'll query completed or walk-in appointments within the date range
       // then group by artist to sum up price, tip
-      // appointment_type in ('completed', 'walk-in')
       let query = supabase
         .from('artist_appointments')
         .select('price, tip, artist_id, artists!inner(artist_name, percentage_split, location_id)')
@@ -234,8 +203,7 @@
         return;
       }
 
-      // Let's group by artist_id
-      // structure: { artist_id: { name, split, totalPrice, totalTip } }
+      // Group by artist
       let artistTotals = {};
       appts.forEach(ap => {
         const aId = ap.artist_id;
@@ -247,15 +215,14 @@
             totalTip: 0
           };
         }
-        // Accumulate
         artistTotals[aId].totalPrice += ap.price || 0;
         artistTotals[aId].totalTip   += ap.tip || 0;
       });
 
-      // Now build table rows
+      // Build table
       for (let aId in artistTotals) {
         const row = artistTotals[aId];
-        const splitVal = row.split; // e.g. 60 means 60%
+        const splitVal = row.split; 
         // The artist takes (price * split%) + 100% of tip
         const fromPrice = (row.totalPrice * (splitVal/100));
         const fromTip   = row.totalTip;
@@ -282,7 +249,6 @@
         payrollTableBody.appendChild(tr);
       }
     });
-
   </script>
 </body>
 </html>
