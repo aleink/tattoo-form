@@ -20,7 +20,7 @@
         ">
 
   <style>
-    /* Dark style reminiscent of index/artist portal */
+    /* Dark style reminiscent of your index/artist portal */
     * {
       margin: 0;
       padding: 0;
@@ -81,9 +81,6 @@
       color: #f33;
       margin-top: 8px;
     }
-    .hidden {
-      display: none;
-    }
     /* Table styling for dark theme and mobile-friendly scrolling */
     .table-container {
       max-height: 300px;
@@ -103,7 +100,7 @@
     th {
       background: #333;
     }
-    /* No access block */
+    /* No-access block */
     .no-access {
       background: #222;
       border: 1px solid #f44336;
@@ -157,7 +154,7 @@
       </div>
     </div>
 
-    <!-- No-access message for FD or SM roles -->
+    <!-- No-access message if FD/SM or no role stored -->
     <div id="no-access" class="no-access hidden">
       You do not have access to the Payroll page.
     </div>
@@ -168,12 +165,12 @@
   <script>
     // 1) Initialize supabase
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // 2) DOM references
     const payrollSection = document.getElementById('payroll-section');
-    const noAccessDiv = document.getElementById('no-access');
+    const noAccessDiv    = document.getElementById('no-access');
     const locationSelect = document.getElementById('location-select');
     const startDateInput = document.getElementById('start-date');
     const endDateInput   = document.getElementById('end-date');
@@ -184,10 +181,17 @@
     // 3) On page load => check role
     window.addEventListener('DOMContentLoaded', async () => {
       const currentUserRole = localStorage.getItem('currentUserRole');
+      // if there's no role => redirect to login
+      if (!currentUserRole) {
+        window.location.href = 'login.html'; // or wherever your login page is
+        return;
+      }
+      // If user is GM or AD => show page
       if (currentUserRole === 'gm' || currentUserRole === 'ad') {
         payrollSection.classList.remove('hidden');
         await loadLocations();
       } else {
+        // no access
         noAccessDiv.classList.remove('hidden');
       }
     });
@@ -272,7 +276,7 @@
         const row = artistTotals[aId];
         const splitVal = row.split;
         // The artist takes (price * split%) + 100% of tip
-        const fromPrice = (row.totalPrice * (splitVal/100));
+        const fromPrice = row.totalPrice * (splitVal/100);
         const fromTip   = row.totalTip;
         const artistEarnings = fromPrice + fromTip;
 
