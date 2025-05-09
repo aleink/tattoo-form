@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- 
-    Content-Security-Policy to allow 'unsafe-eval' for Supabase
-    and connect-src for your supabase project domain
+    Content-Security-Policy:
+    - 'unsafe-eval' so Supabase can use eval internally
+    - connect-src includes your .supabase.co domain
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -176,6 +177,9 @@
       margin: 10px 0 0;
     }
   </style>
+
+  <!-- Load supabase library FIRST in the head -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <header>
@@ -252,16 +256,14 @@
     </div>
   </div>
 
-  <!-- (1) Load supabase library FIRST -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
-
-  <!-- (2) Then your custom code that references `supabase` -->
+  <!-- Your custom code referencing `supabase`, loaded LAST -->
   <script>
+    // 1) Initialize supabase
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // DOM elements
+    // 2) DOM references
     const loginSection = document.getElementById('login-section');
     const loginMsg = document.getElementById('login-message');
     const artistEmailInput = document.getElementById('artist-email');
@@ -286,7 +288,7 @@
     const sumTips = document.getElementById('sum-tips');
     const sumGrand = document.getElementById('sum-grand');
 
-    // modal
+    // Modal
     const dayModal = document.getElementById('day-detail-modal');
     const dayModalTitle = document.getElementById('day-modal-title');
     const dayModalBody = document.getElementById('day-modal-body');
@@ -297,7 +299,7 @@
     let currentArtist = null;
     let currentMonth = null;
 
-    // Artist login
+    // (A) Artist login
     artistLoginBtn.addEventListener('click', async () => {
       const emailVal = artistEmailInput.value.trim();
       if(!emailVal){
@@ -306,7 +308,6 @@
       }
       loginMsg.textContent='';
 
-      // check if there's an artist with that email
       const { data: artists, error } = await supabase
         .from('artists')
         .select('*')
@@ -331,7 +332,7 @@
       loadDayList();
     });
 
-    // Tabs
+    // (B) Tab switching
     tabScheduleBtn.addEventListener('click', () => setActiveTab('schedule'));
     tabEarningsBtn.addEventListener('click', () => setActiveTab('earnings'));
 
@@ -350,7 +351,7 @@
       }
     }
 
-    // Schedule tab => show monthly grid
+    // (C) Schedule => simple monthly view of the current month
     function loadCurrentMonth(){
       const now=new Date();
       const yyyy=now.getFullYear();
@@ -409,7 +410,7 @@
       }
     }
 
-    // Earnings tab => next 30 days
+    // (D) Earnings => next 30 days
     async function loadDayList(){
       dayListContainer.innerHTML='';
       const now=new Date();
@@ -424,7 +425,7 @@
         const div=document.createElement('div');
         div.style.marginBottom='5px';
         div.style.cursor='pointer';
-        div.textContent=`${dayStr}`;
+        div.textContent=dayStr;
         div.onclick=()=> openDayModal(dayStr);
         dayListContainer.appendChild(div);
       }
@@ -450,7 +451,7 @@
         dayModalBody.innerHTML='<div class="no-appts">No appointments.</div>';
         return;
       }
-      // table
+      // build small table
       const table=document.createElement('table');
       const thead=document.createElement('thead');
       thead.innerHTML=`
@@ -491,7 +492,7 @@
       dayModal.classList.remove('active');
     });
 
-    // date-range summary
+    // (E) date-range summary
     rangeGenBtn.addEventListener('click', async ()=>{
       rangeMsg.textContent='';
       sumTable.style.display='none';
@@ -529,7 +530,7 @@
         const tip=ap.tip||0;
         totalSold+=basePrice;
         totalTips+=tip;
-        yourCut+=basePrice*(splitVal/100);
+        yourCut+=(basePrice*(splitVal/100));
       });
       sumTable.style.display='';
       sumTotalSold.textContent=totalSold.toFixed(2);
