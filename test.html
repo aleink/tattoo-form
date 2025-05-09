@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Club Tattoo Management - Single Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 
+    CSP (allowing 'unsafe-inline'/'unsafe-eval' for Supabase):
+    Adjust connect-src if your Supabase domain differs.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+          style-src 'self' 'unsafe-inline';
+          object-src 'none';
+        ">
+
+  <style>
+    /* ======= Global Dark Theme & Layout (like your index) ======= */
+    * {
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      min-height: 100vh;
+      display: flex; /* left sidebar + main */
+    }
+    /* Left sidebar (menu) */
+    aside {
+      width: 220px;
+      background: #000;
+      border-right: 2px solid #444;
+      padding: 20px;
+    }
+    aside h2 {
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .menu-link {
+      display: block;
+      margin-bottom: 12px;
+      color: #bbb;
+      text-decoration: none;
+      font-size: 1rem;
+      padding: 8px;
+      background: #111;
+      border-radius: 4px;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .menu-link:hover {
+      background: #222;
+    }
+    .menu-link.active {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    /* Main content area */
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      max-width: 1400px; /* optional limit */
+    }
+    .hidden { display: none; }
+    .message { color: #f33; margin-top: 10px; }
+    .page-section {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    /* Basic table styling (dark) */
+    .table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #333;
+    }
+    /* Inputs, selects, buttons, etc. (dark style) */
+    input, select, button, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button:hover {
+      background: #444;
+    }
+    /* Some overrides for the calendar/daily elements, if needed, will appear below. */
+  </style>
+</head>
+<body>
+
+  <!-- ======= SIDEBAR MENU ======= -->
+  <aside>
+    <h2>Menu</h2>
+    <!-- Links to switch pages -->
+    <a href="#" class="menu-link" id="link-index">Home (Index)</a>
+    <a href="#" class="menu-link" id="link-booking">Tattoo Booking Form</a>
+    <a href="#" class="menu-link" id="link-calendar">Calendar</a>
+    <a href="#" class="menu-link hidden" id="link-artists">Manage Artists</a>
+    <a href="#" class="menu-link hidden" id="link-schedules">Manage Schedules</a>
+    <a href="#" class="menu-link hidden" id="link-vacations">Manage Vacations</a>
+    <a href="#" class="menu-link hidden" id="link-payroll">Artists Payroll</a>
+  </aside>
+
+  <!-- ======= MAIN CONTENT ======= -->
+  <main>
+    <!-- PART 2 will continue here, with all your page sections and scripts. -->
+        <!-- ========== 1) INDEX PAGE (Your existing index links) ========== -->
+    <div class="page-section" id="page-index">
+      <h1 style="text-align:center;">Club Tattoo Management Tool</h1>
+      <p style="text-align:center;">
+        Welcome to your one-stop portal for booking, scheduling, artist management, and more!
+      </p>
+      <div style="margin:20px auto; max-width:1200px;">
+        <h2 style="font-size:1.3rem; margin-bottom:20px;">Choose a Section:</h2>
+        <!-- We won't open new windows. We'll just mention the "tabs" now. -->
+        <p>Use the left sidebar menu to navigate. This replicates your original index links but in a single page.</p>
+        <div class="message" id="index-msg"></div>
+      </div>
+    </div>
+
+    <!-- ========== 2) BOOKING FORM (Access: Everyone) ========== -->
+    <div class="page-section hidden" id="page-booking">
+      <h2>Tattoo Booking Form</h2>
+      <!-- Paste your 'tattoo_booking_form.html' form here -->
+      <form id="tattoo-form" enctype="multipart/form-data">
+        <!-- personal info section from your snippet -->
+        <div>
+          <h3>Personal Info</h3>
+          <label for="name">Name *</label>
+          <input type="text" id="name" name="name" required>
+
+          <label for="phone">Phone Number *</label>
+          <input type="tel" id="phone" name="phone" required>
+
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <!-- Tattoo info -->
+        <div>
+          <h3>Tattoo Info</h3>
+          <label for="placement">Placement *</label>
+          <input type="text" id="placement" name="placement" required>
+          <!-- etc... replicate your snippet thoroughly -->
+          <!-- Then your reference images, location, artist, marketing consent, etc. -->
+          <label>
+            <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required>
+            I agree to receive emails and SMS...
+          </label>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+      <div class="message" id="booking-message"></div>
+
+      <script>
+        // Code from your 'tattoo_booking_form.html' => loading locations, supabase calls, etc.
+        const bookingSupabase = supabase; // reuse global
+        async function loadLocationsBooking(){
+          const { data, error } = await bookingSupabase
+            .from('locations')
+            .select('id, location_name');
+          if(error){ console.error(error); return; }
+          // populate
+        }
+        // etc. Also your "form submission to Make webhook"
+        document.getElementById('tattoo-form').addEventListener('submit', async function(evt){
+          evt.preventDefault();
+          const formData = new FormData(this);
+          try {
+            const response = await fetch('https://hook.us2.make.com/41mjz...', {
+              method:'POST', body: formData
+            });
+            if(response.ok){
+              alert('Form submitted successfully!');
+              this.reset();
+            } else {
+              alert('Error submitting form.');
+            }
+          } catch(err){
+            console.error(err);
+            alert('Network error submitting form.');
+          }
+        });
+        // On section load
+        // loadLocationsBooking();
+
+      </script>
+    </div>
+
+    <!-- ========== 3) CALENDAR PAGE (FD, SM, GM) ========== -->
+    <div class="page-section hidden" id="page-calendar">
+      <h2>Calendar</h2>
+      <!-- Paste your entire calendar.html content here.
+           We'll unify supabase references to the global 'supabase' variable. -->
+
+      <script>
+        // Code from your 'calendar.html'.
+        // Example: we keep your locationFilter, day vs. month vs. year logic, etc.
+        // Just references the same 'supabase' from the global variable.
+        console.log('Calendar logic would go here. FD, SM, GM can see it.');
+      </script>
+    </div>
+
+    <!-- ========== 4) MANAGE ARTISTS (GM, HR, SM) ========== -->
+    <div class="page-section hidden" id="page-artists">
+      <h2>Manage Artists</h2>
+      <!-- Paste your entire manage_artists.html code here, minus <html>, <head>, <body> -->
+      <!-- For example: your GM local login, or you can skip it if you only want global login. -->
+
+      <div id="artists-container">
+        <p>Insert your forms, table, etc. from manage_artists.html here.</p>
+      </div>
+      <script>
+        // Keep your manage_artists supabase logic here
+        console.log('Manage artists logic from your snippet goes here. GM/HR/SM only');
+      </script>
+    </div>
+
+    <!-- ========== 5) MANAGE SCHEDULES (GM, SM, HR) ========== -->
+    <div class="page-section hidden" id="page-schedules">
+      <h2>Manage Schedules</h2>
+      <p>(Paste your manage_schedules.html code, minus extra HTML boilerplate.)</p>
+      <script>
+        console.log('Schedules logic from your snippet...');
+      </script>
+    </div>
+
+    <!-- ========== 6) MANAGE VACATIONS (GM, SM, HR) ========== -->
+    <div class="page-section hidden" id="page-vacations">
+      <h2>Manage Vacations</h2>
+      <p>(Paste your manage_vacations.html code here... again, no extra <body> tags, etc.)</p>
+      <script>
+        console.log('Vacations logic from snippet...');
+      </script>
+    </div>
+
+    <!-- ========== 7) PAYROLL (GM, AD) ========== -->
+    <div class="page-section hidden" id="page-payroll">
+      <h2>Artists Payroll</h2>
+      <p>(Paste your artists_payroll.html code here, minus <html> / <body>.)</p>
+      <div class="table-container">
+        <table id="payroll-table">
+          <thead>
+            <tr>
+              <th>Artist</th>
+              <th>Total Price</th>
+              <th>Total Tip</th>
+              <th>Split (%)</th>
+              <th>Artist Earnings</th>
+            </tr>
+          </thead>
+          <tbody><!-- from snippet --></tbody>
+        </table>
+      </div>
+      <script>
+        // Keep your generate payroll logic, same supabase calls
+        console.log('Payroll logic from snippet...');
+      </script>
+    </div>
+
+  </main> <!-- END of <main> from part 1 -->
+
+  <!-- Single supabase <script> is already in part 1 or at the bottom. 
+       We'll unify any leftover code references here. -->
+  <script>
+    // ========== SIDEBAR LINK REFS ==========
+    const linkIndex     = document.getElementById('link-index');
+    const pageIndex     = document.getElementById('page-index');
+
+    // The function to hide all, then show one
+    function hideAllPages(){
+      pageIndex.classList.add('hidden');
+      pageBooking.classList.add('hidden');
+      pageCalendar.classList.add('hidden');
+      pageArtists.classList.add('hidden');
+      pageSchedules.classList.add('hidden');
+      pageVacations.classList.add('hidden');
+      pagePayroll.classList.add('hidden');
+
+      linkIndex.classList.remove('active');
+      linkBooking.classList.remove('active');
+      linkCalendar.classList.remove('active');
+      linkArtists.classList.remove('active');
+      linkSchedules.classList.remove('active');
+      linkVacations.classList.remove('active');
+      linkPayroll.classList.remove('active');
+    }
+    function showPage(pageDiv, linkElem){
+      hideAllPages();
+      pageDiv.classList.remove('hidden');
+      linkElem.classList.add('active');
+    }
+
+    linkIndex.addEventListener('click',(e)=>{
+      e.preventDefault();
+      showPage(pageIndex, linkIndex);
+    });
+    // (We already have linkBooking, linkCalendar, etc. from part 1's script, but unify them here if needed.)
+
+    // ========== ROLE-BASED MENU VISIBILITY ==========
+    function updateMenuByRole(){
+      const role = localStorage.getItem('currentUserRole')||'';
+      // Everyone sees index & booking & calendar
+      linkIndex.classList.remove('hidden');
+      linkBooking.classList.remove('hidden');
+      linkCalendar.classList.remove('hidden');
+
+      // Manage Artists => GM, HR, SM
+      linkArtists.classList.add('hidden');
+      linkSchedules.classList.add('hidden');
+      linkVacations.classList.add('hidden');
+      if(role==='gm' || role==='hr' || role==='sm'){
+        linkArtists.classList.remove('hidden');
+        linkSchedules.classList.remove('hidden');
+        linkVacations.classList.remove('hidden');
+      }
+      // Payroll => GM, AD
+      linkPayroll.classList.add('hidden');
+      if(role==='gm' || role==='ad'){
+        linkPayroll.classList.remove('hidden');
+      }
+    }
+
+    // ========== On load, show index by default, update menu
+    window.addEventListener('DOMContentLoaded',()=>{
+      hideAllPages();
+      showPage(pageIndex, linkIndex);
+      updateMenuByRole();
+    });
+  </script>
+
+</body>
+</html>
