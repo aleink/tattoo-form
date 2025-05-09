@@ -5,8 +5,21 @@
   <title>Artist Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Dark style reminiscent of index -->
+  <!-- 
+    Content-Security-Policy to allow 'unsafe-eval' for Supabase
+    and connect-src for your supabase project domain
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+          style-src 'self' 'unsafe-inline';
+          object-src 'none';
+        ">
+
   <style>
+    /* Dark style reminiscent of index */
     * {
       margin: 0; 
       padding: 0; 
@@ -109,7 +122,6 @@
     .day-cell:hover {
       background: #444;
     }
-    /* Extra highlight for days that have appointments */
     .day-has-appts {
       background: #666 !important;
     }
@@ -240,8 +252,10 @@
     </div>
   </div>
 
-  <!-- Supabase -->
+  <!-- (1) Load supabase library FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+
+  <!-- (2) Then your custom code that references `supabase` -->
   <script>
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
@@ -278,8 +292,6 @@
     const dayModalBody = document.getElementById('day-modal-body');
     const dayModalClose = document.getElementById('day-modal-close');
 
-    const portalTitle = document.getElementById('portal-title');
-    const portalSubtitle = document.getElementById('portal-subtitle');
     const artistNameSpan = document.getElementById('artist-name-span');
 
     let currentArtist = null;
@@ -299,6 +311,7 @@
         .from('artists')
         .select('*')
         .eq('email', emailVal);
+
       if(error){
         console.error(error);
         loginMsg.textContent='Error checking artist email.';
@@ -310,8 +323,6 @@
       }
       // success
       currentArtist = artists[0];
-
-      // show name in header
       artistNameSpan.textContent = currentArtist.artist_name || 'Artist';
 
       loginSection.style.display='none';
@@ -339,7 +350,7 @@
       }
     }
 
-    // Schedule tab => show a simple monthly view
+    // Schedule tab => show monthly grid
     function loadCurrentMonth(){
       const now=new Date();
       const yyyy=now.getFullYear();
@@ -353,7 +364,7 @@
       scheduleMsg.textContent='';
 
       const firstDate=new Date(year,month-1,1);
-      const firstDayIndex=firstDate.getDay(); 
+      const firstDayIndex=firstDate.getDay();
       const lastDate=new Date(year, month,0).getDate();
 
       const startStr=`${year}-${month}-01`;
@@ -391,14 +402,14 @@
         cell.textContent=d;
 
         if(daysWithAppts[d]){
-          cell.classList.add('day-has-appts'); // highlight color
+          cell.classList.add('day-has-appts');
           cell.title='You have appointments this day.';
         }
         monthGrid.appendChild(cell);
       }
     }
 
-    // Earnings tab => next 30 days from today
+    // Earnings tab => next 30 days
     async function loadDayList(){
       dayListContainer.innerHTML='';
       const now=new Date();
@@ -439,7 +450,7 @@
         dayModalBody.innerHTML='<div class="no-appts">No appointments.</div>';
         return;
       }
-      // build small table
+      // table
       const table=document.createElement('table');
       const thead=document.createElement('thead');
       thead.innerHTML=`
@@ -516,15 +527,15 @@
       appts.forEach(ap=>{
         const basePrice=ap.price||0;
         const tip=ap.tip||0;
-        totalSold += basePrice;
-        totalTips += tip;
-        yourCut += basePrice*(splitVal/100);
+        totalSold+=basePrice;
+        totalTips+=tip;
+        yourCut+=basePrice*(splitVal/100);
       });
       sumTable.style.display='';
-      document.getElementById('sum-total-sold').textContent=totalSold.toFixed(2);
-      document.getElementById('sum-cut').textContent=yourCut.toFixed(2);
-      document.getElementById('sum-tips').textContent=totalTips.toFixed(2);
-      document.getElementById('sum-grand').textContent=(yourCut+totalTips).toFixed(2);
+      sumTotalSold.textContent=totalSold.toFixed(2);
+      sumCut.textContent=yourCut.toFixed(2);
+      sumTips.textContent=totalTips.toFixed(2);
+      sumGrand.textContent=(yourCut+totalTips).toFixed(2);
     });
   </script>
 </body>
