@@ -7,7 +7,7 @@
 
   <!-- 
     Content-Security-Policy:
-    - 'unsafe-eval' so Supabase can use eval internally
+    - 'unsafe-eval' for Supabase
     - connect-src includes your .supabase.co domain
   -->
   <meta http-equiv="Content-Security-Policy"
@@ -20,10 +20,10 @@
         ">
 
   <style>
-    /* Dark style reminiscent of index */
+    /* Dark style reminiscent of your index */
     * {
-      margin: 0; 
-      padding: 0; 
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
     body {
@@ -104,53 +104,30 @@
       color: #f33;
       margin-top: 8px;
     }
-    /* Calendar container */
-    .calendar-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-    }
-    .calendar-nav button {
-      width: auto;
-      margin-bottom: 0;
-    }
-    .calendar-month-label {
-      font-weight: bold;
-      font-size: 1rem;
-      text-align: center;
-    }
 
-    /* Calendar Grid for schedule (month) */
-    .month-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
+    /* Upcoming appointments list */
+    .appt-list {
       margin-top: 10px;
     }
-    .day-cell {
+    .appt-item {
       background: #333;
       border: 1px solid #444;
+      padding: 10px;
+      margin-bottom: 8px;
       border-radius: 4px;
-      text-align: center;
-      min-height: 60px;
-      cursor: pointer;
-      padding: 5px;
     }
-    .day-cell:hover {
-      background: #444;
+    .appt-item h4 {
+      margin-bottom: 5px;
+      font-size: 1rem;
+      color: #fff;
     }
-    .day-has-appts {
-      background: #666 !important;
-    }
-    /* Earnings tab second calendar */
-    #earnings-month-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      margin-top: 10px;
+    .appt-item p {
+      color: #ccc;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
     }
 
+    /* Table for summary or pop-ups */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -166,11 +143,13 @@
       font-style: italic;
       margin-top: 5px;
     }
-    /* Simple modal/popup for day detail */
+
+    /* Mobile-friendly modal/popup for day detail */
     .modal-bg {
       display: none;
       position: fixed;
-      top: 0; left:0;
+      top: 0; 
+      left: 0;
       width: 100%;
       height: 100%;
       background: rgba(0,0,0,0.7);
@@ -187,7 +166,9 @@
       border-radius: 6px;
       padding: 20px;
       max-width: 500px;
-      width: 90%;
+      width: 90%; /* mobile-friendly */
+      max-height: 80vh;
+      overflow-y: auto;
     }
     .modal-content h3 {
       margin-bottom: 10px;
@@ -224,33 +205,18 @@
         <button id="tab-earnings-btn">Earnings</button>
       </div>
 
-      <!-- ====================== SCHEDULE TAB ====================== -->
+      <!-- ========== SCHEDULE TAB ========== -->
       <div class="tab-content active" id="schedule-tab">
-        <h2>My Schedule</h2>
+        <h2>My Upcoming Appointments</h2>
         <div id="schedule-message" class="message"></div>
-
-        <!-- Calendar navigation for schedule -->
-        <div class="calendar-nav">
-          <button id="sched-prev-month"><< Prev</button>
-          <span id="sched-month-label" class="calendar-month-label"></span>
-          <button id="sched-next-month">Next >></button>
-        </div>
-        <div id="sched-month-grid" class="month-grid"></div>
+        <div class="appt-list" id="upcoming-list"></div>
       </div>
 
-      <!-- ====================== EARNINGS TAB ====================== -->
+      <!-- ========== EARNINGS TAB ========== -->
       <div class="tab-content" id="earnings-tab">
         <h2>My Earnings</h2>
 
-        <!-- Calendar nav for earnings -->
-        <div class="calendar-nav">
-          <button id="earn-prev-month"><< Prev</button>
-          <span id="earn-month-label" class="calendar-month-label"></span>
-          <button id="earn-next-month">Next >></button>
-        </div>
-        <div id="earnings-month-grid"></div>
-
-        <!-- date-range summary -->
+        <!-- Day detail is triggered by date if you want a daily breakdown -->
         <div class="date-range-container">
           <label for="range-start">Start Date</label>
           <input type="date" id="range-start" />
@@ -276,6 +242,15 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Possibly a button to see daily breakdown? 
+             We'll add a 'View day detail' button that asks for a date,
+             then opens the modal with completed appts that day. -->
+        <div style="margin-top:20px;">
+          <label for="day-detail-input">View a specific day</label>
+          <input type="date" id="day-detail-input" />
+          <button id="day-detail-btn">View Day Detail</button>
         </div>
       </div>
     </div>
@@ -309,17 +284,9 @@
     const scheduleTab = document.getElementById('schedule-tab');
     const earningsTab = document.getElementById('earnings-tab');
     const scheduleMsg = document.getElementById('schedule-message');
-    
-    const schedMonthGrid = document.getElementById('sched-month-grid');
-    const schedMonthLabel = document.getElementById('sched-month-label');
-    const schedPrevBtn = document.getElementById('sched-prev-month');
-    const schedNextBtn = document.getElementById('sched-next-month');
+    const upcomingList = document.getElementById('upcoming-list');
 
-    const earnMonthGrid = document.getElementById('earnings-month-grid');
-    const earnMonthLabel = document.getElementById('earn-month-label');
-    const earnPrevBtn = document.getElementById('earn-prev-month');
-    const earnNextBtn = document.getElementById('earn-next-month');
-
+    // Earnings references
     const rangeStart = document.getElementById('range-start');
     const rangeEnd = document.getElementById('range-end');
     const rangeGenBtn = document.getElementById('range-generate-btn');
@@ -330,7 +297,9 @@
     const sumTips = document.getElementById('sum-tips');
     const sumGrand = document.getElementById('sum-grand');
 
-    // Modal
+    // Day detail
+    const dayDetailInput = document.getElementById('day-detail-input');
+    const dayDetailBtn = document.getElementById('day-detail-btn');
     const dayModal = document.getElementById('day-detail-modal');
     const dayModalTitle = document.getElementById('day-modal-title');
     const dayModalBody = document.getElementById('day-modal-body');
@@ -339,10 +308,6 @@
     const artistNameSpan = document.getElementById('artist-name-span');
 
     let currentArtist = null;
-
-    // We'll store scheduleMonth & earningsMonth separately
-    let scheduleMonth = null;  // {year, month}
-    let earningsMonth = null;  // {year, month}
 
     // (A) Artist login
     artistLoginBtn.addEventListener('click', async () => {
@@ -371,16 +336,9 @@
       currentArtist = artists[0];
       artistNameSpan.textContent = currentArtist.artist_name || 'Artist';
 
-      // show portal
       loginSection.style.display='none';
       portalSection.style.display='block';
-      
-      // init schedule & earnings month
-      const now=new Date();
-      scheduleMonth = {year: now.getFullYear(), month: now.getMonth()+1};
-      earningsMonth = {year: now.getFullYear(), month: now.getMonth()+1};
-      drawScheduleMonth();
-      drawEarningsMonth();
+      loadUpcomingAppointments();
     });
 
     // (B) Tab switching
@@ -402,220 +360,50 @@
       }
     }
 
-    // ====================== SCHEDULE MONTH ======================
-    schedPrevBtn.addEventListener('click', () => {
-      // decrement month
-      scheduleMonth.month--;
-      if(scheduleMonth.month < 1){
-        scheduleMonth.month=12;
-        scheduleMonth.year--;
-      }
-      drawScheduleMonth();
-    });
-    schedNextBtn.addEventListener('click', () => {
-      // increment month
-      scheduleMonth.month++;
-      if(scheduleMonth.month>12){
-        scheduleMonth.month=1;
-        scheduleMonth.year++;
-      }
-      drawScheduleMonth();
-    });
-
-    async function drawScheduleMonth(){
-      schedMonthGrid.innerHTML='';
+    // (C) Load upcoming appointments => type='appointment', date >= today
+    async function loadUpcomingAppointments(){
+      upcomingList.innerHTML='';
       scheduleMsg.textContent='';
-      
-      // format year-month
-      const yyyy=scheduleMonth.year;
-      const mm=scheduleMonth.month.toString().padStart(2,'0');
-      // label
-      schedMonthLabel.textContent=`${monthName(mm)} ${yyyy}`;
-      
-      const firstDate=new Date(yyyy, scheduleMonth.month-1, 1);
-      const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(yyyy, scheduleMonth.month,0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0]; // e.g. '2025-05-09'
 
-      const startStr=`${yyyy}-${mm}-01`;
-      const endStr=`${yyyy}-${mm}-${lastDate}`;
-      const { data: appts, error }=await supabase
+      const { data: appts, error } = await supabase
         .from('artist_appointments')
-        .select('date')
+        .select('date,start_time,end_time,client_name,notes,appointment_type')
         .eq('artist_id', currentArtist.id)
-        .gte('date', startStr)
-        .lte('date', endStr);
+        .eq('appointment_type', 'appointment') // only upcoming "appointments"
+        .gte('date', todayStr)                // from now forward
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
       if(error){
         console.error(error);
-        scheduleMsg.textContent='Error loading schedule.';
-        return;
-      }
-      let daysWithAppts={};
-      appts.forEach(ap=>{
-        const dayNum=parseInt(ap.date.split('-')[2],10);
-        daysWithAppts[dayNum]=true;
-      });
-
-      // fill blank cells
-      for(let i=0;i<firstDayIndex;i++){
-        const cell=document.createElement('div');
-        cell.classList.add('day-cell');
-        cell.style.background='#222';
-        schedMonthGrid.appendChild(cell);
-      }
-      // fill days
-      for(let d=1; d<=lastDate; d++){
-        const cell=document.createElement('div');
-        cell.classList.add('day-cell');
-        cell.textContent=d;
-        if(daysWithAppts[d]){
-          cell.classList.add('day-has-appts');
-          cell.title='You have appointments this day.';
-        }
-        schedMonthGrid.appendChild(cell);
-      }
-    }
-
-    // ====================== EARNINGS MONTH ======================
-    earnPrevBtn.addEventListener('click', () => {
-      earningsMonth.month--;
-      if(earningsMonth.month<1){
-        earningsMonth.month=12;
-        earningsMonth.year--;
-      }
-      drawEarningsMonth();
-    });
-    earnNextBtn.addEventListener('click', () => {
-      earningsMonth.month++;
-      if(earningsMonth.month>12){
-        earningsMonth.month=1;
-        earningsMonth.year++;
-      }
-      drawEarningsMonth();
-    });
-
-    async function drawEarningsMonth(){
-      earnMonthGrid.innerHTML='';
-      // label
-      const yyyy=earningsMonth.year;
-      const mm=earningsMonth.month.toString().padStart(2,'0');
-      earnMonthLabel.textContent=`${monthName(mm)} ${yyyy}`;
-
-      const firstDate=new Date(yyyy, earningsMonth.month-1, 1);
-      const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(yyyy, earningsMonth.month, 0).getDate();
-
-      const startStr=`${yyyy}-${mm}-01`;
-      const endStr=`${yyyy}-${mm}-${lastDate}`;
-      const { data: appts, error }=await supabase
-        .from('artist_appointments')
-        .select('date') // we'll fetch more in the modal
-        .eq('artist_id', currentArtist.id)
-        .gte('date', startStr)
-        .lte('date', endStr);
-      if(error){
-        console.error(error);
-        // no direct error message for earnings? can if you want
-        return;
-      }
-      let daysWithAppts={};
-      appts.forEach(ap=>{
-        const dayNum=parseInt(ap.date.split('-')[2],10);
-        daysWithAppts[dayNum]=true;
-      });
-
-      // fill blank cells
-      for(let i=0;i<firstDayIndex;i++){
-        const cell=document.createElement('div');
-        cell.classList.add('day-cell');
-        cell.style.background='#222';
-        earnMonthGrid.appendChild(cell);
-      }
-      // fill days
-      for(let d=1; d<=lastDate; d++){
-        const cell=document.createElement('div');
-        cell.classList.add('day-cell');
-        cell.textContent=d;
-        if(daysWithAppts[d]){
-          cell.classList.add('day-has-appts');
-          cell.title='You have appointments this day.';
-          cell.onclick=()=> openDayModalEarnings(yyyy, mm, d);
-        }
-        earnMonthGrid.appendChild(cell);
-      }
-    }
-
-    // open day modal for earnings
-    async function openDayModalEarnings(y, m, d){
-      const dd = d.toString().padStart(2,'0');
-      const mm = m.toString().padStart(2,'0');
-      const dateStr=`${y}-${mm}-${dd}`;
-      dayModal.classList.add('active');
-      dayModalTitle.textContent=`Appointments on ${dateStr}`;
-      dayModalBody.innerHTML='Loading...';
-
-      const { data: appts, error }=await supabase
-        .from('artist_appointments')
-        .select('*')
-        .eq('artist_id', currentArtist.id)
-        .eq('date', dateStr)
-        .in('appointment_type',['completed','walk-in','appointment']);
-      if(error){
-        console.error(error);
-        dayModalBody.innerHTML='Error loading appointments.';
+        scheduleMsg.textContent='Error loading upcoming appointments.';
         return;
       }
       if(!appts || appts.length===0){
-        dayModalBody.innerHTML='<div class="no-appts">No appointments.</div>';
+        scheduleMsg.textContent='No upcoming appointments.';
         return;
       }
-      // build small table
-      const table=document.createElement('table');
-      const thead=document.createElement('thead');
-      thead.innerHTML=`
-        <tr>
-          <th>Type</th>
-          <th>Price</th>
-          <th>Tip</th>
-          <th>Your Cut</th>
-          <th>Total (cut+tip)</th>
-        </tr>
-      `;
-      table.appendChild(thead);
-      const tbody=document.createElement('tbody');
-      table.appendChild(tbody);
 
-      const splitVal=currentArtist.percentage_split||0;
-      appts.forEach(ap=>{
-        const tr=document.createElement('tr');
-        const basePrice=ap.price||0;
-        const tip=ap.tip||0;
-        const cut=basePrice*(splitVal/100);
-        const total=cut+tip;
-
-        tr.innerHTML=`
-          <td>${ap.appointment_type||''}</td>
-          <td>${basePrice.toFixed(2)}</td>
-          <td>${tip.toFixed(2)}</td>
-          <td>${cut.toFixed(2)}</td>
-          <td>${total.toFixed(2)}</td>
+      appts.forEach(ap => {
+        const item=document.createElement('div');
+        item.classList.add('appt-item');
+        item.innerHTML=`
+          <h4>${ap.date} ${ap.start_time || ''} - ${ap.end_time || ''}</h4>
+          <p>Client: ${ap.client_name || 'N/A'}</p>
+          <p>Notes: ${ap.notes || ''}</p>
         `;
-        tbody.appendChild(tr);
+        upcomingList.appendChild(item);
       });
-      dayModalBody.innerHTML='';
-      dayModalBody.appendChild(table);
     }
 
-    dayModalClose.addEventListener('click',()=>{
-      dayModal.classList.remove('active');
-    });
-
-    // (E) date-range summary
+    // (D) Earnings => date-range summary for completed
     rangeGenBtn.addEventListener('click', async ()=>{
       rangeMsg.textContent='';
       sumTable.style.display='none';
       const startVal=rangeStart.value;
       const endVal=rangeEnd.value;
-      if(!startVal||!endVal){
+      if(!startVal || !endVal){
         rangeMsg.textContent='Start & End Date required.';
         return;
       }
@@ -624,29 +412,30 @@
         return;
       }
 
+      // only sum up 'completed' appointments
       const { data: appts, error }=await supabase
         .from('artist_appointments')
         .select('*')
         .eq('artist_id', currentArtist.id)
         .gte('date', startVal)
         .lte('date', endVal)
-        .in('appointment_type',['completed','walk-in','appointment']);
+        .eq('appointment_type','completed'); // only completed
       if(error){
         console.error(error);
         rangeMsg.textContent='Error fetching appointments.';
         return;
       }
       if(!appts || appts.length===0){
-        rangeMsg.textContent='No appointments found in this range.';
+        rangeMsg.textContent='No completed appointments found in this range.';
         return;
       }
-      const splitVal=currentArtist.percentage_split||0;
+      const splitVal = currentArtist.percentage_split||0;
       let totalSold=0, totalTips=0, yourCut=0;
       appts.forEach(ap=>{
         const basePrice=ap.price||0;
         const tip=ap.tip||0;
-        totalSold+=basePrice;
-        totalTips+=tip;
+        totalSold += basePrice;
+        totalTips += tip;
         yourCut+=(basePrice*(splitVal/100));
       });
       sumTable.style.display='';
@@ -656,12 +445,70 @@
       sumGrand.textContent=(yourCut+totalTips).toFixed(2);
     });
 
-    // Helper: monthName
-    function monthName(mm){
-      const index=parseInt(mm,10)-1;
-      const names=["January","February","March","April","May","June","July","August","September","October","November","December"];
-      return names[index] || mm;
-    }
+    // (E) View day detail => also only completed
+    dayDetailBtn.addEventListener('click', async ()=>{
+      const dayVal = dayDetailInput.value;
+      if(!dayVal){
+        alert('Pick a date.');
+        return;
+      }
+      dayModal.classList.add('active');
+      dayModalTitle.textContent=`Completed Appointments on ${dayVal}`;
+      dayModalBody.innerHTML='Loading...';
+
+      const { data: appts, error }=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('artist_id', currentArtist.id)
+        .eq('date', dayVal)
+        .eq('appointment_type','completed'); // only completed
+      if(error){
+        console.error(error);
+        dayModalBody.innerHTML='Error loading appointments.';
+        return;
+      }
+      if(!appts || appts.length===0){
+        dayModalBody.innerHTML='<div class="no-appts">No completed appointments this day.</div>';
+        return;
+      }
+      const splitVal = currentArtist.percentage_split||0;
+      const table=document.createElement('table');
+      const thead=document.createElement('thead');
+      thead.innerHTML=`
+        <tr>
+          <th>Time</th>
+          <th>Price</th>
+          <th>Tip</th>
+          <th>Your Cut</th>
+          <th>Total</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+      const tbody=document.createElement('tbody');
+      table.appendChild(tbody);
+
+      appts.forEach(ap=>{
+        const basePrice=ap.price||0;
+        const tip=ap.tip||0;
+        const cut=basePrice*(splitVal/100);
+        const total=cut+tip;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${ap.start_time||''} - ${ap.end_time||''}</td>
+          <td>${basePrice.toFixed(2)}</td>
+          <td>${tip.toFixed(2)}</td>
+          <td>${cut.toFixed(2)}</td>
+          <td>${total.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      dayModalBody.innerHTML='';
+      dayModalBody.appendChild(table);
+    });
+
+    dayModalClose.addEventListener('click',()=>{
+      dayModal.classList.remove('active');
+    });
   </script>
 </body>
 </html>
