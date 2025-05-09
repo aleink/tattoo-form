@@ -26,6 +26,12 @@
     }
     .form-section {
       margin: 20px 0;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .form-section h2 {
+      margin-top: 0;
     }
     button {
       background: #333;
@@ -44,6 +50,25 @@
     .size-container > div {
       flex: 1;
     }
+    /* Additional People Section */
+    #additional-people-container {
+      margin-top: 10px;
+      border: 1px dashed #ccc;
+      padding: 10px;
+      display: none; /* hidden by default */
+    }
+    .additional-person {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+    .remove-person-btn {
+      background: #a33;
+      color: #fff;
+      margin-top: 5px;
+      float: right;
+    }
   </style>
 </head>
 <body>
@@ -51,22 +76,22 @@
   
   <!-- We use enctype="multipart/form-data" to properly send files -->
   <form id="tattoo-form" enctype="multipart/form-data">
-    <!-- Personal Info -->
+    <!-- Primary Person Info -->
     <div class="form-section">
-      <h2>Personal Info</h2>
+      <h2>Primary Person Info</h2>
       <label for="name">Name *</label>
       <input type="text" id="name" name="name" required>
       
-      <label for="phone">Phone Number (if you are using a non US number include your prefix followed by your number e.g. Spain +34xxx) *</label>
-      <input type="tel" id="phone" name="phone" required>
+      <label for="phone">Phone Number <small>(if not US, add prefix e.g. +34)</small> *</label>
+      <input type="tel" id="phone" name="phone" placeholder="+1 1234567890" required>
       
       <label for="email">Email *</label>
       <input type="email" id="email" name="email" required>
     </div>
 
-    <!-- Tattoo Info -->
+    <!-- Tattoo Info for Primary Person -->
     <div class="form-section">
-      <h2>Tattoo Info</h2>
+      <h2>Tattoo Info (Primary)</h2>
       <label for="placement">Placement *</label>
       <input type="text" id="placement" name="placement" placeholder="e.g., forearm, shoulder, etc." required>
       
@@ -116,6 +141,21 @@
       </select>
     </div>
 
+    <!-- Option to add more people -->
+    <div>
+      <label>
+        <input type="checkbox" id="add-people-checkbox" name="add-people-checkbox">
+        Add someone else to my booking request
+      </label>
+    </div>
+
+    <!-- Container for additional people forms -->
+    <div id="additional-people-container">
+      <h3>Additional People</h3>
+      <!-- We'll dynamically append .additional-person sections here -->
+      <button type="button" id="add-person-btn">Add Another Person</button>
+    </div>
+
     <!-- Marketing and Consent -->
     <div class="form-section">
       <label>
@@ -151,16 +191,12 @@
       }
 
       const locationSelect = document.getElementById('preferred-location');
-
-      // Clear any existing dynamic options (leaving the first placeholder)
       while (locationSelect.options.length > 1) {
         locationSelect.remove(1);
       }
-
-      // Populate the dropdown with locations from DB
       data.forEach(loc => {
         const option = document.createElement('option');
-        option.value = loc.id;  // We'll store location ID
+        option.value = loc.id;
         option.textContent = loc.location_name;
         locationSelect.appendChild(option);
       });
@@ -179,13 +215,10 @@
       }
 
       const artistSelect = document.getElementById('preferred-artist');
-
-      // Keep the first "No preference / First available" option
+      // Keep "No preference / First available" as first
       while (artistSelect.options.length > 1) {
         artistSelect.remove(1);
       }
-
-      // Populate with artists belonging to selected location
       data.forEach(artist => {
         const option = document.createElement('option');
         option.value = artist.id; 
@@ -194,14 +227,12 @@
       });
     }
 
-    // Event: When user changes location dropdown
     document.getElementById('preferred-location').addEventListener('change', (event) => {
       const locationId = event.target.value;
       if (locationId) {
-        // Load artists for that location
         loadArtistsByLocation(locationId);
       } else {
-        // Reset to "No preference / First available" only
+        // reset artist select
         const artistSelect = document.getElementById('preferred-artist');
         while (artistSelect.options.length > 1) {
           artistSelect.remove(1);
@@ -209,8 +240,90 @@
       }
     });
 
-    // On page load, fetch the locations
     window.addEventListener('DOMContentLoaded', loadLocations);
+  </script>
+
+  <script>
+    // Handle "Add someone else" logic
+    const addPeopleCheckbox = document.getElementById('add-people-checkbox');
+    const additionalPeopleContainer = document.getElementById('additional-people-container');
+    const addPersonBtn = document.getElementById('add-person-btn');
+
+    addPeopleCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        additionalPeopleContainer.style.display = 'block';
+      } else {
+        additionalPeopleContainer.style.display = 'none';
+        // remove all additional-person blocks
+        const existing = additionalPeopleContainer.querySelectorAll('.additional-person');
+        existing.forEach(block => block.remove());
+      }
+    });
+
+    addPersonBtn.addEventListener('click', function() {
+      createAdditionalPersonBlock();
+    });
+
+    function createAdditionalPersonBlock() {
+      // create a new block
+      const block = document.createElement('div');
+      block.classList.add('additional-person');
+
+      // a unique ID/time for naming
+      const timestamp = Date.now();
+
+      block.innerHTML = `
+        <button type="button" class="remove-person-btn">Remove</button>
+        <h4>Additional Person</h4>
+
+        <label for="extra_name_${timestamp}">Name *</label>
+        <input type="text" id="extra_name_${timestamp}" name="extra_name_${timestamp}" required>
+
+        <div class="form-section" style="padding:0; border:none;">
+          <h5>Tattoo Info</h5>
+          <label for="extra_placement_${timestamp}">Placement *</label>
+          <input type="text" id="extra_placement_${timestamp}" name="extra_placement_${timestamp}" required>
+          
+          <div class="size-container">
+            <div>
+              <label for="extra_heightInches_${timestamp}">Height (inches) *</label>
+              <input type="number" id="extra_heightInches_${timestamp}" name="extra_heightInches_${timestamp}" required>
+            </div>
+            <div>
+              <label for="extra_widthInches_${timestamp}">Width (inches) *</label>
+              <input type="number" id="extra_widthInches_${timestamp}" name="extra_widthInches_${timestamp}" required>
+            </div>
+          </div>
+
+          <label>Color or Black & Grey? *</label>
+          <select id="extra_colorOrBlack_${timestamp}" name="extra_colorOrBlack_${timestamp}" required>
+            <option value="color">Color</option>
+            <option value="black-and-grey">Black and Grey</option>
+          </select>
+          
+          <label for="extra_description_${timestamp}">Brief Description *</label>
+          <textarea id="extra_description_${timestamp}" name="extra_description_${timestamp}" rows="3" required></textarea>
+
+          <!-- Three separate file inputs for reference images -->
+          <label for="extra_ref1_${timestamp}">Reference Image 1</label>
+          <input type="file" id="extra_ref1_${timestamp}" name="extra_ref1_${timestamp}" accept="image/*">
+
+          <label for="extra_ref2_${timestamp}">Reference Image 2</label>
+          <input type="file" id="extra_ref2_${timestamp}" name="extra_ref2_${timestamp}" accept="image/*">
+
+          <label for="extra_ref3_${timestamp}">Reference Image 3</label>
+          <input type="file" id="extra_ref3_${timestamp}" name="extra_ref3_${timestamp}" accept="image/*">
+        </div>
+      `;
+
+      // remove button logic
+      const removeBtn = block.querySelector('.remove-person-btn');
+      removeBtn.addEventListener('click', () => {
+        block.remove();
+      });
+
+      additionalPeopleContainer.appendChild(block);
+    }
   </script>
 
   <script>
@@ -222,7 +335,7 @@
       // Create a FormData object from the form
       const formData = new FormData(form);
 
-      // Send form data to Make webhook
+      // Send form data to your Make webhook
       try {
         const response = await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e', {
           method: 'POST',
@@ -232,6 +345,8 @@
         if (response.ok) {
           alert('Form submitted successfully! We will contact you soon via SMS or email.');
           form.reset();
+          // hide additional-people container
+          additionalPeopleContainer.style.display = 'none';
         } else {
           alert('Error submitting form, please try again later.');
         }
@@ -241,5 +356,6 @@
       }
     });
   </script>
+
 </body>
 </html>
