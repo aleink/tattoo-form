@@ -104,6 +104,23 @@
       color: #f33;
       margin-top: 8px;
     }
+    /* Calendar container */
+    .calendar-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .calendar-nav button {
+      width: auto;
+      margin-bottom: 0;
+    }
+    .calendar-month-label {
+      font-weight: bold;
+      font-size: 1rem;
+      text-align: center;
+    }
+
     /* Calendar Grid for schedule (month) */
     .month-grid {
       display: grid;
@@ -126,10 +143,14 @@
     .day-has-appts {
       background: #666 !important;
     }
-    /* Earnings day-list & date-range containers */
-    .day-list, .date-range-container {
+    /* Earnings tab second calendar */
+    #earnings-month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
       margin-top: 10px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -203,18 +224,31 @@
         <button id="tab-earnings-btn">Earnings</button>
       </div>
 
-      <!-- Schedule Tab -->
+      <!-- ====================== SCHEDULE TAB ====================== -->
       <div class="tab-content active" id="schedule-tab">
         <h2>My Schedule</h2>
         <div id="schedule-message" class="message"></div>
-        <div id="month-grid" class="month-grid"></div>
+
+        <!-- Calendar navigation for schedule -->
+        <div class="calendar-nav">
+          <button id="sched-prev-month"><< Prev</button>
+          <span id="sched-month-label" class="calendar-month-label"></span>
+          <button id="sched-next-month">Next >></button>
+        </div>
+        <div id="sched-month-grid" class="month-grid"></div>
       </div>
 
-      <!-- Earnings Tab -->
+      <!-- ====================== EARNINGS TAB ====================== -->
       <div class="tab-content" id="earnings-tab">
         <h2>My Earnings</h2>
-        <!-- day-list => next 30 days from today -->
-        <div class="day-list" id="day-list-container"></div>
+
+        <!-- Calendar nav for earnings -->
+        <div class="calendar-nav">
+          <button id="earn-prev-month"><< Prev</button>
+          <span id="earn-month-label" class="calendar-month-label"></span>
+          <button id="earn-next-month">Next >></button>
+        </div>
+        <div id="earnings-month-grid"></div>
 
         <!-- date-range summary -->
         <div class="date-range-container">
@@ -275,9 +309,17 @@
     const scheduleTab = document.getElementById('schedule-tab');
     const earningsTab = document.getElementById('earnings-tab');
     const scheduleMsg = document.getElementById('schedule-message');
-    const monthGrid = document.getElementById('month-grid');
+    
+    const schedMonthGrid = document.getElementById('sched-month-grid');
+    const schedMonthLabel = document.getElementById('sched-month-label');
+    const schedPrevBtn = document.getElementById('sched-prev-month');
+    const schedNextBtn = document.getElementById('sched-next-month');
 
-    const dayListContainer = document.getElementById('day-list-container');
+    const earnMonthGrid = document.getElementById('earnings-month-grid');
+    const earnMonthLabel = document.getElementById('earn-month-label');
+    const earnPrevBtn = document.getElementById('earn-prev-month');
+    const earnNextBtn = document.getElementById('earn-next-month');
+
     const rangeStart = document.getElementById('range-start');
     const rangeEnd = document.getElementById('range-end');
     const rangeGenBtn = document.getElementById('range-generate-btn');
@@ -297,7 +339,10 @@
     const artistNameSpan = document.getElementById('artist-name-span');
 
     let currentArtist = null;
-    let currentMonth = null;
+
+    // We'll store scheduleMonth & earningsMonth separately
+    let scheduleMonth = null;  // {year, month}
+    let earningsMonth = null;  // {year, month}
 
     // (A) Artist login
     artistLoginBtn.addEventListener('click', async () => {
@@ -326,10 +371,16 @@
       currentArtist = artists[0];
       artistNameSpan.textContent = currentArtist.artist_name || 'Artist';
 
+      // show portal
       loginSection.style.display='none';
       portalSection.style.display='block';
-      loadCurrentMonth();
-      loadDayList();
+      
+      // init schedule & earnings month
+      const now=new Date();
+      scheduleMonth = {year: now.getFullYear(), month: now.getMonth()+1};
+      earningsMonth = {year: now.getFullYear(), month: now.getMonth()+1};
+      drawScheduleMonth();
+      drawEarningsMonth();
     });
 
     // (B) Tab switching
@@ -351,40 +402,55 @@
       }
     }
 
-    // (C) Schedule => simple monthly view of the current month
-    function loadCurrentMonth(){
-      const now=new Date();
-      const yyyy=now.getFullYear();
-      const mm=(now.getMonth()+1).toString().padStart(2,'0');
-      currentMonth=`${yyyy}-${mm}`;
-      drawMonthGrid(yyyy, mm);
-    }
+    // ====================== SCHEDULE MONTH ======================
+    schedPrevBtn.addEventListener('click', () => {
+      // decrement month
+      scheduleMonth.month--;
+      if(scheduleMonth.month < 1){
+        scheduleMonth.month=12;
+        scheduleMonth.year--;
+      }
+      drawScheduleMonth();
+    });
+    schedNextBtn.addEventListener('click', () => {
+      // increment month
+      scheduleMonth.month++;
+      if(scheduleMonth.month>12){
+        scheduleMonth.month=1;
+        scheduleMonth.year++;
+      }
+      drawScheduleMonth();
+    });
 
-    async function drawMonthGrid(year, month){
-      monthGrid.innerHTML='';
+    async function drawScheduleMonth(){
+      schedMonthGrid.innerHTML='';
       scheduleMsg.textContent='';
-
-      const firstDate=new Date(year,month-1,1);
+      
+      // format year-month
+      const yyyy=scheduleMonth.year;
+      const mm=scheduleMonth.month.toString().padStart(2,'0');
+      // label
+      schedMonthLabel.textContent=`${monthName(mm)} ${yyyy}`;
+      
+      const firstDate=new Date(yyyy, scheduleMonth.month-1, 1);
       const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(year, month,0).getDate();
+      const lastDate=new Date(yyyy, scheduleMonth.month,0).getDate();
 
-      const startStr=`${year}-${month}-01`;
-      const endStr=`${year}-${month}-${lastDate}`;
+      const startStr=`${yyyy}-${mm}-01`;
+      const endStr=`${yyyy}-${mm}-${lastDate}`;
       const { data: appts, error }=await supabase
         .from('artist_appointments')
         .select('date')
         .eq('artist_id', currentArtist.id)
         .gte('date', startStr)
         .lte('date', endStr);
-
       if(error){
         console.error(error);
         scheduleMsg.textContent='Error loading schedule.';
         return;
       }
-
       let daysWithAppts={};
-      appts.forEach(ap => {
+      appts.forEach(ap=>{
         const dayNum=parseInt(ap.date.split('-')[2],10);
         daysWithAppts[dayNum]=true;
       });
@@ -394,44 +460,95 @@
         const cell=document.createElement('div');
         cell.classList.add('day-cell');
         cell.style.background='#222';
-        monthGrid.appendChild(cell);
+        schedMonthGrid.appendChild(cell);
       }
       // fill days
       for(let d=1; d<=lastDate; d++){
         const cell=document.createElement('div');
         cell.classList.add('day-cell');
         cell.textContent=d;
-
         if(daysWithAppts[d]){
           cell.classList.add('day-has-appts');
           cell.title='You have appointments this day.';
         }
-        monthGrid.appendChild(cell);
+        schedMonthGrid.appendChild(cell);
       }
     }
 
-    // (D) Earnings => next 30 days
-    async function loadDayList(){
-      dayListContainer.innerHTML='';
-      const now=new Date();
-      for(let i=0; i<30; i++){
-        const clone=new Date(now);
-        clone.setDate(clone.getDate()+i);
-        const yyyy=clone.getFullYear();
-        const mm=(clone.getMonth()+1).toString().padStart(2,'0');
-        const dd=clone.getDate().toString().padStart(2,'0');
-        const dayStr=`${yyyy}-${mm}-${dd}`;
+    // ====================== EARNINGS MONTH ======================
+    earnPrevBtn.addEventListener('click', () => {
+      earningsMonth.month--;
+      if(earningsMonth.month<1){
+        earningsMonth.month=12;
+        earningsMonth.year--;
+      }
+      drawEarningsMonth();
+    });
+    earnNextBtn.addEventListener('click', () => {
+      earningsMonth.month++;
+      if(earningsMonth.month>12){
+        earningsMonth.month=1;
+        earningsMonth.year++;
+      }
+      drawEarningsMonth();
+    });
 
-        const div=document.createElement('div');
-        div.style.marginBottom='5px';
-        div.style.cursor='pointer';
-        div.textContent=dayStr;
-        div.onclick=()=> openDayModal(dayStr);
-        dayListContainer.appendChild(div);
+    async function drawEarningsMonth(){
+      earnMonthGrid.innerHTML='';
+      // label
+      const yyyy=earningsMonth.year;
+      const mm=earningsMonth.month.toString().padStart(2,'0');
+      earnMonthLabel.textContent=`${monthName(mm)} ${yyyy}`;
+
+      const firstDate=new Date(yyyy, earningsMonth.month-1, 1);
+      const firstDayIndex=firstDate.getDay();
+      const lastDate=new Date(yyyy, earningsMonth.month, 0).getDate();
+
+      const startStr=`${yyyy}-${mm}-01`;
+      const endStr=`${yyyy}-${mm}-${lastDate}`;
+      const { data: appts, error }=await supabase
+        .from('artist_appointments')
+        .select('date') // we'll fetch more in the modal
+        .eq('artist_id', currentArtist.id)
+        .gte('date', startStr)
+        .lte('date', endStr);
+      if(error){
+        console.error(error);
+        // no direct error message for earnings? can if you want
+        return;
+      }
+      let daysWithAppts={};
+      appts.forEach(ap=>{
+        const dayNum=parseInt(ap.date.split('-')[2],10);
+        daysWithAppts[dayNum]=true;
+      });
+
+      // fill blank cells
+      for(let i=0;i<firstDayIndex;i++){
+        const cell=document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.style.background='#222';
+        earnMonthGrid.appendChild(cell);
+      }
+      // fill days
+      for(let d=1; d<=lastDate; d++){
+        const cell=document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.textContent=d;
+        if(daysWithAppts[d]){
+          cell.classList.add('day-has-appts');
+          cell.title='You have appointments this day.';
+          cell.onclick=()=> openDayModalEarnings(yyyy, mm, d);
+        }
+        earnMonthGrid.appendChild(cell);
       }
     }
 
-    async function openDayModal(dateStr){
+    // open day modal for earnings
+    async function openDayModalEarnings(y, m, d){
+      const dd = d.toString().padStart(2,'0');
+      const mm = m.toString().padStart(2,'0');
+      const dateStr=`${y}-${mm}-${dd}`;
       dayModal.classList.add('active');
       dayModalTitle.textContent=`Appointments on ${dateStr}`;
       dayModalBody.innerHTML='Loading...';
@@ -538,6 +655,13 @@
       sumTips.textContent=totalTips.toFixed(2);
       sumGrand.textContent=(yourCut+totalTips).toFixed(2);
     });
+
+    // Helper: monthName
+    function monthName(mm){
+      const index=parseInt(mm,10)-1;
+      const names=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return names[index] || mm;
+    }
   </script>
 </body>
 </html>
