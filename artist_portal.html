@@ -7,8 +7,8 @@
 
   <!-- 
     Content-Security-Policy:
-    - 'unsafe-eval' so Supabase can use eval
-    - connect-src for your .supabase.co domain
+    - 'unsafe-eval' so Supabase can use eval internally
+    - connect-src includes your .supabase.co domain
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -125,6 +125,11 @@
       color: #ccc;
       margin-bottom: 4px;
       font-size: 0.9rem;
+    }
+    .appt-total {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #0f0; /* greenish highlight for total */
     }
 
     /* Calendar for earnings tab */
@@ -246,6 +251,7 @@
         <h2>My Upcoming Appointments</h2>
         <div id="schedule-message" class="message"></div>
         <div class="appt-list" id="upcoming-list"></div>
+        <div class="appt-total" id="upcoming-total"></div>
       </div>
 
       <!-- ========== EARNINGS TAB ========== -->
@@ -322,6 +328,7 @@
     // schedule references
     const scheduleMsg = document.getElementById('schedule-message');
     const upcomingList = document.getElementById('upcoming-list');
+    const upcomingTotal = document.getElementById('upcoming-total');
 
     // earnings references
     const earnPrevBtn = document.getElementById('earn-prev-month');
@@ -384,8 +391,8 @@
 
       // init earnings month => current
       const now=new Date();
-      earnMonth.year=now.getFullYear();
-      earnMonth.month=now.getMonth()+1;
+      earnMonth.year= now.getFullYear();
+      earnMonth.month= now.getMonth()+1;
       drawEarningsMonth();
     });
 
@@ -407,38 +414,52 @@
     }
 
     // (C) Load upcoming appointments => type='appointment', date>=today
+    // also show phone,email, price, and sum up
     async function loadUpcomingAppointments(){
       upcomingList.innerHTML='';
+      upcomingTotal.textContent='';
       scheduleMsg.textContent='';
+      let totalSum=0;
+
       const todayStr=new Date().toISOString().split('T')[0];
 
       const { data: appts, error } = await supabase
         .from('artist_appointments')
-        .select('date,start_time,end_time,client_name,notes')
+        .select('date,start_time,end_time,client_name,client_phone,email,price,notes')
         .eq('artist_id', currentArtist.id)
-        .eq('appointment_type','appointment') // only "appointment"
+        .eq('appointment_type','appointment')
         .gte('date', todayStr)
         .order('date',{ ascending:true })
         .order('start_time',{ ascending:true });
+
       if(error){
         console.error(error);
         scheduleMsg.textContent='Error loading upcoming appointments.';
         return;
       }
-      if(!appts||appts.length===0){
+      if(!appts || appts.length===0){
         scheduleMsg.textContent='No upcoming appointments.';
         return;
       }
+
       appts.forEach(ap=>{
+        const basePrice=ap.price||0;
+        totalSum+= basePrice;
+
         const item=document.createElement('div');
         item.classList.add('appt-item');
         item.innerHTML=`
           <h4>${ap.date} ${ap.start_time||''} - ${ap.end_time||''}</h4>
           <p>Client: ${ap.client_name||'N/A'}</p>
+          <p>Phone: ${ap.client_phone||'N/A'}</p>
+          <p>Email: ${ap.email||'N/A'}</p>
+          <p>Price: $${basePrice.toFixed(2)}</p>
           <p>Notes: ${ap.notes||''}</p>
         `;
         upcomingList.appendChild(item);
       });
+
+      upcomingTotal.textContent=`Total Potential: $${totalSum.toFixed(2)}`;
     }
 
     // (D) Earnings => monthly "completed or walk-in" appts
@@ -461,10 +482,10 @@
 
     async function drawEarningsMonth(){
       earnMonthGrid.innerHTML='';
-      earnMonthLabel.textContent = `${monthName(earnMonth.month)} ${earnMonth.year}`;
+      earnMonthLabel.textContent=`${monthName(earnMonth.month)} ${earnMonth.year}`;
       const firstDate=new Date(earnMonth.year, earnMonth.month-1, 1);
       const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(earnMonth.year, earnMonth.month, 0).getDate();
+      const lastDate=new Date(earnMonth.year, earnMonth.month,0).getDate();
 
       const startStr=`${earnMonth.year}-${String(earnMonth.month).padStart(2,'0')}-01`;
       const endStr=`${earnMonth.year}-${String(earnMonth.month).padStart(2,'0')}-${lastDate}`;
