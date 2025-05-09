@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- 
-    Content-Security-Policy:
-    - 'unsafe-eval' for Supabase
-    - connect-src includes your .supabase.co domain
+    Content Security Policy:
+    - 'unsafe-eval' so Supabase can use eval
+    - connect-src for your .supabase.co domain
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -22,8 +22,8 @@
   <style>
     /* Dark style reminiscent of your index */
     * {
-      margin: 0;
-      padding: 0;
+      margin: 0; 
+      padding: 0; 
       box-sizing: border-box;
     }
     body {
@@ -105,7 +105,7 @@
       margin-top: 8px;
     }
 
-    /* Upcoming appointments list */
+    /* Appt list in schedule tab */
     .appt-list {
       margin-top: 10px;
     }
@@ -127,7 +127,43 @@
       font-size: 0.9rem;
     }
 
-    /* Table for summary or pop-ups */
+    /* Calendar for earnings tab */
+    .calendar-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .calendar-nav button {
+      width: auto;
+      margin-bottom: 0;
+    }
+    .calendar-month-label {
+      font-weight: bold;
+      font-size: 1rem;
+      text-align: center;
+    }
+    .earn-month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .day-cell {
+      background: #333;
+      border: 1px solid #444;
+      border-radius: 4px;
+      text-align: center;
+      min-height: 60px;
+      cursor: pointer;
+      padding: 5px;
+    }
+    .day-cell:hover {
+      background: #444;
+    }
+    .day-has-appts {
+      background: #666 !important;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -144,7 +180,7 @@
       margin-top: 5px;
     }
 
-    /* Mobile-friendly modal/popup for day detail */
+    /* Modal - mobile-friendly */
     .modal-bg {
       display: none;
       position: fixed;
@@ -166,7 +202,7 @@
       border-radius: 6px;
       padding: 20px;
       max-width: 500px;
-      width: 90%; /* mobile-friendly */
+      width: 90%;
       max-height: 80vh;
       overflow-y: auto;
     }
@@ -216,7 +252,15 @@
       <div class="tab-content" id="earnings-tab">
         <h2>My Earnings</h2>
 
-        <!-- Day detail is triggered by date if you want a daily breakdown -->
+        <!-- Calendar nav for monthly completed appts -->
+        <div class="calendar-nav">
+          <button id="earn-prev-month"><< Prev</button>
+          <span id="earn-month-label" class="calendar-month-label"></span>
+          <button id="earn-next-month">Next >></button>
+        </div>
+        <div id="earnings-month-grid" class="earn-month-grid"></div>
+
+        <!-- date-range summary -->
         <div class="date-range-container">
           <label for="range-start">Start Date</label>
           <input type="date" id="range-start" />
@@ -242,15 +286,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <!-- Possibly a button to see daily breakdown? 
-             We'll add a 'View day detail' button that asks for a date,
-             then opens the modal with completed appts that day. -->
-        <div style="margin-top:20px;">
-          <label for="day-detail-input">View a specific day</label>
-          <input type="date" id="day-detail-input" />
-          <button id="day-detail-btn">View Day Detail</button>
         </div>
       </div>
     </div>
@@ -283,10 +318,17 @@
     const tabEarningsBtn = document.getElementById('tab-earnings-btn');
     const scheduleTab = document.getElementById('schedule-tab');
     const earningsTab = document.getElementById('earnings-tab');
+
+    // schedule references
     const scheduleMsg = document.getElementById('schedule-message');
     const upcomingList = document.getElementById('upcoming-list');
 
-    // Earnings references
+    // earnings references
+    const earnPrevBtn = document.getElementById('earn-prev-month');
+    const earnNextBtn = document.getElementById('earn-next-month');
+    const earnMonthLabel = document.getElementById('earn-month-label');
+    const earnMonthGrid = document.getElementById('earnings-month-grid');
+
     const rangeStart = document.getElementById('range-start');
     const rangeEnd = document.getElementById('range-end');
     const rangeGenBtn = document.getElementById('range-generate-btn');
@@ -297,9 +339,7 @@
     const sumTips = document.getElementById('sum-tips');
     const sumGrand = document.getElementById('sum-grand');
 
-    // Day detail
-    const dayDetailInput = document.getElementById('day-detail-input');
-    const dayDetailBtn = document.getElementById('day-detail-btn');
+    // day detail modal
     const dayModal = document.getElementById('day-detail-modal');
     const dayModalTitle = document.getElementById('day-modal-title');
     const dayModalBody = document.getElementById('day-modal-body');
@@ -308,6 +348,9 @@
     const artistNameSpan = document.getElementById('artist-name-span');
 
     let currentArtist = null;
+
+    // We'll track the current year/month for the earnings calendar
+    let earnMonth = { year: 0, month: 0 };
 
     // (A) Artist login
     artistLoginBtn.addEventListener('click', async () => {
@@ -336,21 +379,28 @@
       currentArtist = artists[0];
       artistNameSpan.textContent = currentArtist.artist_name || 'Artist';
 
+      // show portal
       loginSection.style.display='none';
       portalSection.style.display='block';
+
+      // load schedule tab
       loadUpcomingAppointments();
+
+      // init earnings month to "today"
+      const now=new Date();
+      earnMonth.year = now.getFullYear();
+      earnMonth.month= now.getMonth()+1;
+      drawEarningsMonth();
     });
 
     // (B) Tab switching
-    tabScheduleBtn.addEventListener('click', () => setActiveTab('schedule'));
-    tabEarningsBtn.addEventListener('click', () => setActiveTab('earnings'));
-
+    tabScheduleBtn.addEventListener('click', ()=> setActiveTab('schedule'));
+    tabEarningsBtn.addEventListener('click', ()=> setActiveTab('earnings'));
     function setActiveTab(tabName){
       tabScheduleBtn.classList.remove('active');
       tabEarningsBtn.classList.remove('active');
       scheduleTab.classList.remove('active');
       earningsTab.classList.remove('active');
-
       if(tabName==='schedule'){
         tabScheduleBtn.classList.add('active');
         scheduleTab.classList.add('active');
@@ -360,21 +410,20 @@
       }
     }
 
-    // (C) Load upcoming appointments => type='appointment', date >= today
+    // (C) Load upcoming appointments => type='appointment', date>=today
     async function loadUpcomingAppointments(){
       upcomingList.innerHTML='';
       scheduleMsg.textContent='';
-      const todayStr = new Date().toISOString().split('T')[0]; // e.g. '2025-05-09'
+      const todayStr = new Date().toISOString().split('T')[0];
 
       const { data: appts, error } = await supabase
         .from('artist_appointments')
-        .select('date,start_time,end_time,client_name,notes,appointment_type')
+        .select('date,start_time,end_time,client_name,notes')
         .eq('artist_id', currentArtist.id)
-        .eq('appointment_type', 'appointment') // only upcoming "appointments"
-        .gte('date', todayStr)                // from now forward
+        .eq('appointment_type','appointment') // only "appointment", no walk-ins
+        .gte('date', todayStr)               // from now forward
         .order('date', { ascending: true })
         .order('start_time', { ascending: true });
-
       if(error){
         console.error(error);
         scheduleMsg.textContent='Error loading upcoming appointments.';
@@ -384,94 +433,117 @@
         scheduleMsg.textContent='No upcoming appointments.';
         return;
       }
-
-      appts.forEach(ap => {
+      appts.forEach(ap=>{
         const item=document.createElement('div');
         item.classList.add('appt-item');
         item.innerHTML=`
-          <h4>${ap.date} ${ap.start_time || ''} - ${ap.end_time || ''}</h4>
-          <p>Client: ${ap.client_name || 'N/A'}</p>
-          <p>Notes: ${ap.notes || ''}</p>
+          <h4>${ap.date} ${ap.start_time || ''} - ${ap.end_time||''}</h4>
+          <p>Client: ${ap.client_name||'N/A'}</p>
+          <p>Notes: ${ap.notes||''}</p>
         `;
         upcomingList.appendChild(item);
       });
     }
 
-    // (D) Earnings => date-range summary for completed
-    rangeGenBtn.addEventListener('click', async ()=>{
-      rangeMsg.textContent='';
-      sumTable.style.display='none';
-      const startVal=rangeStart.value;
-      const endVal=rangeEnd.value;
-      if(!startVal || !endVal){
-        rangeMsg.textContent='Start & End Date required.';
-        return;
+    // (D) Earnings => monthly calendar of COMPLETED appts
+    earnPrevBtn.addEventListener('click', ()=>{
+      earnMonth.month--;
+      if(earnMonth.month<1){
+        earnMonth.month=12;
+        earnMonth.year--;
       }
-      if(endVal<startVal){
-        rangeMsg.textContent='End date cannot be before start date.';
-        return;
+      drawEarningsMonth();
+    });
+    earnNextBtn.addEventListener('click', ()=>{
+      earnMonth.month++;
+      if(earnMonth.month>12){
+        earnMonth.month=1;
+        earnMonth.year++;
       }
-
-      // only sum up 'completed' appointments
-      const { data: appts, error }=await supabase
-        .from('artist_appointments')
-        .select('*')
-        .eq('artist_id', currentArtist.id)
-        .gte('date', startVal)
-        .lte('date', endVal)
-        .eq('appointment_type','completed'); // only completed
-      if(error){
-        console.error(error);
-        rangeMsg.textContent='Error fetching appointments.';
-        return;
-      }
-      if(!appts || appts.length===0){
-        rangeMsg.textContent='No completed appointments found in this range.';
-        return;
-      }
-      const splitVal = currentArtist.percentage_split||0;
-      let totalSold=0, totalTips=0, yourCut=0;
-      appts.forEach(ap=>{
-        const basePrice=ap.price||0;
-        const tip=ap.tip||0;
-        totalSold += basePrice;
-        totalTips += tip;
-        yourCut+=(basePrice*(splitVal/100));
-      });
-      sumTable.style.display='';
-      sumTotalSold.textContent=totalSold.toFixed(2);
-      sumCut.textContent=yourCut.toFixed(2);
-      sumTips.textContent=totalTips.toFixed(2);
-      sumGrand.textContent=(yourCut+totalTips).toFixed(2);
+      drawEarningsMonth();
     });
 
-    // (E) View day detail => also only completed
-    dayDetailBtn.addEventListener('click', async ()=>{
-      const dayVal = dayDetailInput.value;
-      if(!dayVal){
-        alert('Pick a date.');
+    async function drawEarningsMonth(){
+      earnMonthGrid.innerHTML='';
+      // label
+      earnMonthLabel.textContent=`${monthName(earnMonth.month)} ${earnMonth.year}`;
+      // first day, last day
+      const firstDate=new Date(earnMonth.year, earnMonth.month-1, 1);
+      const firstDayIndex=firstDate.getDay();
+      const lastDate=new Date(earnMonth.year, earnMonth.month,0).getDate();
+      
+      // query only COMPLETED appts
+      const startStr=`${earnMonth.year}-${String(earnMonth.month).padStart(2,'0')}-01`;
+      const endStr=`${earnMonth.year}-${String(earnMonth.month).padStart(2,'0')}-${lastDate}`;
+      const { data: appts, error }=await supabase
+        .from('artist_appointments')
+        .select('date')
+        .eq('artist_id', currentArtist.id)
+        .eq('appointment_type','completed')
+        .gte('date', startStr)
+        .lte('date', endStr);
+
+      if(error){
+        console.error(error);
+        // no direct error message
         return;
       }
+      // collect days with appts
+      let daysWithAppts={};
+      appts.forEach(ap=>{
+        const dayNum=parseInt(ap.date.split('-')[2],10);
+        daysWithAppts[dayNum]=true;
+      });
+
+      // fill blank cells for the offset
+      for(let i=0;i<firstDayIndex;i++){
+        const cell=document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.style.background='#222';
+        earnMonthGrid.appendChild(cell);
+      }
+      // fill days
+      for(let d=1; d<=lastDate; d++){
+        const cell=document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.textContent=d;
+        if(daysWithAppts[d]){
+          cell.classList.add('day-has-appts');
+          cell.title='You have completed appointments this day.';
+          // clickable => open detail
+          cell.onclick=()=> openDayModal(earnMonth.year, earnMonth.month, d);
+        }
+        earnMonthGrid.appendChild(cell);
+      }
+    }
+
+    // open day detail => only 'completed' appts for that day
+    async function openDayModal(y,m,d){
+      const dd=String(d).padStart(2,'0');
+      const mm=String(m).padStart(2,'0');
+      const dateStr=`${y}-${mm}-${dd}`;
+
       dayModal.classList.add('active');
-      dayModalTitle.textContent=`Completed Appointments on ${dayVal}`;
+      dayModalTitle.textContent=`Completed Appointments on ${dateStr}`;
       dayModalBody.innerHTML='Loading...';
 
       const { data: appts, error }=await supabase
         .from('artist_appointments')
         .select('*')
         .eq('artist_id', currentArtist.id)
-        .eq('date', dayVal)
-        .eq('appointment_type','completed'); // only completed
+        .eq('date', dateStr)
+        .eq('appointment_type','completed');
       if(error){
         console.error(error);
         dayModalBody.innerHTML='Error loading appointments.';
         return;
       }
-      if(!appts || appts.length===0){
+      if(!appts|| appts.length===0){
         dayModalBody.innerHTML='<div class="no-appts">No completed appointments this day.</div>';
         return;
       }
-      const splitVal = currentArtist.percentage_split||0;
+
+      const splitVal=currentArtist.percentage_split||0;
       const table=document.createElement('table');
       const thead=document.createElement('thead');
       thead.innerHTML=`
@@ -492,6 +564,7 @@
         const tip=ap.tip||0;
         const cut=basePrice*(splitVal/100);
         const total=cut+tip;
+
         const tr=document.createElement('tr');
         tr.innerHTML=`
           <td>${ap.start_time||''} - ${ap.end_time||''}</td>
@@ -504,11 +577,63 @@
       });
       dayModalBody.innerHTML='';
       dayModalBody.appendChild(table);
-    });
+    }
 
-    dayModalClose.addEventListener('click',()=>{
+    dayModalClose.addEventListener('click', ()=>{
       dayModal.classList.remove('active');
     });
+
+    // (E) date-range summary => only 'completed'
+    rangeGenBtn.addEventListener('click', async ()=>{
+      rangeMsg.textContent='';
+      sumTable.style.display='none';
+      const startVal=rangeStart.value;
+      const endVal=rangeEnd.value;
+      if(!startVal||!endVal){
+        rangeMsg.textContent='Start & End Date required.';
+        return;
+      }
+      if(endVal<startVal){
+        rangeMsg.textContent='End date cannot be before start date.';
+        return;
+      }
+
+      const { data: appts, error }=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('artist_id', currentArtist.id)
+        .eq('appointment_type','completed')
+        .gte('date', startVal)
+        .lte('date', endVal);
+      if(error){
+        console.error(error);
+        rangeMsg.textContent='Error fetching appointments.';
+        return;
+      }
+      if(!appts||appts.length===0){
+        rangeMsg.textContent='No completed appointments found in this range.';
+        return;
+      }
+      const splitVal=currentArtist.percentage_split||0;
+      let totalSold=0, totalTips=0, yourCut=0;
+      appts.forEach(ap=>{
+        const basePrice=ap.price||0;
+        const tip=ap.tip||0;
+        totalSold += basePrice;
+        totalTips += tip;
+        yourCut += (basePrice*(splitVal/100));
+      });
+      sumTable.style.display='';
+      sumTotalSold.textContent=totalSold.toFixed(2);
+      sumCut.textContent=yourCut.toFixed(2);
+      sumTips.textContent=totalTips.toFixed(2);
+      sumGrand.textContent=(yourCut+totalTips).toFixed(2);
+    });
+
+    function monthName(m){
+      const names=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return names[m-1]||m;
+    }
   </script>
 </body>
 </html>
