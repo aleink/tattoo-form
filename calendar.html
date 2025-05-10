@@ -2,14 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tattoo Booking Form</title>
+  <title>Calendar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 
-    Content Security Policy for production:
-      - 'unsafe-eval' so Supabase can do eval
-      - connect-src includes your supabase domain
-  -->
+  <!-- CSP with 'unsafe-eval' for Supabase usage -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -20,7 +16,7 @@
         ">
 
   <style>
-    /* Dark, mobile-friendly style */
+    /* Dark style for PC layout */
     * {
       margin: 0;
       padding: 0;
@@ -30,209 +26,288 @@
       font-family: 'Helvetica Neue', Arial, sans-serif;
       background: #111;
       color: #fff;
-      max-width: 600px;
+      max-width: 1200px;
       margin: 20px auto;
       padding: 10px;
     }
-    h1, h2, h3 {
-      margin-bottom: 10px;
+    header {
+      background: #000;
+      border-bottom: 2px solid #444;
+      padding: 20px;
+      text-align: center;
     }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
+    header h1 {
+      color: #fff;
+      margin: 0;
+      font-size: 1.8rem;
     }
-    input, select, textarea, button {
-      width: 100%;
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin: 15px 0;
+    }
+    #logout-btn {
+      background: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    select, input[type="date"], input[type="time"], input[type="text"], input[type="number"], input[type="email"], textarea {
       background: #222;
       color: #fff;
       border: 1px solid #444;
       border-radius: 4px;
-      padding: 8px;
-      margin-bottom: 10px;
+      padding: 6px;
     }
-    button {
+    select option {
+      color: #000;
+    }
+    /* Daily scheduler */
+    #daily-scheduler {
+      position: relative;
+      height: 960px; /* 8:00 -> 24:00 => 16 hours => 960 minutes */
+      border: 1px solid #444;
+      overflow-y: auto;
+      margin-top: 10px;
+      background: #222;
+    }
+    .hour-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      border-top: 1px dashed #444;
+      color: #bbb;
+      font-size: 12px;
+      padding-left: 5px;
+    }
+    .schedule-block {
+      position: absolute;
+      background: rgba(255,255,255,0.05);
+      color: #ddd;
+      padding: 2px;
+      font-size: 0.75em;
+      box-sizing: border-box;
+      border-left: 4px solid #555;
+      pointer-events: none;
+    }
+    .schedule-artist-name {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 2px;
+      color: #fff;
+    }
+    .appointment-block {
+      position: absolute;
+      background: #444;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 0.85em;
+      box-sizing: border-box;
       cursor: pointer;
     }
-    button:hover {
-      background: #333;
+    /* offset scheduler columns 80px to the right to see hour lines on the left */
+    /* Appointment Modal */
+    #appt-modal {
+      display: none;
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      border: 1px solid #444;
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      color: #fff;
+      z-index: 999;
     }
-    .form-section {
+    #appt-modal h3 {
+      margin-top: 0;
+    }
+    #appt-modal input, #appt-modal select, #appt-modal textarea {
+      width: 100%;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 4px;
+      padding: 6px;
+    }
+    .modal-field {
+      margin-bottom: 10px;
+    }
+    .modal-buttons {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .modal-buttons button {
+      margin-left: 8px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .modal-buttons button:hover {
+      background: #555;
+    }
+    /* Artist filter checkboxes */
+    #artist-filter-container {
+      margin-top: 10px;
+    }
+    .artist-filter-item {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .artist-filter-item label {
+      margin-left: 4px;
+    }
+
+    /* bottom "Appointments & Walk-ins" box */
+    #appointments-list-section {
+      margin-top: 20px;
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
       padding: 15px;
-      margin-bottom: 20px;
     }
-    .size-container {
-      display: flex;
-      gap: 10px;
-    }
-    .size-container > div {
-      flex: 1;
-    }
-    .radio-group {
-      display: flex;
-      gap: 20px;
+    #appointments-list-section h2 {
       margin-bottom: 10px;
     }
-    .slot-option {
+    .filters-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .appointments-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #444;
+      padding: 10px;
+    }
+    .appt-item {
       background: #333;
       border: 1px solid #555;
       padding: 8px;
-      margin: 5px 0;
       border-radius: 4px;
-      cursor: pointer;
+      margin-bottom: 8px;
     }
-    .slot-option:hover {
-      background: #444;
+    .appt-item h4 {
+      margin-bottom: 3px;
+      font-size: 1rem;
+      color: #fff;
     }
-    .hidden {
-      display: none;
+    .appt-item p {
+      margin-bottom: 2px;
+      font-size: 0.85rem;
+      color: #bbb;
     }
   </style>
 </head>
 <body>
-  <h1>Tattoo Booking Form</h1>
+  <header>
+    <h1>Calendar</h1>
+  </header>
 
-  <form id="tattoo-form" enctype="multipart/form-data">
-    <!-- Personal Info -->
-    <div class="form-section">
-      <h2>Personal Info</h2>
-      <label for="name">Name *</label>
-      <input type="text" id="name" name="name" required>
+  <div class="top-controls">
+    <button id="logout-btn">Logout</button>
 
-      <label for="phone">Phone Number <small>(include prefix if not US, e.g. +34)</small> *</label>
-      <input type="tel" id="phone" name="phone" required>
+    <label for="location-filter">Location:</label>
+    <select id="location-filter">
+      <option value="">-- Select Location --</option>
+    </select>
 
-      <label for="email">Email *</label>
-      <input type="email" id="email" name="email" required>
+    <label for="day-input">Date:</label>
+    <input type="date" id="day-input" />
+  </div>
+
+  <div id="artist-filter-container"></div>
+
+  <!-- Daily Scheduler -->
+  <div id="daily-scheduler"></div>
+
+  <!-- Appointment Modal -->
+  <div id="appt-modal">
+    <h3 id="modal-title">New Appointment</h3>
+    <div class="modal-field">
+      <label for="modal-start-time">Start Time (5 min steps):</label>
+      <input type="time" id="modal-start-time" step="300" />
     </div>
-
-    <!-- Tattoo Info -->
-    <div class="form-section">
-      <h2>Tattoo Info</h2>
-      <label for="placement">Placement *</label>
-      <input type="text" id="placement" name="placement" required>
-
-      <div class="size-container">
-        <div>
-          <label for="heightInches">Height (inches) *</label>
-          <input type="number" id="heightInches" name="heightInches" required>
-        </div>
-        <div>
-          <label for="widthInches">Width (inches) *</label>
-          <input type="number" id="widthInches" name="widthInches" required>
-        </div>
-      </div>
-
-      <label>Color or Black & Grey? *</label>
-      <select id="colorOrBlack" name="colorOrBlack" required>
-        <option value="color">Color</option>
-        <option value="black-and-grey">Black and Grey</option>
+    <div class="modal-field">
+      <label for="modal-end-time">End Time (5 min steps):</label>
+      <input type="time" id="modal-end-time" step="300" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-artist">Artist:</label>
+      <select id="modal-artist"></select>
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-name">Client Name:</label>
+      <input type="text" id="modal-client-name" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-phone">Client Phone:</label>
+      <input type="text" id="modal-client-phone" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-email">Client Email:</label>
+      <input type="email" id="modal-email" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-description">Tattoo Description:</label>
+      <textarea id="modal-description"></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="modal-deposit">Deposit:</label>
+      <input type="number" id="modal-deposit" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-price">Price:</label>
+      <input type="number" id="modal-price" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-tip">Tip:</label>
+      <input type="number" id="modal-tip" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-appt-type">Appointment Type:</label>
+      <select id="modal-appt-type">
+        <option value="walk-in">Walk-in</option>
+        <option value="appointment">Appointment</option>
       </select>
-
-      <label for="description">Brief Description *</label>
-      <textarea id="description" name="description" rows="3" required></textarea>
-
-      <label>Reference Images (up to 3):</label>
-      <input type="file" id="reference-image1" name="reference-image1" accept="image/*">
-      <input type="file" id="reference-image2" name="reference-image2" accept="image/*">
-      <input type="file" id="reference-image3" name="reference-image3" accept="image/*">
     </div>
-
-    <!-- Location First -->
-    <div class="form-section">
-      <h2>Choose Location</h2>
-      <label for="preferred-location">Preferred Location *</label>
-      <select id="preferred-location" name="preferred-location" required>
-        <option value="">-- Select Location --</option>
-      </select>
+    <div class="modal-buttons">
+      <button id="save-appt-btn">Save</button>
+      <button id="cancel-appt-btn">Cancel</button>
+      <button id="delete-appt-btn" style="display:none;">Delete</button>
+      <button id="complete-appt-btn" style="display:none;">Mark Completed</button>
     </div>
+  </div>
 
-    <!-- Step: what's more important? date or artist -->
-    <div class="form-section hidden" id="importance-section">
-      <h2>Help us accommodate you faster:</h2>
-      <p>Which is more important for you?</p>
-      <div class="radio-group">
-        <label>
-          <input type="radio" name="priority" value="date" /> Date
-        </label>
-        <label>
-          <input type="radio" name="priority" value="artist" /> Artist
-        </label>
+  <!-- Bottom box: Appointments & Walk-ins -->
+  <div id="appointments-list-section">
+    <h2>Appointments & Walk-ins</h2>
+    <div class="filters-row">
+      <label for="range-start">From:</label>
+      <input type="date" id="range-start" />
+
+      <label for="range-end">To:</label>
+      <input type="date" id="range-end" />
+
+      <!-- 2 checkboxes for appointments/walk-ins -->
+      <div>
+        <label><input type="checkbox" id="cb-appointments" checked /> Appointments</label>
+        <label><input type="checkbox" id="cb-walkins" checked /> Walk-ins</label>
       </div>
     </div>
-
-    <!-- If date is priority -->
-    <div class="form-section hidden" id="priority-date-section">
-      <h3>Select Date & Slot</h3>
-      <label for="priority-date">Date:</label>
-      <input type="date" id="priority-date" />
-
-      <div id="date-artist-choice" class="hidden">
-        <label for="date-artist-select">Artist (optional):</label>
-        <select id="date-artist-select">
-          <option value="">Any / First Available</option>
-        </select>
-      </div>
-
-      <div id="date-slot-list" class="hidden">
-        <label>Available Slots:</label>
-        <div id="slot-container-date"></div>
-      </div>
-    </div>
-
-    <!-- If artist is priority -->
-    <div class="form-section hidden" id="priority-artist-section">
-      <h3>Select Artist & Date Range</h3>
-      <label for="priority-artist-select">Artist *</label>
-      <select id="priority-artist-select">
-        <option value="">-- Select Artist --</option>
-      </select>
-
-      <label>Choose Date Range:</label>
-      <div class="size-container">
-        <div>
-          <label>Start:</label>
-          <input type="date" id="artist-range-start" />
-        </div>
-        <div>
-          <label>End:</label>
-          <input type="date" id="artist-range-end" />
-        </div>
-      </div>
-
-      <div id="artist-day-list" class="hidden">
-        <label>Pick a Day:</label>
-        <div id="artist-day-container"></div>
-      </div>
-
-      <div id="artist-slot-list" class="hidden">
-        <label>Available Slots:</label>
-        <div id="slot-container-artist"></div>
-      </div>
-    </div>
-
-    <!-- Marketing and Consent -->
-    <div class="form-section">
-      <label>
-        <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required>
-        I agree to receive emails and SMS regarding my appointment and marketing.
-      </label>
-      <p style="font-size: 0.9em;">
-        By checking this box, you consent to be contacted in compliance with applicable ADA and privacy regulations.
-      </p>
-    </div>
-
-    <!-- Hidden fields to store final date/time (start/end) and artist -->
-    <input type="hidden" id="final-chosen-date" name="final-chosen-date" />
-    <input type="hidden" id="final-chosen-time" name="final-chosen-time" />
-    <input type="hidden" id="final-chosen-endtime" name="final-chosen-endtime" />
-    <input type="hidden" id="final-chosen-artist" name="final-chosen-artist" />
-
-    <button type="submit">Submit</button>
-  </form>
+    <div class="appointments-container" id="appointments-list"></div>
+  </div>
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
@@ -241,409 +316,516 @@
     const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 
+    // Auth check
+    function checkAuth(){
+      const userId=localStorage.getItem('currentUserId');
+      if(!userId){
+        window.location.href='login.html';
+      }
+    }
+    checkAuth();
+
     // references
-    const locationSelect=document.getElementById('preferred-location');
-    const importanceSection=document.getElementById('importance-section');
+    const logoutBtn=document.getElementById('logout-btn');
+    const locationFilter=document.getElementById('location-filter');
+    const dayInput=document.getElementById('day-input');
+    const dailyScheduler=document.getElementById('daily-scheduler');
+    const artistFilterContainer=document.getElementById('artist-filter-container');
 
-    const dateSection=document.getElementById('priority-date-section');
-    const priorityDateInput=document.getElementById('priority-date');
-    const dateArtistChoice=document.getElementById('date-artist-choice');
-    const dateArtistSelect=document.getElementById('date-artist-select');
-    const dateSlotList=document.getElementById('date-slot-list');
-    const slotContainerDate=document.getElementById('slot-container-date');
+    const apptModal=document.getElementById('appt-modal');
+    const modalTitle=document.getElementById('modal-title');
+    const modalStartTime=document.getElementById('modal-start-time');
+    const modalEndTime=document.getElementById('modal-end-time');
+    const modalArtist=document.getElementById('modal-artist');
+    const modalClientName=document.getElementById('modal-client-name');
+    const modalClientPhone=document.getElementById('modal-client-phone');
+    const modalEmail=document.getElementById('modal-email');
+    const modalDescription=document.getElementById('modal-description');
+    const modalDeposit=document.getElementById('modal-deposit');
+    const modalPrice=document.getElementById('modal-price');
+    const modalTip=document.getElementById('modal-tip');
+    const modalApptType=document.getElementById('modal-appt-type');
+    const saveApptBtn=document.getElementById('save-appt-btn');
+    const cancelApptBtn=document.getElementById('cancel-appt-btn');
+    const deleteApptBtn=document.getElementById('delete-appt-btn');
+    const completeApptBtn=document.getElementById('complete-appt-btn');
+    let currentApptId=null;
+    let artistMap={};
 
-    const artistSection=document.getElementById('priority-artist-section');
-    const priorityArtistSelect=document.getElementById('priority-artist-select');
-    const artistRangeStart=document.getElementById('artist-range-start');
-    const artistRangeEnd=document.getElementById('artist-range-end');
-    const artistDayList=document.getElementById('artist-day-list');
-    const artistDayContainer=document.getElementById('artist-day-container');
-    const artistSlotList=document.getElementById('artist-slot-list');
-    const slotContainerArtist=document.getElementById('slot-container-artist');
+    // bottom appointments list
+    const rangeStart=document.getElementById('range-start');
+    const rangeEnd=document.getElementById('range-end');
+    const cbAppointments=document.getElementById('cb-appointments');
+    const cbWalkins=document.getElementById('cb-walkins');
+    const appointmentsList=document.getElementById('appointments-list');
 
-    const heightInches=document.getElementById('heightInches');
-    const widthInches=document.getElementById('widthInches');
+    logoutBtn.addEventListener('click',()=>{
+      localStorage.clear();
+      window.location.href='login.html';
+    });
 
-    const finalChosenDate=document.getElementById('final-chosen-date');
-    const finalChosenTime=document.getElementById('final-chosen-time');
-    const finalChosenEndTime=document.getElementById('final-chosen-endtime');
-    const finalChosenArtist=document.getElementById('final-chosen-artist');
+    // load day automatically on date change
+    dayInput.addEventListener('change',loadDay);
 
-    // 1) On load => fetch locations
-    window.addEventListener('DOMContentLoaded', loadLocations);
+    // location => load artists => reload day + bottom list
+    locationFilter.addEventListener('change', async()=>{
+      await loadArtistsForLocation(locationFilter.value);
+      loadDay();
+      loadAppointmentsList();
+    });
+
+    // artist checkboxes => reload day + bottom list
+    artistFilterContainer.addEventListener('change',()=>{
+      loadDay();
+      loadAppointmentsList();
+    });
+
+    // bottom filters
+    rangeStart.addEventListener('change',loadAppointmentsList);
+    rangeEnd.addEventListener('change',loadAppointmentsList);
+    cbAppointments.addEventListener('change',loadAppointmentsList);
+    cbWalkins.addEventListener('change',loadAppointmentsList);
+
+    // init
+    window.addEventListener('DOMContentLoaded', async()=>{
+      await loadLocations();
+      // default day => today
+      const todayStr=new Date().toISOString().split('T')[0];
+      dayInput.value=todayStr;
+
+      // default range => from 7 days ago to +7 days
+      const now=new Date();
+      const past=new Date(now.getTime()-7*86400000);
+      const future=new Date(now.getTime()+7*86400000);
+      rangeStart.value=past.toISOString().split('T')[0];
+      rangeEnd.value=future.toISOString().split('T')[0];
+
+      loadDay();
+      loadAppointmentsList();
+    });
 
     async function loadLocations(){
-      const {data, error}=await supabase
+      const {data,error}=await supabase
         .from('locations')
-        .select('id, location_name');
+        .select('*');
       if(error){console.error(error);return;}
-      while(locationSelect.options.length>1){
-        locationSelect.remove(1);
-      }
+      locationFilter.innerHTML='<option value="">-- Select Location --</option>';
       data.forEach(loc=>{
         const opt=document.createElement('option');
         opt.value=loc.id;
         opt.textContent=loc.location_name;
-        locationSelect.appendChild(opt);
+        locationFilter.appendChild(opt);
       });
     }
-    // location => show "importance" section
-    locationSelect.addEventListener('change', ()=>{
-      if(locationSelect.value){
-        importanceSection.classList.remove('hidden');
-      } else {
-        importanceSection.classList.add('hidden');
-        dateSection.classList.add('hidden');
-        artistSection.classList.add('hidden');
-      }
-    });
 
-    // Priority radio
-    const radios=importanceSection.querySelectorAll('input[name="priority"]');
-    radios.forEach(radio=>{
-      radio.addEventListener('change',(evt)=>{
-        if(evt.target.value==='date'){
-          dateSection.classList.remove('hidden');
-          artistSection.classList.add('hidden');
-          loadDateStep();
-        } else {
-          dateSection.classList.add('hidden');
-          artistSection.classList.remove('hidden');
-          loadArtistStep();
-        }
-      });
-    });
-
-    // ---- DATE PRIORITY ----
-    async function loadDateStep(){
-      priorityDateInput.value='';
-      dateArtistSelect.innerHTML='<option value="">Any / First Available</option>';
-      dateArtistChoice.classList.add('hidden');
-      dateSlotList.classList.add('hidden');
-      slotContainerDate.innerHTML='';
-    }
-
-    priorityDateInput.addEventListener('change', async()=>{
-      if(!priorityDateInput.value)return;
-      // fetch all artists in that location
-      const {data:artists,error}=await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .eq('location_id', locationSelect.value);
-      if(error){console.error(error);return;}
-
-      // fill dateArtistSelect
-      while(dateArtistSelect.options.length>1){
-        dateArtistSelect.remove(1);
-      }
-      artists.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        dateArtistSelect.appendChild(opt);
-      });
-      dateArtistChoice.classList.remove('hidden');
-    });
-
-    dateArtistSelect.addEventListener('change', loadDateSlots);
-
-    async function loadDateSlots(){
-      const dateVal=priorityDateInput.value;
-      if(!dateVal)return;
-      const chosenArtistId=dateArtistSelect.value;
-      const neededMins=calcNeededMinutes();
-
-      slotContainerDate.innerHTML='';
-      if(chosenArtistId){
-        // single artist
-        const freeSlots=await computeFreeSlots(chosenArtistId, dateVal, neededMins);
-        freeSlots.forEach(startTime=>{
-          const endTime=calcEndTime(startTime, neededMins);
-          const div=document.createElement('div');
-          div.classList.add('slot-option');
-          div.textContent=`${startTime} - ${endTime}`;
-          div.addEventListener('click',()=>{
-            pickFinal(chosenArtistId, dateVal, startTime, endTime);
-          });
-          slotContainerDate.appendChild(div);
-        });
-      } else {
-        // "Any" => check each artist
-        const {data:artists,error}=await supabase
-          .from('artists')
-          .select('id, artist_name')
-          .eq('location_id', locationSelect.value);
-        if(error){console.error(error);return;}
-        for(let art of artists){
-          const freeSlots=await computeFreeSlots(art.id, dateVal, neededMins);
-          if(freeSlots.length>0){
-            const label=document.createElement('div');
-            label.style.fontWeight='bold';
-            label.textContent=`Artist: ${art.artist_name}`;
-            label.style.marginTop='10px';
-            slotContainerDate.appendChild(label);
-
-            freeSlots.forEach(st=>{
-              const en=calcEndTime(st, neededMins);
-              const div=document.createElement('div');
-              div.classList.add('slot-option');
-              div.textContent=`${st} - ${en}`;
-              div.addEventListener('click', ()=>{
-                pickFinal(art.id, dateVal, st, en);
-              });
-              slotContainerDate.appendChild(div);
-            });
-          }
-        }
-      }
-      dateSlotList.classList.remove('hidden');
-    }
-
-    // ---- ARTIST PRIORITY ----
-    async function loadArtistStep(){
-      priorityArtistSelect.innerHTML='<option value="">-- Select Artist --</option>';
-      artistRangeStart.value='';
-      artistRangeEnd.value='';
-      artistDayList.classList.add('hidden');
-      artistDayContainer.innerHTML='';
-      artistSlotList.classList.add('hidden');
-      slotContainerArtist.innerHTML='';
-
-      // load artists for location
-      const {data:artists,error}=await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .eq('location_id', locationSelect.value);
-      if(error){console.error(error);return;}
-      artists.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        priorityArtistSelect.appendChild(opt);
-      });
-    }
-    priorityArtistSelect.addEventListener('change',()=>{
-      artistDayList.classList.remove('hidden');
-      artistDayContainer.innerHTML='Pick your Start/End date above.';
-    });
-    artistRangeStart.addEventListener('change', loadArtistDays);
-    artistRangeEnd.addEventListener('change', loadArtistDays);
-
-    async function loadArtistDays(){
-      artistDayContainer.innerHTML='';
-      artistSlotList.classList.add('hidden');
-      slotContainerArtist.innerHTML='';
-
-      const aId=priorityArtistSelect.value;
-      const sVal=artistRangeStart.value;
-      const eVal=artistRangeEnd.value;
-      if(!aId||!sVal||!eVal){
-        artistDayContainer.innerHTML='<p>Please pick an artist and date range.</p>';
-        return;
-      }
-      const neededMins=calcNeededMinutes();
-      const dayList=await findAvailableDaysForArtist(aId,sVal,eVal,neededMins);
-      if(!dayList.length){
-        artistDayContainer.innerHTML='<p>No days available in that range.</p>';
-        return;
-      }
-      dayList.forEach(dStr=>{
-        const div=document.createElement('div');
-        div.classList.add('slot-option');
-        div.textContent=dStr;
-        div.addEventListener('click',()=> loadArtistSlots(dStr));
-        artistDayContainer.appendChild(div);
-      });
-    }
-    async function loadArtistSlots(dayStr){
-      const aId=priorityArtistSelect.value;
-      const neededMins=calcNeededMinutes();
-      const freeSlots=await computeFreeSlots(aId, dayStr, neededMins);
-      slotContainerArtist.innerHTML='';
-      if(!freeSlots.length){
-        slotContainerArtist.innerHTML='<p>No slots available this day.</p>';
-      } else {
-        freeSlots.forEach(st=>{
-          const en=calcEndTime(st, neededMins);
-          const div=document.createElement('div');
-          div.classList.add('slot-option');
-          div.textContent=`${st} - ${en}`;
-          div.addEventListener('click',()=>{
-            pickFinal(aId, dayStr, st, en);
-          });
-          slotContainerArtist.appendChild(div);
-        });
-      }
-      artistSlotList.classList.remove('hidden');
-    }
-
-    // Compute needed minutes from size
-    function calcNeededMinutes(){
-      const h= parseFloat(heightInches.value)||0;
-      const w= parseFloat(widthInches.value)||0;
-      const sq= h*w;
-      if(sq<3) return 30;
-      if(sq<=6) return 45;
-      if(sq<=9) return 60;
-      if(sq<=12) return 75;
-      if(sq<=18) return 120;
-      if(sq<=25) return 190;
-      if(sq<=38) return 285;
-      return 9999; // entire day
-    }
-
-    // When user picks a slot => store final date/time
-    function pickFinal(artistId, dateVal, start, end){
-      finalChosenDate.value=dateVal;
-      finalChosenTime.value=start;
-      finalChosenEndTime.value=end;
-      finalChosenArtist.value=artistId||'';
-      alert(`Chosen: date=${dateVal}, time=${start}-${end}, artist=${artistId||'Any'}. You can submit now.`);
-    }
-
-    // Convert HH:MM => total minutes
-    function toMinutes(hm){
-      if(!hm)return 0;
-      const [hh,mm]=hm.split(':').map(Number);
-      return hh*60+mm;
-    }
-    // Add neededMins => produce an end time
-    function calcEndTime(startStr, neededMins){
-      const sN=toMinutes(startStr);
-      const eN=sN+neededMins;
-      const hh=Math.floor(eN/60);
-      const mm=eN%60;
-      return hh.toString().padStart(2,'0')+':'+ mm.toString().padStart(2,'0');
-    }
-
-    // Real logic: fetch schedule columns from the single row in `artists`, then subtract existing appointments
-    // We'll do 1 row query of `artists` and 1 query of `artist_appointments`.
-    async function computeFreeSlots(artistId, dateStr, neededMins){
-      let result=[];
-      // 1) find day-of-week => map to "monday_start/monday_end", etc.
-      const dt=new Date(dateStr+'T00:00:00');
-      const idx=dt.getDay(); // 0=Sun..6=Sat
-      const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-      const scStart= dayCols[idx]+'_start';
-      const scEnd= dayCols[idx]+'_end';
-
-      // 2) get that artist row
-      const {data:rows, error:errArt}=await supabase
+    async function loadArtistsForLocation(locId){
+      artistMap={};
+      modalArtist.innerHTML='';
+      artistFilterContainer.innerHTML='';
+      if(!locId)return;
+      const {data,error}=await supabase
         .from('artists')
         .select('*')
-        .eq('id', artistId);
-      if(errArt||!rows||!rows.length)return result;
-      const art=rows[0];
-      const sVal=art[scStart];
-      const eVal=art[scEnd];
-      if(!sVal||!eVal)return result; // off day or no schedule
+        .eq('location_id',locId);
 
-      const sNum=toMinutes(sVal);
-      const eNum=toMinutes(eVal);
-      if(sNum>=eNum)return result;
+      if(error){console.error(error);return;}
+      data.sort((a,b)=> a.artist_name.localeCompare(b.artist_name));
+      data.forEach(art=>{
+        artistMap[art.id]=art;
+        // add to modal
+        const opt=document.createElement('option');
+        opt.value=art.id;
+        opt.textContent=art.artist_name;
+        modalArtist.appendChild(opt);
+        // add filter checkbox
+        const div=document.createElement('div');
+        div.classList.add('artist-filter-item');
+        const cb=document.createElement('input');
+        cb.type='checkbox';
+        cb.value=art.id;
+        cb.checked=true;
+        const lb=document.createElement('label');
+        lb.textContent=art.artist_name;
+        div.appendChild(cb);
+        div.appendChild(lb);
+        artistFilterContainer.appendChild(div);
+      });
+    }
 
-      // 3) fetch appointments => only "appointment"
-      const {data:appts, error:errApt}=await supabase
+    function getFilteredArtistIds(){
+      const cbs=artistFilterContainer.querySelectorAll('input[type=checkbox]');
+      let arr=[];
+      cbs.forEach(cb=>{
+        if(cb.checked) arr.push(cb.value);
+      });
+      return arr;
+    }
+
+    async function loadDay(){
+      dailyScheduler.innerHTML='';
+      if(!dayInput.value)return;
+      const dayVal=dayInput.value;
+
+      // hour lines from 8->24
+      for(let hr=8; hr<=24; hr++){
+        const top=(hr-8)*60;
+        const line=document.createElement('div');
+        line.classList.add('hour-line');
+        line.style.top=top+'px';
+        let displayHr=hr; let ampm='AM';
+        if(displayHr>=12) ampm='PM';
+        if(displayHr>12) displayHr-=12;
+        if(displayHr===24){displayHr=12;ampm='AM';}
+        line.textContent=`${displayHr}:00 ${ampm}`;
+        dailyScheduler.appendChild(line);
+      }
+      // gather chosen artists
+      const filteredIds=getFilteredArtistIds();
+      if(filteredIds.length===0)return; // no artists => nothing to show
+
+      // schedules
+      const dayIdx=new Date(dayVal).getDay();
+      const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      const scStart=dayCols[dayIdx]+'_start';
+      const scEnd=dayCols[dayIdx]+'_end';
+
+      // build array from artistMap filtered
+      let colArtists=[];
+      for(let id of filteredIds){
+        if(artistMap[id]) colArtists.push(artistMap[id]);
+      }
+      colArtists.sort((a,b)=> a.artist_name.localeCompare(b.artist_name));
+
+      // place schedule blocks
+      colArtists.forEach((art,colIdx)=>{
+        const st=art[scStart];
+        const en=art[scEnd];
+        if(!st||!en)return;
+        const sNum=toMinutes(st);
+        const eNum=toMinutes(en);
+        if(sNum>=eNum)return;
+
+        const top=sNum-8*60;
+        const height=eNum-sNum;
+        const leftBase=80+(colIdx*120);
+        const div=document.createElement('div');
+        div.classList.add('schedule-block');
+        div.style.left=leftBase+'px';
+        div.style.width='110px';
+        div.style.top=top+'px';
+        div.style.height=height+'px';
+        div.style.borderLeftColor=art.color||'#999';
+        div.innerHTML=`
+          <span class="schedule-artist-name">${art.artist_name}</span>
+          ${st}-${en}
+        `;
+        dailyScheduler.appendChild(div);
+      });
+
+      // load appointments for day
+      let {data:appts, error}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id', artistId)
-        .eq('date', dateStr)
-        .eq('appointment','appointment'); // only where appointment='appointment'
-      if(errApt){console.error(errApt);return result;}
-      // sort by start_time
-      appts.sort((a,b)=> toMinutes(a.start_time)-toMinutes(b.start_time));
+        .eq('date',dayVal)
+        .in('artist_id',filteredIds); 
+      if(error){console.error(error);return;}
 
-      // 4) build free intervals from sNum..eNum
-      let freeIntervals=[[sNum,eNum]];
-      // subtract appts
+      // group by artist => sub columns
+      let byArtist={};
+      colArtists.forEach(a=> byArtist[a.id]=[]);
       appts.forEach(ap=>{
-        const aS=toMinutes(ap.start_time);
-        const aE=toMinutes(ap.end_time);
-        let newIntervals=[];
-        for(let fi of freeIntervals){
-          const [fiS, fiE]=fi;
-          if(aE<=fiS||aS>=fiE){
-            // no overlap
-            newIntervals.push(fi);
-          } else {
-            // partial
-            if(aS>fiS) newIntervals.push([fiS,aS]);
-            if(aE<fiE) newIntervals.push([aE,fiE]);
-          }
+        if(byArtist[ap.artist_id]){ // ensure we have the key to avoid "push" error
+          byArtist[ap.artist_id].push(ap);
         }
-        freeIntervals=newIntervals;
       });
+      // for each artist => overlap logic
+      colArtists.forEach((art,mainIdx)=>{
+        let arr=byArtist[art.id];
+        arr.sort((a,b)=> toMinutes(a.start_time)-toMinutes(b.start_time));
+        let subCols=[];
+        arr.forEach(ap=>{
+          let placed=false;
+          for(let col of subCols){
+            let last=col[col.length-1];
+            if(!overlaps(last,ap)){
+              col.push(ap);placed=true;break;
+            }
+          }
+          if(!placed) subCols.push([ap]);
+        });
+        subCols.forEach((subCol, subIdx)=>{
+          subCol.forEach(ap=>{
+            const sN=toMinutes(ap.start_time)-8*60;
+            const eN=toMinutes(ap.end_time)-8*60;
+            const top=Math.max(sN,0);
+            const ht=Math.max(eN-sN,5);
+            const block=document.createElement('div');
+            block.classList.add('appointment-block');
+            block.style.backgroundColor=art.color||'#444';
+            
+            const leftBase=80+(mainIdx*120);
+            const totalSubs=subCols.length;
+            const eachW=110/totalSubs;
+            const leftPos=leftBase+(subIdx*eachW);
+            block.style.left=leftPos+'px';
+            block.style.width=(eachW-2)+'px';
+            block.style.top=top+'px';
+            block.style.height=ht+'px';
 
-      // 5) from freeIntervals => generate possible starts in 5-min increments
-      freeIntervals.forEach(fi=>{
-        const [fiS, fiE]=fi;
-        const fiLen=fiE-fiS;
-        if(fiLen>=neededMins){
-          const earliest=fiS;
-          const latest=fiE - neededMins;
-          for(let st=earliest; st<=latest; st+=5){
-            const hr=Math.floor(st/60);
-            const mn=st%60;
-            const hrStr=hr.toString().padStart(2,'0');
-            const mnStr=mn.toString().padStart(2,'0');
-            result.push(`${hrStr}:${mnStr}`);
-          }
-        }
+            const cName=ap.client_name||'N/A';
+            block.textContent=`${art.artist_name} - ${cName} (${ap.appointment_type})`;
+            block.addEventListener('click',(evt)=>{
+              evt.stopPropagation();
+              openExistingApptModal(ap.id);
+            });
+            dailyScheduler.appendChild(block);
+          });
+        });
       });
-      return result;
+      dailyScheduler.addEventListener('click',onSchedulerClick);
     }
-
-    // If artist priority => user picks an artist + range => find which days are possible
-    async function findAvailableDaysForArtist(artistId, startVal, endVal, neededMins){
-      let found=[];
-      let startDate=new Date(startVal+'T00:00:00');
-      let endDate=new Date(endVal+'T00:00:00');
-      for(let d=startDate; d<=endDate; d=new Date(d.getTime()+86400000)){
-        const iso=d.toISOString().split('T')[0];
-        const slots=await computeFreeSlots(artistId, iso, neededMins);
-        if(slots.length>0) found.push(iso);
+    function overlaps(a,b){
+      if(!a||!b)return false;
+      const aS=toMinutes(a.start_time);
+      const aE=toMinutes(a.end_time);
+      const bS=toMinutes(b.start_time);
+      const bE=toMinutes(b.end_time);
+      return(aS<bE && bS<aE);
+    }
+    function onSchedulerClick(e){
+      if(
+        e.target.classList.contains('appointment-block')||
+        e.target.classList.contains('schedule-block')||
+        e.target.classList.contains('hour-line')
+      )return;
+      const rect=dailyScheduler.getBoundingClientRect();
+      const y=e.clientY-rect.top;
+      const mins=Math.floor(y);
+      const hr=Math.floor(mins/60)+8;
+      const mm=(mins%60).toString().padStart(2,'0');
+      const hh=hr.toString().padStart(2,'0');
+      if(dayInput.value){
+        openNewApptModal(`${hh}:${mm}`, dayInput.value);
       }
-      return found;
+    }
+    function toMinutes(hm){
+      if(!hm)return 0;
+      const[h,m]=hm.split(':').map(Number);
+      return h*60+m;
+    }
+    function openNewApptModal(slot,dateStr){
+      currentApptId=null;
+      modalTitle.textContent='New Appointment';
+      modalStartTime.value=slot;
+      modalEndTime.value=slot;
+      modalArtist.value='';
+      modalClientName.value='';
+      modalClientPhone.value='';
+      modalEmail.value='';
+      modalDescription.value='';
+      modalDeposit.value='';
+      modalPrice.value='';
+      modalTip.value='';
+      modalApptType.value='walk-in';
+      deleteApptBtn.style.display='none';
+      completeApptBtn.style.display='none';
+      apptModal.style.display='block';
+    }
+    async function openExistingApptModal(id){
+      currentApptId=id;
+      const {data, error}=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('id',id);
+      if(error||!data||!data.length){alert('Error loading appt.');return;}
+      const ap=data[0];
+      modalTitle.textContent='Edit Appointment';
+      modalStartTime.value=ap.start_time||'08:00';
+      modalEndTime.value=ap.end_time||'08:00';
+      modalArtist.value=ap.artist_id;
+      modalClientName.value=ap.client_name||'';
+      modalClientPhone.value=ap.client_phone||'';
+      modalEmail.value=ap.email||'';
+      modalDescription.value=ap.notes||'';
+      modalDeposit.value=ap.deposit||'';
+      modalPrice.value=ap.price||'';
+      modalTip.value=ap.tip||'';
+      modalApptType.value=ap.appointment_type||'walk-in';
+      deleteApptBtn.style.display='inline-block';
+      completeApptBtn.style.display='inline-block';
+      apptModal.style.display='block';
     }
 
-    // pick final => store in hidden fields
-    function pickFinal(artistId, dateStr, startTime, endTime){
-      finalChosenDate.value=dateStr;
-      finalChosenTime.value=startTime;
-      finalChosenEndTime.value=endTime;
-      finalChosenArtist.value=artistId||'';
-      alert(`Chosen: date=${dateStr}, time=${startTime}-${endTime}, artist=${artistId||'Any'}. You can submit now.`);
+    saveApptBtn.addEventListener('click',async()=>{
+      const sVal=modalStartTime.value;
+      const eVal=modalEndTime.value;
+      const aVal=modalArtist.value;
+      const cName=modalClientName.value;
+      const cPhone=modalClientPhone.value;
+      const cEmail=modalEmail.value;
+      const desc=modalDescription.value;
+      const dep=modalDeposit.value?parseFloat(modalDeposit.value):null;
+      const pr=modalPrice.value?parseFloat(modalPrice.value):null;
+      const tp=modalTip.value?parseFloat(modalTip.value):null;
+      const apType=modalApptType.value;
+      if(!sVal||!eVal){alert('Start/End time required.');return;}
+      const dayVal=dayInput.value;
+      // check overlap
+      let {data:ex,error}=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('date',dayVal)
+        .eq('artist_id',aVal);
+      if(error){console.error(error);alert('Error checking overlap.');return;}
+      if(isOverlap(ex,sVal,eVal,currentApptId)){
+        alert('Overlap found.');return;
+      }
+      if(!currentApptId){
+        // insert
+        const {error:e2}=await supabase
+          .from('artist_appointments')
+          .insert([{
+            artist_id:aVal,
+            date:dayVal,
+            start_time:sVal,
+            end_time:eVal,
+            appointment_type:apType,
+            client_name:cName,
+            client_phone:cPhone,
+            email:cEmail,
+            notes:desc,
+            deposit:dep,
+            price:pr,
+            tip:tp
+          }]);
+        if(e2){console.error(e2);alert('Error inserting.');return;}
+      } else {
+        // update
+        const {error:e3}=await supabase
+          .from('artist_appointments')
+          .update({
+            artist_id:aVal,
+            start_time:sVal,
+            end_time:eVal,
+            appointment_type:apType,
+            client_name:cName,
+            client_phone:cPhone,
+            email:cEmail,
+            notes:desc,
+            deposit:dep,
+            price:pr,
+            tip:tp
+          })
+          .eq('id',currentApptId);
+        if(e3){console.error(e3);alert('Error updating.');return;}
+      }
+      reloadDaily();
+    });
+    function isOverlap(arr, sVal, eVal, skipId){
+      const sN=toMinutes(sVal);
+      const eN=toMinutes(eVal);
+      for(let ap of arr){
+        if(ap.id!==skipId){
+          const aS=toMinutes(ap.start_time);
+          const aE=toMinutes(ap.end_time);
+          if(sN<aE && aS<eN)return true;
+        }
+      }
+      return false;
     }
+    function reloadDaily(){
+      apptModal.style.display='none';
+      loadDay();
+      loadAppointmentsList();
+    }
+    deleteApptBtn.addEventListener('click',async()=>{
+      if(!currentApptId)return;
+      if(!confirm('Delete this appointment?'))return;
+      const {error}=await supabase
+        .from('artist_appointments')
+        .delete()
+        .eq('id',currentApptId);
+      if(error){console.error(error);alert('Error deleting.');return;}
+      reloadDaily();
+    });
+    completeApptBtn.addEventListener('click',async()=>{
+      if(!currentApptId)return;
+      const {error}=await supabase
+        .from('artist_appointments')
+        .update({appointment_type:'completed'})
+        .eq('id',currentApptId);
+      if(error){console.error(error);alert('Error marking completed.');return;}
+      reloadDaily();
+    });
+    cancelApptBtn.addEventListener('click',()=>{
+      apptModal.style.display='none';
+    });
 
-    // final submit => to Make webhook
-    const form=document.getElementById('tattoo-form');
-    form.addEventListener('submit', async(e)=>{
-      e.preventDefault();
-      if(!finalChosenDate.value||!finalChosenTime.value||!finalChosenEndTime.value){
-        alert('Please pick a date/time slot before submitting.');
+    // bottom list
+    async function loadAppointmentsList(){
+      appointmentsList.innerHTML='';
+      const locId=locationFilter.value;
+      const fIds=getFilteredArtistIds();
+      if(!fIds.length){
+        appointmentsList.innerHTML='<p>No artists selected.</p>';return;
+      }
+      const rS=rangeStart.value;
+      const rE=rangeEnd.value;
+      if(!rS||!rE){
+        appointmentsList.innerHTML='<p>Select a date range.</p>';return;
+      }
+      // which appt types?
+      let types=[];
+      if(cbAppointments.checked) types.push('appointment');
+      if(cbWalkins.checked) types.push('walk-in');
+      if(!types.length){
+        appointmentsList.innerHTML='<p>No types selected.</p>';return;
+      }
+      // build query
+      let query=supabase
+        .from('artist_appointments')
+        // We'll load from the 'artists' relationship for location
+        .select('*, artists!inner(location_id, artist_name)')
+        .gte('date', rS)
+        .lte('date', rE)
+        .in('appointment_type', types)
+        .in('artist_id', fIds);
+
+      // filter by location => eq('artists.location_id', locId)
+      if(locId){
+        query=query.eq('artists.location_id', locId);
+      }
+
+      const {data:appts,error}=await query;
+      if(error){
+        console.error(error);
+        appointmentsList.innerHTML='<p>Error loading appointments.</p>';
         return;
       }
-      const fd=new FormData(form);
-      try{
-        const resp=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{
-          method:'POST',
-          body:fd
-        });
-        if(resp.ok){
-          alert('Form submitted! We will contact you soon via SMS or email.');
-          form.reset();
-          finalChosenDate.value='';
-          finalChosenTime.value='';
-          finalChosenEndTime.value='';
-          finalChosenArtist.value='';
-        } else {
-          alert('Error submitting form, please try again later.');
-        }
-      } catch(err){
-        console.error(err);
-        alert('Error submitting form, please see console for details.');
+      if(!appts||!appts.length){
+        appointmentsList.innerHTML='<p>No matching appointments/walk-ins found.</p>';
+        return;
       }
-    });
+      // sort by date ascending, then time
+      appts.sort((a,b)=>{
+        if(a.date===b.date){
+          return toMinutes(a.start_time)-toMinutes(b.start_time);
+        }
+        return(a.date<b.date?-1:1);
+      });
+      appts.forEach(ap=>{
+        const div=document.createElement('div');
+        div.classList.add('appt-item');
+        const dt=`${ap.date} ${ap.start_time||''}-${ap.end_time||''}`;
+        div.innerHTML=`
+          <h4>${dt} [${ap.appointment_type}]</h4>
+          <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
+          <p>Client: ${ap.client_name||'N/A'}</p>
+          <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>
+        `;
+        appointmentsList.appendChild(div);
+      });
+    }
   </script>
 </body>
 </html>
