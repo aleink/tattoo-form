@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- 
-    Content-Security-Policy for production:
+    Updated Content-Security-Policy:
       - 'unsafe-eval' so Supabase can function
-      - connect-src includes your domain
+      - connect-src includes your Supabase domain and Make webhook domain
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -22,8 +22,8 @@
   <style>
     /* Dark, mobile-friendly style */
     * {
-      margin: 0;
-      padding: 0;
+      margin: 0; 
+      padding: 0; 
       box-sizing: border-box;
     }
     body {
@@ -89,9 +89,16 @@
       border-radius: 4px;
       margin-bottom: 6px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .list-item:hover {
       background: #555;
+    }
+    .list-item.selected {
+      background: #28a745 !important;
+      border: 1px solid #4fdf6f;
     }
     .hidden {
       display: none;
@@ -247,8 +254,11 @@
     const finalStartTime=document.getElementById('finalStartTime');
     const finalEndTime=document.getElementById('finalEndTime');
 
+    let currentArtistPickValue='';  // to preserve artistPick selection
+
     // On load => fill location
     window.addEventListener('DOMContentLoaded', loadLocations);
+
     async function loadLocations(){
       let {data,error}=await supabase
         .from('locations')
@@ -265,7 +275,7 @@
     // watchers that trigger re-computation
     [
       locationSelect, prioritySelect, priorityDate,
-      artistPick, rangeStart, rangeEnd,
+      rangeStart, rangeEnd,
       heightInches, widthInches
     ].forEach(el=>{
       el.addEventListener('change', ()=>{
@@ -274,11 +284,23 @@
       });
     });
 
+    // We also handle artistPick changes, but preserve it if user changes something else
+    artistPick.addEventListener('change', ()=>{
+      currentArtistPickValue=artistPick.value;
+      availableDaysForArtist.innerHTML='';
+      artistTimesContainer.innerHTML='';
+      artistTimesContainer.classList.add('hidden');
+      loadDaysForArtistRange();
+    });
+
     function clearFinalSelection(){
       finalArtistId.value='';
       finalDate.value='';
       finalStartTime.value='';
       finalEndTime.value='';
+      // remove any selected highlight from existing slot items
+      const selectedEls=document.querySelectorAll('.list-item.selected');
+      selectedEls.forEach(el=> el.classList.remove('selected'));
     }
 
     function updateLogic(){
@@ -306,6 +328,7 @@
       }
     }
 
+    // compute needed time from form
     function getNeededMins(){
       const hVal=parseFloat(heightInches.value||'0');
       const wVal=parseFloat(widthInches.value||'0');
@@ -321,6 +344,33 @@
       if(sqIn<=25) return 190;
       if(sqIn<=38) return 285;
       return 9999;
+    }
+
+    // offset day => +1 
+    function fixDayOffset(dateStr){
+      let realDay=new Date(dateStr+'T00:00:00Z').getDay();
+      return (realDay+1)%7;
+    }
+
+    function toMinutes(hhmm){
+      if(!hhmm)return 0;
+      const [h,m]=hhmm.split(':').map(Number);
+      return h*60+m;
+    }
+    // Convert minutes -> 12h am/pm e.g. "08:05 AM"
+    function minsToHHMM(m){
+      let hh=Math.floor(m/60);
+      let mm=m%60;
+      let ampm='AM';
+      if(hh===0){
+        hh=12; // midnight
+      } else if(hh===12){
+        ampm='PM'; // noon
+      } else if(hh>12){
+        hh-=12;
+        ampm='PM';
+      }
+      return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' '+ampm;
     }
 
     /* ================ DATE PRIORITY ================ */
@@ -371,6 +421,7 @@
         availableArtistsForDate.innerHTML='<p>No artists available for that day.</p>';
         return;
       }
+      availableArtistsForDate.innerHTML='';
       possible.forEach(art=>{
         const div=document.createElement('div');
         div.classList.add('list-item');
@@ -413,6 +464,7 @@
           div.classList.add('list-item');
           div.textContent=`All Day with ${artistObj.artist_name}`;
           div.addEventListener('click',()=>{
+            slotChosen(div);
             finalArtistId.value=artistObj.id;
             finalDate.value=dateVal;
             finalStartTime.value=st;
@@ -450,6 +502,7 @@
         div.classList.add('list-item');
         div.textContent=s.label;
         div.addEventListener('click',()=>{
+          slotChosen(div);
           finalArtistId.value=artistObj.id;
           finalDate.value=dateVal;
           finalStartTime.value=minsToHHMM(s.startM);
@@ -462,6 +515,8 @@
 
     /* ================ ARTIST PRIORITY ================ */
     async function loadArtistPickForLocation(){
+      // preserve current selection if possible
+      const oldVal=artistPick.value||'';
       artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
       availableDaysForArtist.innerHTML='';
       artistTimesContainer.innerHTML='';
@@ -480,15 +535,22 @@
         opt.textContent=a.artist_name;
         artistPick.appendChild(opt);
       });
+      // re-apply oldVal if it still exists
+      if(arts.some(a=> a.id===oldVal)){
+        artistPick.value=oldVal;
+      }
+      loadDaysForArtistRange();
     }
     [artistPick, rangeStart, rangeEnd].forEach(el=>{
       el.addEventListener('change', ()=>{
-        availableDaysForArtist.innerHTML='';
+        clearFinalSelection();
         artistTimesContainer.innerHTML='';
         artistTimesContainer.classList.add('hidden');
+        availableDaysForArtist.innerHTML='';
         loadDaysForArtistRange();
       });
     });
+
     async function loadDaysForArtistRange(){
       availableDaysForArtist.innerHTML='';
       artistTimesContainer.innerHTML='';
@@ -592,6 +654,7 @@
           div.classList.add('list-item');
           div.textContent=`All Day => ${dayVal}`;
           div.addEventListener('click',()=>{
+            slotChosen(div);
             finalArtistId.value=artistId;
             finalDate.value=dayVal;
             finalStartTime.value=st;
@@ -604,7 +667,7 @@
         }
         return;
       }
-      let free= buildFreeIntervals(sMin,eMin,appts);
+      let free=buildFreeIntervals(sMin,eMin,appts);
       let result=[];
       free.forEach(int=>{
         let length=int.end-int.start;
@@ -628,6 +691,7 @@
         div.classList.add('list-item');
         div.textContent=r.label;
         div.addEventListener('click',()=>{
+          slotChosen(div);
           finalArtistId.value=artistId;
           finalDate.value=dayVal;
           finalStartTime.value=minsToHHMM(r.startM);
@@ -663,6 +727,15 @@
       return free;
     }
 
+    // highlight chosen slot & unhighlight others
+    function slotChosen(clickedDiv){
+      // remove selected class from all
+      const items=document.querySelectorAll('.list-item');
+      items.forEach(i=> i.classList.remove('selected'));
+      // highlight the clicked one
+      clickedDiv.classList.add('selected');
+    }
+
     // offset day => +1 
     function fixDayOffset(dateStr){
       let realDay=new Date(dateStr+'T00:00:00Z').getDay();
@@ -674,10 +747,20 @@
       const [h,m]=hhmm.split(':').map(Number);
       return h*60+m;
     }
+    // Convert minutes -> 12h am/pm e.g. "08:05 AM"
     function minsToHHMM(m){
-      const hh=Math.floor(m/60);
-      const mm=m%60;
-      return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+      let hh=Math.floor(m/60);
+      let mm=m%60;
+      let ampm='AM';
+      if(hh===0){
+        hh=12; 
+      } else if(hh===12){
+        ampm='PM'; 
+      } else if(hh>12){
+        hh-=12;
+        ampm='PM';
+      }
+      return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+' '+ampm;
     }
 
     // On form submit => check final fields => send to your Make webhook
