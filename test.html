@@ -88,53 +88,6 @@
       border-top: 2px solid #444;
     }
 
-    /* Login Modal */
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .modal-content {
-      background: #222;
-      padding: 20px;
-      border-radius: 6px;
-      max-width: 400px;
-      width: 100%;
-    }
-
-    .modal-content label {
-      display: block;
-      margin: 10px 0 4px;
-    }
-
-    .modal-content input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border: none;
-      background: #333;
-      color: #fff;
-    }
-
-    .modal-content button {
-      padding: 10px 20px;
-      background: #777;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-    }
-
-    .message {
-      color: red;
-      margin-top: 10px;
-    }
-
     @media (max-width: 600px) {
       nav.tabs {
         flex-wrap: nowrap;
@@ -143,19 +96,6 @@
   </style>
 </head>
 <body>
-
-<!-- Login Modal -->
-<div id="login-modal" class="modal">
-  <div class="modal-content">
-    <h2>Login</h2>
-    <label>Email</label>
-    <input type="email" id="login-email" placeholder="GM/HR/SM/FD email">
-    <label>Password</label>
-    <input type="password" id="login-password" placeholder="Password">
-    <button onclick="handleLogin()">Login</button>
-    <div id="login-message" class="message"></div>
-  </div>
-</div>
 
 <!-- Navigation Tabs -->
 <header>
@@ -177,17 +117,15 @@
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
   const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-  let currentUserRole = null;
-
   document.getElementById('year').textContent = new Date().getFullYear();
 
   const tabsConfig = [
-    { id: 'booking-form', title: 'Booking Form', roles: ['*'] },
-    { id: 'calendar', title: 'Calendar', roles: ['fd', 'sm', 'gm'] },
-    { id: 'artists', title: 'Manage Artists', roles: ['gm', 'hr', 'sm'] },
-    { id: 'schedules', title: 'Manage Schedules', roles: ['gm', 'hr', 'sm'] },
-    { id: 'vacations', title: 'Manage Vacations', roles: ['gm', 'hr', 'sm'] },
-    { id: 'payroll', title: 'Payroll', roles: ['ad', 'gm'] },
+    { id: 'booking-form', title: 'Booking Form' },
+    { id: 'calendar', title: 'Calendar' },
+    { id: 'artists', title: 'Manage Artists' },
+    { id: 'schedules', title: 'Manage Schedules' },
+    { id: 'vacations', title: 'Manage Vacations' },
+    { id: 'payroll', title: 'Payroll' },
   ];
 
   function showTab(tabId) {
@@ -195,41 +133,11 @@
     document.getElementById(tabId).classList.add('active');
   }
 
-  async function handleLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    const messageEl = document.getElementById('login-message');
-
-    if (!email || !password) {
-      messageEl.textContent = 'Email and Password required.';
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (error || !data || data.password_hash !== password) {
-      messageEl.textContent = 'Invalid credentials.';
-      return;
-    }
-
-    currentUserRole = data.role;
-    localStorage.setItem('currentUserRole', currentUserRole);
-
-    document.getElementById('login-modal').style.display = 'none';
-
-    renderTabs();
-  }
-
   function renderTabs() {
     const nav = document.getElementById('tabs-nav');
     nav.innerHTML = '';
-    const allowedTabs = tabsConfig.filter(t => t.roles.includes(currentUserRole) || t.roles.includes('*'));
 
-    allowedTabs.forEach(tab => {
+    tabsConfig.forEach(tab => {
       const a = document.createElement('div');
       a.className = 'tab-link';
       a.innerText = tab.title;
@@ -237,12 +145,11 @@
       nav.appendChild(a);
     });
 
-    if (allowedTabs.length > 0) {
-      showTab(allowedTabs[0].id);
+    if (tabsConfig.length > 0) {
+      showTab(tabsConfig[0].id);
     }
   }
 
-  // Inject tab contents dynamically
   async function loadTabContent(tabId) {
     const response = await fetch(`${tabId}.html`);
     const text = await response.text();
@@ -263,12 +170,6 @@
   }
 
   async function initApp() {
-    const storedRole = localStorage.getItem('currentUserRole');
-    if (!storedRole) {
-      return; // Show login modal
-    }
-
-    currentUserRole = storedRole;
     renderTabs();
 
     // Load all necessary tab contents
