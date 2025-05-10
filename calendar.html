@@ -21,9 +21,9 @@
         ">
 
   <style>
-    /* Dark theme + mobile friendly, like the index/artist portal */
+    /* Dark theme + mobile friendly, akin to your index/artist portal */
     * {
-      margin: 0; 
+      margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
@@ -52,6 +52,35 @@
       margin: 20px auto;
       padding: 10px;
     }
+    /* Top bar for logout + schedules link */
+    .top-links {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    a {
+      text-decoration: none;
+      color: #fff;
+      background: #1b8adb;
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+    a:hover {
+      background: #3aa0f3;
+    }
+    #logout-btn {
+      background: #f44336;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+    #logout-btn:hover {
+      background: #d32f2f;
+    }
 
     /* Tab buttons row */
     .tab-buttons {
@@ -74,7 +103,7 @@
 
     .tab-content {
       display: none;
-      margin-top: 20px;
+      margin-top: 10px;
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
@@ -91,7 +120,7 @@
     input, select, button {
       width: 100%;
       padding: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       background: #333;
       color: #fff;
       border: 1px solid #555;
@@ -101,137 +130,46 @@
     button:hover {
       background: #444;
     }
-    a {
-      text-decoration: none;
-      color: #fff;
-      background: #1b8adb;
-      padding: 6px 12px;
-      border-radius: 4px;
-      margin-left: 10px;
-    }
-    a:hover {
-      background: #3aa0f3;
-    }
-    #logout-btn {
-      background: #f44336;
-      color: #fff;
-      border: none;
-      margin-left: 10px;
-    }
 
-    /* Calendar grids */
-    .calendar-grid {
-      display: grid;
-      gap: 6px;
-      border: 1px solid #444;
-      padding: 6px;
-      margin-top: 10px;
-      background: #333;
-    }
-    .yearly-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-    .yearly-month-cell {
-      border: 1px solid #444;
-      padding: 8px;
-      min-height: 100px;
-      cursor: pointer;
-      background: #222;
-    }
+    /* Calendar grid for monthly */
     .month-header {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
+      gap: 4px;
       text-align: center;
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
     .month-grid {
+      display: grid;
       grid-template-columns: repeat(7, 1fr);
-      min-height: 250px;
+      gap: 4px;
+      border: 1px solid #444;
+      padding: 4px;
     }
     .calendar-cell {
       border: 1px solid #444;
-      padding: 5px;
       min-height: 70px;
-      position: relative;
-      cursor: pointer;
-    }
-
-    /* Daily view container */
-    #daily-container {
-      position: relative;
-      height: 960px; /* 8:00 -> 24:00 => 16 hours => 960 minutes */
-      border: 1px solid #444;
-      overflow-y: auto;
-      margin-top: 10px;
+      padding: 5px;
       background: #333;
-    }
-    .hour-line {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      border-top: 1px dashed #555;
-      color: #ccc;
-      font-size: 12px;
-      padding-left: 5px;
-    }
-    .schedule-block {
-      position: absolute;
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-      padding: 2px;
-      font-size: 0.75em;
-      box-sizing: border-box;
-      border-left: 4px solid #888;
-      pointer-events: none;
-    }
-    .schedule-artist-name {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 2px;
-    }
-    .appointment-block {
-      position: absolute;
-      background: #666;
-      color: #fff;
-      border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 0.85em;
-      box-sizing: border-box;
       cursor: pointer;
     }
-
-    /* Offset columns so hour lines remain left */
-    /* Modal for appointments */
-    #appt-modal {
-      display: none;
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      border: 2px solid #444;
-      padding: 20px;
-      width: 90%;
-      max-width: 400px;
-      color: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      border-radius: 6px;
-      z-index: 999;
+    .calendar-cell:hover {
+      background: #444;
     }
-    .modal-field {
+    .day-label {
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+    }
+
+    /* The appointments tab styling */
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .modal-buttons {
-      text-align: right;
-      margin-top: 10px;
-    }
-    .modal-buttons button {
-      margin-left: 8px;
-    }
-
-    /* Appointments tab list styling */
     .appt-list {
       margin-top: 10px;
     }
@@ -257,348 +195,226 @@
 <body>
   <header>
     <h1>Calendar</h1>
-    <div style="margin-top: 5px;">
+  </header>
+  <main>
+    <div class="top-links">
       <a id="manage-schedules-link" href="manage_schedules.html">Manage Schedules</a>
       <button id="logout-btn">Logout</button>
     </div>
-  </header>
-  <main>
+
     <div class="tab-buttons">
-      <button id="year-btn">Yearly</button>
-      <button id="month-btn">Monthly</button>
-      <button id="day-btn">Daily</button>
-      <button id="appts-btn">Appointments</button>
+      <button id="calendar-tab-btn" class="active">Calendar</button>
+      <button id="appointments-tab-btn">Appointments</button>
     </div>
 
-    <!-- YEARLY VIEW TAB -->
-    <div id="yearly-view" class="tab-content">
-      <h2>Yearly View</h2>
-      <div>
-        <label for="year-input">Year:</label>
-        <select id="year-input">
-          <!-- fill with current year +/- some range -->
-        </select>
-        <button id="load-year">Load Year</button>
-      </div>
-      <div class="calendar-grid yearly-grid" id="year-grid">
-        <!-- We'll fill months here -->
-      </div>
-    </div>
+    <!-- CALENDAR TAB -->
+    <div id="calendar-tab" class="tab-content active">
+      <h2>Calendar</h2>
+      <label for="month-input">Select Month:</label>
+      <input type="month" id="month-input" />
 
-    <!-- MONTHLY VIEW TAB -->
-    <div id="monthly-view" class="tab-content">
-      <h2>Monthly View</h2>
-      <div style="margin-bottom:10px;">
-        <label for="month-input">Month:</label>
-        <input type="month" id="month-input" />
-        <button id="load-month">Load Month</button>
-      </div>
+      <!-- Days of the week row -->
       <div class="month-header" id="month-header"></div>
-      <div class="calendar-grid month-grid" id="month-grid"></div>
-    </div>
-
-    <!-- DAILY VIEW TAB -->
-    <div id="daily-view" class="tab-content">
-      <h2>Daily View</h2>
-      <div style="margin-bottom:10px;">
-        <label for="location-filter">Location:</label>
-        <select id="location-filter">
-          <option value="">-- Select Location --</option>
-        </select>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label for="day-input">Date:</label>
-        <input type="date" id="day-input" />
-        <button id="load-day">Load Day</button>
-      </div>
-
-      <!-- Artist Filter -->
-      <div id="artist-filter-container" style="margin-bottom:10px;"></div>
-
-      <div id="daily-container"></div>
+      <div class="month-grid" id="month-grid"></div>
     </div>
 
     <!-- APPOINTMENTS TAB -->
     <div id="appointments-tab" class="tab-content">
-      <h2>Appointments List</h2>
-      <label for="artist-select">Select Artist</label>
-      <select id="artist-select"></select>
-
-      <div id="appts-upcoming" class="appt-list">
-        <h3>Upcoming Appointments</h3>
-        <!-- We'll fill with future appointments -->
+      <h2>Appointments</h2>
+      <div style="margin-bottom:10px;">
+        <label for="start-date">Start Date</label>
+        <input type="date" id="start-date" />
+        <label for="end-date">End Date</label>
+        <input type="date" id="end-date" />
       </div>
-      <div id="appts-past" class="appt-list" style="margin-top:20px;">
-        <h3>Past Appointments</h3>
-        <!-- We'll fill with past appointments -->
+      <div class="check-row">
+        <label>
+          <input type="checkbox" id="chk-appointment" checked />
+          Appointments
+        </label>
+        <label>
+          <input type="checkbox" id="chk-walkin" checked />
+          Walk-ins
+        </label>
+      </div>
+      <div id="appts-list" class="appt-list">
+        <!-- We'll fill with appointments based on the filters -->
       </div>
     </div>
   </main>
 
-  <!-- Appointment Modal -->
-  <div id="appt-modal">
-    <h3 id="modal-title">New Appointment</h3>
-    <div class="modal-field">
-      <label for="modal-start-time">Start Time:</label>
-      <input type="time" id="modal-start-time" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-end-time">End Time:</label>
-      <input type="time" id="modal-end-time" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-artist">Artist:</label>
-      <select id="modal-artist"></select>
-    </div>
-    <div class="modal-field">
-      <label for="modal-client-name">Client Name:</label>
-      <input type="text" id="modal-client-name" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-client-phone">Client Phone:</label>
-      <input type="text" id="modal-client-phone" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-email">Client Email:</label>
-      <input type="email" id="modal-email" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-description">Tattoo Description:</label>
-      <textarea id="modal-description"></textarea>
-    </div>
-    <div class="modal-field">
-      <label for="modal-deposit">Deposit:</label>
-      <input type="number" id="modal-deposit" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-price">Price:</label>
-      <input type="number" id="modal-price" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-tip">Tip:</label>
-      <input type="number" id="modal-tip" />
-    </div>
-    <div class="modal-field">
-      <label for="modal-appt-type">Appointment Type:</label>
-      <select id="modal-appt-type">
-        <option value="walk-in">Walk-in</option>
-        <option value="appointment">Appointment</option>
-      </select>
-    </div>
-    <div class="modal-buttons">
-      <button id="save-appt-btn">Save</button>
-      <button id="cancel-appt-btn">Cancel</button>
-      <button id="delete-appt-btn" style="display: none;">Delete</button>
-      <button id="complete-appt-btn" style="display: none;">Mark Completed</button>
-    </div>
-  </div>
-
-  <!-- Supabase JS (v1.35.7) -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    // (A) Basic Setup
+    // Basic setup
     const supabaseUrl='https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 
-    const yearBtn=document.getElementById('year-btn');
-    const monthBtn=document.getElementById('month-btn');
-    const dayBtn=document.getElementById('day-btn');
-    const apptsBtn=document.getElementById('appts-btn');
-
-    const yearlyView=document.getElementById('yearly-view');
-    const monthlyView=document.getElementById('monthly-view');
-    const dailyView=document.getElementById('daily-view');
-    const appointmentsTab=document.getElementById('appointments-tab');
-
     const logoutBtn=document.getElementById('logout-btn');
-    const manageSchedulesLink=document.getElementById('manage-schedules-link');
-
-    function showTab(tabName){
-      yearlyView.classList.remove('active');
-      monthlyView.classList.remove('active');
-      dailyView.classList.remove('active');
-      appointmentsTab.classList.remove('active');
-
-      yearBtn.classList.remove('active');
-      monthBtn.classList.remove('active');
-      dayBtn.classList.remove('active');
-      apptsBtn.classList.remove('active');
-
-      if(tabName==='year'){
-        yearlyView.classList.add('active');
-        yearBtn.classList.add('active');
-      }else if(tabName==='month'){
-        monthlyView.classList.add('active');
-        monthBtn.classList.add('active');
-      }else if(tabName==='day'){
-        dailyView.classList.add('active');
-        dayBtn.classList.add('active');
-      }else if(tabName==='appts'){
-        appointmentsTab.classList.add('active');
-        apptsBtn.classList.add('active');
-      }
-    }
-
-    yearBtn.addEventListener('click',()=> showTab('year'));
-    monthBtn.addEventListener('click',()=> showTab('month'));
-    dayBtn.addEventListener('click',()=> showTab('day'));
-    apptsBtn.addEventListener('click',()=> showTab('appts'));
+    const calendarTabBtn=document.getElementById('calendar-tab-btn');
+    const appointmentsTabBtn=document.getElementById('appointments-tab-btn');
+    const calendarTab=document.getElementById('calendar-tab');
+    const appointmentsTab=document.getElementById('appointments-tab');
 
     logoutBtn.addEventListener('click',()=>{
       localStorage.clear();
       window.location.href='login.html';
     });
 
-    function checkAuth(){
-      const userId=localStorage.getItem('currentUserId');
-      if(!userId) window.location.href='login.html';
+    // Tab logic
+    calendarTabBtn.addEventListener('click', ()=>{
+      showTab('calendar');
+    });
+    appointmentsTabBtn.addEventListener('click', ()=>{
+      showTab('appointments');
+    });
+    function showTab(tabName){
+      calendarTabBtn.classList.remove('active');
+      appointmentsTabBtn.classList.remove('active');
+      calendarTab.classList.remove('active');
+      appointmentsTab.classList.remove('active');
+      if(tabName==='calendar'){
+        calendarTabBtn.classList.add('active');
+        calendarTab.classList.add('active');
+      }else{
+        appointmentsTabBtn.classList.add('active');
+        appointmentsTab.classList.add('active');
+      }
     }
 
-    // (B) Appointment logic => same as your current code
-    // ... existing event listeners for apptModal, etc. are unchanged
-    // (They are provided in your current code below.)
+    // 1) Calendar tab => monthly
+    const monthInput=document.getElementById('month-input');
+    const monthHeader=document.getElementById('month-header');
+    const monthGrid=document.getElementById('month-grid');
+    const dayOfWeekShort=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    // (C) Adding the “Appointments” tab => upcoming & past for each chosen artist
-    const artistSelect=document.getElementById('artist-select');
-    const apptsUpcoming=document.getElementById('appts-upcoming');
-    const apptsPast=document.getElementById('appts-past');
+    monthInput.addEventListener('change', loadMonth);
 
-    // On tab => load artists into the select
-    apptsBtn.addEventListener('click',loadApptTab);
-    async function loadApptTab(){
+    function loadMonth(){
       // Clear
-      artistSelect.innerHTML='';
-      apptsUpcoming.innerHTML='<h3>Upcoming Appointments</h3>';
-      apptsPast.innerHTML='<h3>Past Appointments</h3>';
+      monthHeader.innerHTML='';
+      monthGrid.innerHTML='';
+      // Day headers
+      dayOfWeekShort.forEach(d=>{
+        const div=document.createElement('div');
+        div.textContent=d;
+        div.style.textAlign='center';
+        div.style.fontWeight='bold';
+        monthHeader.appendChild(div);
+      });
+      const mVal=monthInput.value;
+      if(!mVal)return;
+      const [yyyy,mm]=mVal.split('-').map(Number);
+      // first day
+      const firstDate=new Date(yyyy,mm-1,1);
+      const firstDayIndex=firstDate.getDay();
+      // last day
+      const lastDate=new Date(yyyy,mm,0);
+      const totalDays=lastDate.getDate();
+      // fill blank
+      for(let i=0;i<firstDayIndex;i++){
+        const cell=document.createElement('div');
+        cell.classList.add('calendar-cell');
+        cell.style.background='#222';
+        monthGrid.appendChild(cell);
+      }
+      // fill days
+      for(let d=1; d<=totalDays; d++){
+        const cell=document.createElement('div');
+        cell.classList.add('calendar-cell');
+        cell.innerHTML=`<div class="day-label">${d}</div>`;
+        // Maybe future: click => daily detail
+        monthGrid.appendChild(cell);
+      }
+    }
 
-      // fetch all artists
-      const {data:arts,error}=await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .order('artist_name',{ascending:true});
-      if(error){
-        console.error(error);
+    // 2) Appointments tab => date range + checkboxes
+    const startDate=document.getElementById('start-date');
+    const endDate=document.getElementById('end-date');
+    const chkAppt=document.getElementById('chk-appointment');
+    const chkWalkin=document.getElementById('chk-walkin');
+    const apptsList=document.getElementById('appts-list');
+
+    // Whenever user changes date or checkboxes => reload
+    [startDate,endDate,chkAppt,chkWalkin].forEach(el=>{
+      el.addEventListener('change', loadAppointments);
+    });
+
+    async function loadAppointments(){
+      apptsList.innerHTML='';
+      const sVal=startDate.value;
+      const eVal=endDate.value;
+      if(!sVal||!eVal)return; // need both
+      // gather types
+      let arrTypes=[];
+      if(chkAppt.checked) arrTypes.push('appointment');
+      if(chkWalkin.checked) arrTypes.push('walk-in');
+      if(arrTypes.length===0){
+        apptsList.innerHTML='<p>You have unchecked both Appointment and Walk-in.</p>';
         return;
       }
-      // fill
-      const defOpt=document.createElement('option');
-      defOpt.value='';
-      defOpt.textContent='-- Select an Artist --';
-      artistSelect.appendChild(defOpt);
 
-      arts.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        artistSelect.appendChild(opt);
-      });
-    }
-    // On change => load that artist’s upcoming & past
-    artistSelect.addEventListener('change',async()=>{
-      apptsUpcoming.innerHTML='<h3>Upcoming Appointments</h3>';
-      apptsPast.innerHTML='<h3>Past Appointments</h3>';
-      const artId=artistSelect.value;
-      if(!artId) return;
-
-      const {data:appts,error}=await supabase
+      // fetch
+      let query=supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id',artId)
+        .gte('date', sVal)
+        .lte('date', eVal)
+        .in('appointment_type', arrTypes)
         .order('date',{ascending:false});
+
+      const {data:appts,error}=await query;
       if(error){
         console.error(error);
+        apptsList.innerHTML='<p>Error loading appointments.</p>';
         return;
       }
       if(!appts||appts.length===0){
-        const noUp=document.createElement('p');
-        noUp.textContent='No appointments found.';
-        apptsUpcoming.appendChild(noUp);
+        apptsList.innerHTML='<p>No appointments found for the selected range and types.</p>';
         return;
       }
-      // separate upcoming vs past
-      const today=new Date();
-      const upArr=[];
-      const pastArr=[];
-      appts.forEach(ap=>{
-        const d=new Date(ap.date+'T'+(ap.start_time||'00:00:00'));
-        if(d>today){
-          upArr.push(ap);
-        }else{
-          pastArr.push(ap);
-        }
-      });
-      // Fill upcoming
-      upArr.sort((a,b)=>{
-        let da=new Date(a.date+'T'+(a.start_time||'00:00'));
-        let db=new Date(b.date+'T'+(b.start_time||'00:00'));
-        return da-db;
-      });
-      if(upArr.length===0){
-        const p=document.createElement('p');
-        p.textContent='No upcoming appointments.';
-        apptsUpcoming.appendChild(p);
-      }else{
-        upArr.forEach(ap=>{
-          const div=document.createElement('div');
-          div.classList.add('appt-item');
-          div.innerHTML=`
-            <h4>${ap.date} ${ap.start_time||''}-${ap.end_time||''}</h4>
-            <p>Type: ${ap.appointment_type}</p>
-            <p>Client: ${ap.client_name||'N/A'}</p>
-            <p>Phone: ${ap.client_phone||'N/A'}</p>
-            <p>Email: ${ap.email||'N/A'}</p>
-            <p>Price: $${(ap.price||0).toFixed(2)} - Deposit: $${(ap.deposit||0).toFixed(2)}</p>
-            <p>Notes: ${ap.notes||''}</p>
-          `;
-          apptsUpcoming.appendChild(div);
-        });
-      }
-
-      // Fill past
-      pastArr.sort((a,b)=>{
+      // Sort ascending or descending as you want
+      // let's do descending by date
+      appts.sort((a,b)=>{
         let da=new Date(a.date+'T'+(a.start_time||'00:00'));
         let db=new Date(b.date+'T'+(b.start_time||'00:00'));
         return db-da; // descending
       });
-      if(pastArr.length===0){
-        const p=document.createElement('p');
-        p.textContent='No past appointments.';
-        apptsPast.appendChild(p);
-      }else{
-        pastArr.forEach(ap=>{
-          const div=document.createElement('div');
-          div.classList.add('appt-item');
-          div.innerHTML=`
-            <h4>${ap.date} ${ap.start_time||''}-${ap.end_time||''}</h4>
-            <p>Type: ${ap.appointment_type}</p>
-            <p>Client: ${ap.client_name||'N/A'}</p>
-            <p>Phone: ${ap.client_phone||'N/A'}</p>
-            <p>Email: ${ap.email||'N/A'}</p>
-            <p>Price: $${(ap.price||0).toFixed(2)} - Deposit: $${(ap.deposit||0).toFixed(2)}</p>
-            <p>Notes: ${ap.notes||''}</p>
-          `;
-          apptsPast.appendChild(div);
-        });
+      // build
+      appts.forEach(ap=>{
+        const div=document.createElement('div');
+        div.classList.add('appt-item');
+        div.innerHTML=`
+          <h4>${ap.date} ${ap.start_time||''}-${ap.end_time||''}</h4>
+          <p>Type: ${ap.appointment_type}</p>
+          <p>Client: ${ap.client_name||'N/A'}</p>
+          <p>Phone: ${ap.client_phone||'N/A'}</p>
+          <p>Email: ${ap.email||'N/A'}</p>
+          <p>Price: $${(ap.price||0).toFixed(2)} (Deposit: $${(ap.deposit||0).toFixed(2)})</p>
+          <p>Notes: ${ap.notes||''}</p>
+        `;
+        apptsList.appendChild(div);
+      });
+    }
+
+    // On load => check Auth, set default month to current
+    window.addEventListener('DOMContentLoaded',()=>{
+      // check user auth
+      const userId=localStorage.getItem('currentUserId');
+      if(!userId){
+        window.location.href='login.html';
+        return;
       }
+      // default month => this month
+      const now=new Date();
+      const y=now.getFullYear();
+      const m=(now.getMonth()+1).toString().padStart(2,'0');
+      document.getElementById('month-input').value=`${y}-${m}`;
+      loadMonth();
+      // default appointments => no range set yet
+      // user can set range & type
     });
-
-    // On load => do the existing logic
-    window.addEventListener('DOMContentLoaded',async()=>{
-      checkAuth(); 
-      // from your existing code
-      // fillYearDropdown, loadLocations, etc.
-      // show daily as default
-      fillYearDropdown();
-      await loadLocations();
-      showTab('day');
-      const today=new Date().toISOString().split('T')[0];
-      document.getElementById('day-input').value=today;
-      loadDay();
-    });
-
-    // Remainder: your existing daily, monthly, yearly scheduling logic from above
-    // plus the appointment modal logic, unchanged.
   </script>
 </body>
 </html>
