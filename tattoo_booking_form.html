@@ -239,6 +239,9 @@
     const availableDaysForArtist=document.getElementById('availableDaysForArtist');
     const artistTimesContainer=document.getElementById('artistTimesContainer');
 
+    const heightInches=document.getElementById('heightInches');
+    const widthInches=document.getElementById('widthInches');
+
     const finalArtistId=document.getElementById('finalArtistId');
     const finalDate=document.getElementById('finalDate');
     const finalStartTime=document.getElementById('finalStartTime');
@@ -259,54 +262,57 @@
       });
     }
 
-    // Priority => show/hide
-    prioritySelect.addEventListener('change',()=>{
+    // watchers that trigger re-computation
+    [
+      locationSelect, prioritySelect, priorityDate,
+      artistPick, rangeStart, rangeEnd,
+      heightInches, widthInches
+    ].forEach(el=>{
+      el.addEventListener('change', ()=>{
+        clearFinalSelection();
+        updateLogic();
+      });
+    });
+
+    function clearFinalSelection(){
+      finalArtistId.value='';
+      finalDate.value='';
+      finalStartTime.value='';
+      finalEndTime.value='';
+    }
+
+    function updateLogic(){
+      // hide sections
+      dateTimesContainer.innerHTML='';
+      dateTimesContainer.classList.add('hidden');
+      availableArtistsForDate.innerHTML='';
+
+      artistTimesContainer.innerHTML='';
+      artistTimesContainer.classList.add('hidden');
+      availableDaysForArtist.innerHTML='';
+
       const val=prioritySelect.value;
       if(val==='datePriority'){
         datePrioritySection.classList.remove('hidden');
         artistPrioritySection.classList.add('hidden');
-        clearDatePriority();
-        clearArtistPriority();
+        loadArtistsForThisDate();
       } else if(val==='artistPriority'){
-        artistPrioritySection.classList.remove('hidden');
         datePrioritySection.classList.add('hidden');
-        loadArtistsForLocation();
-        clearArtistPriority();
-        clearDatePriority();
+        artistPrioritySection.classList.remove('hidden');
+        loadArtistPickForLocation();
       } else {
         datePrioritySection.classList.add('hidden');
         artistPrioritySection.classList.add('hidden');
-        clearDatePriority();
-        clearArtistPriority();
       }
-    });
-
-    function clearDatePriority(){
-      priorityDate.value='';
-      availableArtistsForDate.innerHTML='';
-      dateTimesContainer.innerHTML='';
-      dateTimesContainer.classList.add('hidden');
-    }
-    function clearArtistPriority(){
-      artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
-      rangeStart.value='';
-      rangeEnd.value='';
-      availableDaysForArtist.innerHTML='';
-      artistTimesContainer.innerHTML='';
-      artistTimesContainer.classList.add('hidden');
     }
 
-    // If date priority => user picks date => we list which artists are free that day
-    priorityDate.addEventListener('change', loadArtistsForThisDate);
-
-    // compute needed time from form
     function getNeededMins(){
-      const hVal=parseFloat(document.getElementById('heightInches').value||'0');
-      const wVal=parseFloat(document.getElementById('widthInches').value||'0');
+      const hVal=parseFloat(heightInches.value||'0');
+      const wVal=parseFloat(widthInches.value||'0');
       return computeTattooDurationSqInches(hVal,wVal);
     }
-    function computeTattooDurationSqInches(height,width){
-      const sqIn=height*width;
+    function computeTattooDurationSqInches(h,w){
+      const sqIn=h*w;
       if(sqIn<3) return 30;
       if(sqIn<=6) return 45;
       if(sqIn<=9) return 60;
@@ -317,214 +323,200 @@
       return 9999;
     }
 
+    /* ================ DATE PRIORITY ================ */
     async function loadArtistsForThisDate(){
-      availableArtistsForDate.innerHTML='';
-      dateTimesContainer.innerHTML='';
-      dateTimesContainer.classList.add('hidden');
       const locId=locationSelect.value;
       const dateVal=priorityDate.value;
       if(!locId||!dateVal)return;
-      const needed=getNeededMins();
 
-      // fetch all artists in location
-      let {data:artists, error}=await supabase
+      // load artists in location
+      let {data:artists,error}=await supabase
         .from('artists')
         .select('*')
         .eq('location_id', locId);
-      if(error||!artists)return;
+      if(error||!artists){console.error(error);return;}
 
-      // fetch appts for date
-      let {data:appts, error:apE}=await supabase
+      // load appts for date
+      let {data:appts}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('date', dateVal);
-      if(apE){console.error(apE);return;}
+        .eq('date',dateVal);
 
-      let dayIdx= fixDayOffset(dateVal);
+      const needed=getNeededMins();
+      const dayIdx= fixDayOffset(dateVal);
       const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
       const scStart=dayCols[dayIdx]+'_start';
       const scEnd=dayCols[dayIdx]+'_end';
 
-      // We'll show only those artists who have at least 1 free slot big enough
-      let validArtists=[];
+      let possible=[];
       artists.forEach(art=>{
         const st=art[scStart];
         const en=art[scEnd];
         if(!st||!en)return;
         const sMin=toMinutes(st);
         const eMin=toMinutes(en);
-        const dayAppts=appts.filter(a=> a.artist_id===art.id);
+        const dayAp=appts.filter(a=> a.artist_id===art.id);
         if(needed>=9999){
-          // entire day => if dayAppts=0 => valid
-          if(dayAppts.length===0){
-            validArtists.push({id:art.id,name:art.artist_name});
+          if(dayAp.length===0){
+            possible.push(art);
           }
-          return;
-        }
-        let free=buildFreeIntervals(sMin,eMin,dayAppts);
-        // if any free interval >= needed => valid
-        let hasSlot= free.some(int=> (int.end-int.start)>=needed );
-        if(hasSlot){
-          validArtists.push({id:art.id,name:art.artist_name});
+        } else {
+          let free=buildFreeIntervals(sMin,eMin,dayAp);
+          // if any free block >= needed
+          let hasSlot= free.some(int=> (int.end-int.start)>= needed);
+          if(hasSlot) possible.push(art);
         }
       });
-
-      if(validArtists.length===0){
-        availableArtistsForDate.innerHTML='<p>No artists available that day for the needed time.</p>';
-      } else {
-        validArtists.forEach(va=>{
-          const div=document.createElement('div');
-          div.classList.add('list-item');
-          div.textContent=va.name;
-          div.addEventListener('click',()=>{
-            // load times for that artist
-            showTimesForArtistOnDate(va.id, va.name, dateVal, needed);
-          });
-          availableArtistsForDate.appendChild(div);
-        });
+      if(!possible.length){
+        availableArtistsForDate.innerHTML='<p>No artists available for that day.</p>';
+        return;
       }
+      possible.forEach(art=>{
+        const div=document.createElement('div');
+        div.classList.add('list-item');
+        div.textContent=art.artist_name;
+        div.addEventListener('click', ()=>{
+          showTimesForDateArtist(art, dateVal);
+        });
+        availableArtistsForDate.appendChild(div);
+      });
     }
 
-    async function showTimesForArtistOnDate(artistId, artistName, dateVal, needed){
+    async function showTimesForDateArtist(artistObj, dateVal){
       dateTimesContainer.innerHTML='';
       dateTimesContainer.classList.remove('hidden');
-
-      // fetch that artist
-      let {data:artist}=await supabase
-        .from('artists')
-        .select('*')
-        .eq('id',artistId)
-        .single();
-      if(!artist)return;
 
       // fetch appts
       let {data:appts}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id', artistId)
-        .eq('date', dateVal);
+        .eq('artist_id', artistObj.id)
+        .eq('date',dateVal);
 
-      let dayIdx= fixDayOffset(dateVal);
+      const needed=getNeededMins();
+      const dayIdx= fixDayOffset(dateVal);
       const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
       const scStart=dayCols[dayIdx]+'_start';
       const scEnd=dayCols[dayIdx]+'_end';
-      const st=artist[scStart];
-      const en=artist[scEnd];
+      const st=artistObj[scStart];
+      const en=artistObj[scEnd];
       if(!st||!en){
         dateTimesContainer.innerHTML='<p>Artist is off that day.</p>';
         return;
       }
       const sMin=toMinutes(st);
       const eMin=toMinutes(en);
+
       if(needed>=9999){
-        // entire day => if no conflict => 1 slot
-        if(!appts||appts.length===0){
+        if(!appts||!appts.length){
           const div=document.createElement('div');
           div.classList.add('list-item');
-          div.textContent=`${artistName}: All Day`;
+          div.textContent=`All Day with ${artistObj.artist_name}`;
           div.addEventListener('click',()=>{
-            finalArtistId.value=artistId;
+            finalArtistId.value=artistObj.id;
             finalDate.value=dateVal;
             finalStartTime.value=st;
             finalEndTime.value=en;
-            alert(`Selected All Day with ${artistName}`);
+            alert(`Selected All Day slot with ${artistObj.artist_name}`);
           });
           dateTimesContainer.appendChild(div);
-        }else{
-          dateTimesContainer.innerHTML='<p>No full-day slot. Artist is booked.</p>';
+        } else {
+          dateTimesContainer.innerHTML='<p>No full-day slot available, artist is booked.</p>';
         }
         return;
       }
       let free= buildFreeIntervals(sMin,eMin,appts);
-      let resultSlots=[];
+      let slots=[];
       free.forEach(int=>{
         let length=int.end-int.start;
         if(length>=needed){
           let step=5;
           for(let t=int.start; t<=(int.end-needed); t+=step){
-            resultSlots.push({
+            const label=`${artistObj.artist_name}: ${minsToHHMM(t)} - ${minsToHHMM(t+needed)}`;
+            slots.push({
+              label,
               startM:t,
-              endM:t+needed,
-              label:`${artistName}: ${minsToHHMM(t)} - ${minsToHHMM(t+needed)}`
+              endM:t+needed
             });
           }
         }
       });
-      if(!resultSlots.length){
-        dateTimesContainer.innerHTML='<p>No available timeslots for this artist/day.</p>';
+      if(!slots.length){
+        dateTimesContainer.innerHTML='<p>No times available for this artist/day.</p>';
         return;
       }
-      resultSlots.forEach(rs=>{
+      slots.forEach(s=>{
         const div=document.createElement('div');
         div.classList.add('list-item');
-        div.textContent=rs.label;
+        div.textContent=s.label;
         div.addEventListener('click',()=>{
-          finalArtistId.value=artistId;
+          finalArtistId.value=artistObj.id;
           finalDate.value=dateVal;
-          finalStartTime.value=minsToHHMM(rs.startM);
-          finalEndTime.value=minsToHHMM(rs.endM);
-          alert(`Selected: ${rs.label}`);
+          finalStartTime.value=minsToHHMM(s.startM);
+          finalEndTime.value=minsToHHMM(s.endM);
+          alert(`Selected: ${s.label}`);
         });
         dateTimesContainer.appendChild(div);
       });
     }
 
-    // If artist priority => load artists in location => user picks => range => show days
-    async function loadArtistsForLocation(){
+    /* ================ ARTIST PRIORITY ================ */
+    async function loadArtistPickForLocation(){
       artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
-      const locId=locationSelect.value;
-      if(!locId)return;
-      let {data:artists, error}=await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .eq('location_id', locId);
-      if(error){console.error(error);return;}
-      artists.forEach(art=>{
-        const opt=document.createElement('option');
-        opt.value=art.id;
-        opt.textContent=art.artist_name;
-        artistPick.appendChild(opt);
-      });
-    }
-    artistPick.addEventListener('change', ()=>{
       availableDaysForArtist.innerHTML='';
       artistTimesContainer.innerHTML='';
       artistTimesContainer.classList.add('hidden');
-    });
-    rangeStart.addEventListener('change', loadDaysForArtistRange);
-    rangeEnd.addEventListener('change', loadDaysForArtistRange);
 
+      const locId=locationSelect.value;
+      if(!locId)return;
+      let {data:arts}=await supabase
+        .from('artists')
+        .select('id,artist_name')
+        .eq('location_id', locId);
+      if(!arts)return;
+      arts.forEach(a=>{
+        const opt=document.createElement('option');
+        opt.value=a.id;
+        opt.textContent=a.artist_name;
+        artistPick.appendChild(opt);
+      });
+    }
+    [artistPick, rangeStart, rangeEnd].forEach(el=>{
+      el.addEventListener('change', ()=>{
+        availableDaysForArtist.innerHTML='';
+        artistTimesContainer.innerHTML='';
+        artistTimesContainer.classList.add('hidden');
+        loadDaysForArtistRange();
+      });
+    });
     async function loadDaysForArtistRange(){
       availableDaysForArtist.innerHTML='';
       artistTimesContainer.innerHTML='';
       artistTimesContainer.classList.add('hidden');
 
       const aVal=artistPick.value;
-      if(!aVal)return;
-      const rS=rangeStart.value;
-      const rE=rangeEnd.value;
-      if(!rS||!rE)return;
-      const needed=getNeededMins();
+      const sVal=rangeStart.value;
+      const eVal=rangeEnd.value;
+      if(!aVal||!sVal||!eVal)return;
 
-      // fetch that artist
+      // fetch artist
       let {data:art}=await supabase
         .from('artists')
         .select('*')
-        .eq('id',aVal)
+        .eq('id', aVal)
         .single();
       if(!art)return;
-
       // fetch appts in range
       let {data:appts}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id',aVal)
-        .gte('date',rS)
-        .lte('date',rE);
+        .eq('artist_id', aVal)
+        .gte('date', sVal)
+        .lte('date', eVal);
 
-      // iterate from rS->rE day by day
-      let allDays=[];
-      for(let d=new Date(rS); d<=new Date(rE); d=new Date(d.getTime()+86400000)){
+      const needed=getNeededMins();
+      let dayList=[];
+      for(let d=new Date(sVal); d<=new Date(eVal); d=new Date(d.getTime()+86400000)){
         const dayVal=d.toISOString().split('T')[0];
         const dayIdx= fixDayOffset(dayVal);
         const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
@@ -536,52 +528,51 @@
         const sMin=toMinutes(st);
         const eMin=toMinutes(en);
 
-        const dayAp= appts.filter(a=> a.date===dayVal);
+        const dayAp= appts.filter(x=> x.date===dayVal);
         if(needed>=9999){
-          // entire day => if no dayAp => 1 big day
           if(dayAp.length===0){
-            allDays.push({date:dayVal,label:`${dayVal} => All Day`});
+            dayList.push({date:dayVal, label:`All Day => ${dayVal}`});
           }
         } else {
           let free=buildFreeIntervals(sMin,eMin,dayAp);
-          let anySlot= free.some(int=> (int.end-int.start)>=needed );
+          let anySlot= free.some(int=> (int.end-int.start)>=needed);
           if(anySlot){
-            allDays.push({date:dayVal,label:dayVal});
+            dayList.push({date:dayVal,label:dayVal});
           }
         }
       }
-      if(!allDays.length){
+      if(!dayList.length){
         availableDaysForArtist.innerHTML='<p>No available days in that range.</p>';
         return;
       }
-      allDays.forEach(dy=>{
+      dayList.forEach(dy=>{
         const div=document.createElement('div');
         div.classList.add('list-item');
         div.textContent=dy.label;
         div.addEventListener('click',()=>{
-          showTimesForArtistDay(aVal,dy.date,needed);
+          showArtistDaySlots(aVal, dy.date);
         });
         availableDaysForArtist.appendChild(div);
       });
     }
-
-    async function showTimesForArtistDay(artistId, dayVal, needed){
+    async function showArtistDaySlots(artistId, dayVal){
       artistTimesContainer.innerHTML='';
       artistTimesContainer.classList.remove('hidden');
 
       let {data:art}=await supabase
         .from('artists')
         .select('*')
-        .eq('id', artistId)
+        .eq('id',artistId)
         .single();
       if(!art)return;
 
       let {data:appts}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id', artistId)
-        .eq('date', dayVal);
+        .eq('artist_id',artistId)
+        .eq('date',dayVal);
 
+      const needed=getNeededMins();
       const dayIdx= fixDayOffset(dayVal);
       const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
       const scStart=dayCols[dayIdx]+'_start';
@@ -605,7 +596,7 @@
             finalDate.value=dayVal;
             finalStartTime.value=st;
             finalEndTime.value=en;
-            alert(`Selected All Day`);
+            alert(`Selected Full-Day on ${dayVal}`);
           });
           artistTimesContainer.appendChild(div);
         }else{
@@ -613,35 +604,35 @@
         }
         return;
       }
-      let free=buildFreeIntervals(sMin,eMin,appts);
-      let resultSlots=[];
+      let free= buildFreeIntervals(sMin,eMin,appts);
+      let result=[];
       free.forEach(int=>{
-        let length=int.end - int.start;
+        let length=int.end-int.start;
         if(length>=needed){
           let step=5;
           for(let t=int.start; t<=(int.end-needed); t+=step){
-            resultSlots.push({
+            result.push({
+              label:`${dayVal} => ${minsToHHMM(t)} - ${minsToHHMM(t+needed)}`,
               startM:t,
-              endM:t+needed,
-              label:`${dayVal} => ${minsToHHMM(t)} - ${minsToHHMM(t+needed)}`
+              endM:t+needed
             });
           }
         }
       });
-      if(!resultSlots.length){
-        artistTimesContainer.innerHTML='<p>No timeslots available.</p>';
+      if(!result.length){
+        artistTimesContainer.innerHTML='<p>No timeslots available for that day.</p>';
         return;
       }
-      resultSlots.forEach(rs=>{
+      result.forEach(r=>{
         const div=document.createElement('div');
         div.classList.add('list-item');
-        div.textContent=rs.label;
+        div.textContent=r.label;
         div.addEventListener('click',()=>{
           finalArtistId.value=artistId;
           finalDate.value=dayVal;
-          finalStartTime.value=minsToHHMM(rs.startM);
-          finalEndTime.value=minsToHHMM(rs.endM);
-          alert(`Selected ${rs.label}`);
+          finalStartTime.value=minsToHHMM(r.startM);
+          finalEndTime.value=minsToHHMM(r.endM);
+          alert(`Selected ${r.label}`);
         });
         artistTimesContainer.appendChild(div);
       });
@@ -672,10 +663,10 @@
       return free;
     }
 
-    // we add +1 day offset to fix "thursday => wednesday schedule"
+    // offset day => +1 
     function fixDayOffset(dateStr){
-      let realDay = new Date(dateStr+'T00:00:00Z').getDay(); 
-      return (realDay+1)%7; 
+      let realDay=new Date(dateStr+'T00:00:00Z').getDay();
+      return (realDay+1)%7;
     }
 
     function toMinutes(hhmm){
@@ -704,22 +695,19 @@
           body: fd
         });
         if(resp.ok){
-          alert('Form submitted! We’ll contact you soon.');
+          alert('Form submitted successfully! We’ll contact you soon.');
           form.reset();
-          // clear hidden
-          finalArtistId.value='';
-          finalDate.value='';
-          finalStartTime.value='';
-          finalEndTime.value='';
+          clearFinalSelection();
+          // hide priority sections
           prioritySelect.value='';
           datePrioritySection.classList.add('hidden');
           artistPrioritySection.classList.add('hidden');
         } else {
-          alert('Error submitting form, please try again later.');
+          alert('Error submitting form, please try again.');
         }
-      }catch(err){
+      } catch(err){
         console.error(err);
-        alert('Error submitting form, check console.');
+        alert('Error submitting form, see console.');
       }
     });
   </script>
