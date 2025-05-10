@@ -8,7 +8,7 @@
   <!-- 
     Content-Security-Policy:
     - 'unsafe-eval' for Supabase
-    - connect-src includes your .supabase.co domain
+    - connect-src for your .supabase.co domain
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -20,9 +20,9 @@
         ">
 
   <style>
-    /* Dark, mobile-friendly style */
+    /* Mobile-friendly dark style. */
     * {
-      margin: 0; 
+      margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
@@ -32,11 +32,32 @@
       color: #fff;
       max-width: 600px;
       margin: 0 auto;
-      padding: 10px;
+      padding: 20px;
     }
-    h1 {
-      text-align: center;
-      margin: 20px 0;
+    h1, h2 {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 8px 0 4px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #333;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: #555;
     }
     .form-section {
       background: #222;
@@ -45,28 +66,6 @@
       padding: 15px;
       margin-bottom: 20px;
     }
-    .form-section h2 {
-      margin-bottom: 10px;
-    }
-    label {
-      font-weight: bold;
-      margin: 8px 0 4px;
-      display: block;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button:hover {
-      background: #444;
-      cursor: pointer;
-    }
     .size-container {
       display: flex;
       gap: 10px;
@@ -74,29 +73,28 @@
     .size-container > div {
       flex: 1;
     }
-    .small-text {
-      font-size: 0.9em;
-      color: #ccc;
-    }
-    .hidden {
-      display: none;
+    .conditional-section {
+      margin-top: 10px;
+      background: #333;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 10px;
     }
     .slots-container {
-      background: #333;
-      border: 1px solid #555;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     .slot-item {
       background: #444;
-      padding: 6px;
+      padding: 8px;
       border-radius: 4px;
       margin-bottom: 6px;
       cursor: pointer;
     }
     .slot-item:hover {
-      background: #666;
+      background: #555;
+    }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
@@ -108,33 +106,33 @@
     <div class="form-section">
       <h2>Personal Info</h2>
       <label for="name">Name *</label>
-      <input type="text" id="name" name="name" required>
+      <input type="text" id="name" name="name" required />
 
-      <label for="phone">Phone Number <small>(include prefix if not US)</small> *</label>
-      <input type="tel" id="phone" name="phone" required>
+      <label for="phone">Phone Number (if not US, include prefix e.g. +34) *</label>
+      <input type="tel" id="phone" name="phone" required />
 
       <label for="email">Email *</label>
-      <input type="email" id="email" name="email" required>
+      <input type="email" id="email" name="email" required />
     </div>
 
     <!-- Tattoo Info -->
     <div class="form-section">
       <h2>Tattoo Info</h2>
       <label for="placement">Placement *</label>
-      <input type="text" id="placement" name="placement" placeholder="e.g., forearm, shoulder" required>
+      <input type="text" id="placement" name="placement" placeholder="e.g. forearm, shoulder" required />
 
       <div class="size-container">
         <div>
           <label for="heightInches">Height (inches) *</label>
-          <input type="number" id="heightInches" name="heightInches" required>
+          <input type="number" id="heightInches" name="heightInches" required />
         </div>
         <div>
           <label for="widthInches">Width (inches) *</label>
-          <input type="number" id="widthInches" name="widthInches" required>
+          <input type="number" id="widthInches" name="widthInches" required />
         </div>
       </div>
 
-      <label for="colorOrBlack">Color or Black & Grey? *</label>
+      <label>Color or Black & Grey? *</label>
       <select id="colorOrBlack" name="colorOrBlack" required>
         <option value="color">Color</option>
         <option value="black-and-grey">Black and Grey</option>
@@ -143,121 +141,124 @@
       <label for="description">Brief Description *</label>
       <textarea id="description" name="description" rows="4" required></textarea>
 
-      <label for="reference-image1">Reference Image 1</label>
-      <input type="file" id="reference-image1" name="reference-image1" accept="image/*">
+      <!-- Reference images -->
+      <label>Reference Image 1</label>
+      <input type="file" id="reference-image1" name="reference-image1" accept="image/*" />
 
-      <label for="reference-image2">Reference Image 2</label>
-      <input type="file" id="reference-image2" name="reference-image2" accept="image/*">
+      <label>Reference Image 2</label>
+      <input type="file" id="reference-image2" name="reference-image2" accept="image/*" />
 
-      <label for="reference-image3">Reference Image 3</label>
-      <input type="file" id="reference-image3" name="reference-image3" accept="image/*">
+      <label>Reference Image 3</label>
+      <input type="file" id="reference-image3" name="reference-image3" accept="image/*" />
     </div>
 
-    <!-- Location & Priority -->
+    <!-- Location first -->
     <div class="form-section">
-      <h2>Location & Priority</h2>
-      <label for="preferred-location">Location *</label>
-      <select id="preferred-location" name="preferred-location" required>
+      <label for="locationSelect">Preferred Location *</label>
+      <select id="locationSelect" name="locationSelect" required>
         <option value="">-- Select Location --</option>
       </select>
 
-      <label for="priority-select">Which is more important?</label>
-      <select id="priority-select" required>
-        <option value="">-- Please Choose --</option>
-        <option value="date">Date is more important</option>
-        <option value="artist">Artist is more important</option>
+      <!-- Then ask what's the priority -->
+      <label for="prioritySelect">Which is more important to you?</label>
+      <select id="prioritySelect" name="prioritySelect" required>
+        <option value="">-- Select Priority --</option>
+        <option value="artistPriority">Choosing the Artist</option>
+        <option value="datePriority">Choosing the Date</option>
       </select>
+
+      <!-- If date is priority, show date & timeslots from the schedule/appointments -->
+      <div id="datePrioritySection" class="conditional-section hidden">
+        <label for="dateChoice">Choose a Date</label>
+        <input type="date" id="dateChoice" />
+
+        <div class="slots-container" id="dateSlotsContainer"></div>
+      </div>
+
+      <!-- If artist is priority, show artist dropdown, date-range, then timeslots -->
+      <div id="artistPrioritySection" class="conditional-section hidden">
+        <label for="artistChoice">Choose an Artist</label>
+        <select id="artistChoice">
+          <option value="">-- Select Artist --</option>
+        </select>
+
+        <label for="rangeStart">Start Date</label>
+        <input type="date" id="rangeStart" />
+        <label for="rangeEnd">End Date</label>
+        <input type="date" id="rangeEnd" />
+
+        <div class="slots-container" id="artistSlotsContainer"></div>
+      </div>
     </div>
 
-    <!-- Date priority section -->
-    <div id="date-priority-section" class="form-section hidden">
-      <h2>Pick Your Date</h2>
-      <p class="small-text">We'll find an artist who can accommodate your tattoo on this day.</p>
-      <label for="dp-date">Select Date:</label>
-      <input type="date" id="dp-date">
-
-      <div id="dp-slots-container" class="slots-container hidden"></div>
-    </div>
-
-    <!-- Artist priority section -->
-    <div id="artist-priority-section" class="form-section hidden">
-      <h2>Pick Your Artist & Date Range</h2>
-      <p class="small-text">We'll show all available slots for this artist in the chosen range.</p>
-
-      <label for="ap-artist">Artist:</label>
-      <select id="ap-artist"></select>
-
-      <label for="ap-range-start">From Date:</label>
-      <input type="date" id="ap-range-start">
-
-      <label for="ap-range-end">To Date:</label>
-      <input type="date" id="ap-range-end">
-
-      <div id="ap-dayslots-container" class="slots-container hidden"></div>
-    </div>
-
-    <!-- Hidden fields for final chosen date/time/artist -->
-    <input type="hidden" id="final-artist-id" name="final-artist-id">
-    <input type="hidden" id="final-date" name="final-date">
-    <input type="hidden" id="final-start-time" name="final-start-time">
-    <input type="hidden" id="final-end-time" name="final-end-time">
-
-    <!-- Consent -->
+    <!-- Marketing + Consent -->
     <div class="form-section">
       <label>
-        <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required>
+        <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required />
         I agree to receive emails and SMS regarding my appointment and marketing.
       </label>
-      <p class="small-text">
-        By checking this box, you consent to be contacted in compliance with applicable regulations.
+      <p style="font-size: 0.9em;">
+        By checking this box, you consent to be contacted in compliance with applicable ADA and privacy regulations.
       </p>
     </div>
+
+    <!-- Hidden fields for final chosen date/time/artist if needed -->
+    <input type="hidden" id="finalArtistId" name="finalArtistId" />
+    <input type="hidden" id="finalDate" name="finalDate" />
+    <input type="hidden" id="finalStartTime" name="finalStartTime" />
+    <input type="hidden" id="finalEndTime" name="finalEndTime" />
 
     <!-- Submit -->
     <button type="submit">Submit</button>
   </form>
 
-  <!-- Supabase JS -->
+  <!-- Supabase JS library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    // Init Supabase
+    // Setup
     const supabaseUrl='https://YOUR_PROJECT.supabase.co';
     const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 
-    // DOM
-    const locationSelect=document.getElementById('preferred-location');
-    const prioritySelect=document.getElementById('priority-select');
+    // Basic references
+    const locationSelect=document.getElementById('locationSelect');
+    const prioritySelect=document.getElementById('prioritySelect');
+    const datePrioritySection=document.getElementById('datePrioritySection');
+    const artistPrioritySection=document.getElementById('artistPrioritySection');
+    const dateChoice=document.getElementById('dateChoice');
+    const dateSlotsContainer=document.getElementById('dateSlotsContainer');
+    const artistChoice=document.getElementById('artistChoice');
+    const rangeStart=document.getElementById('rangeStart');
+    const rangeEnd=document.getElementById('rangeEnd');
+    const artistSlotsContainer=document.getElementById('artistSlotsContainer');
 
-    const datePriSec=document.getElementById('date-priority-section');
-    const dpDate=document.getElementById('dp-date');
-    const dpSlotsContainer=document.getElementById('dp-slots-container');
+    // Hidden final fields
+    const finalArtistId=document.getElementById('finalArtistId');
+    const finalDate=document.getElementById('finalDate');
+    const finalStartTime=document.getElementById('finalStartTime');
+    const finalEndTime=document.getElementById('finalEndTime');
 
-    const artistPriSec=document.getElementById('artist-priority-section');
-    const apArtist=document.getElementById('ap-artist');
-    const apRangeStart=document.getElementById('ap-range-start');
-    const apRangeEnd=document.getElementById('ap-range-end');
-    const apDayslotsContainer=document.getElementById('ap-dayslots-container');
+    // Tattoo size => approximate duration
+    function computeTattooDurationSqInches(height, width){
+      const sqIn=height*width;
+      if(sqIn<3)return 30;      // minutes
+      if(sqIn<=6)return 45;
+      if(sqIn<=9)return 60;
+      if(sqIn<=12)return 75;
+      if(sqIn<=18)return 120;
+      if(sqIn<=25)return 190;
+      if(sqIn<=38)return 285;
+      // >39
+      return 9999; // means entire day
+    }
 
-    // hidden
-    const finalArtistId=document.getElementById('final-artist-id');
-    const finalDate=document.getElementById('final-date');
-    const finalStartTime=document.getElementById('final-start-time');
-    const finalEndTime=document.getElementById('final-end-time');
-
-    // size
-    const heightInches=document.getElementById('heightInches');
-    const widthInches=document.getElementById('widthInches');
-
-    // On load => loadLocations
+    // On page load => load locations
     window.addEventListener('DOMContentLoaded', loadLocations);
-
     async function loadLocations(){
-      const {data, error}=await supabase
+      const {data,error}=await supabase
         .from('locations')
         .select('id, location_name');
       if(error){console.error(error);return;}
-      while(locationSelect.options.length>1) locationSelect.remove(1);
       data.forEach(loc=>{
         const opt=document.createElement('option');
         opt.value=loc.id;
@@ -266,303 +267,313 @@
       });
     }
 
-    // Priority changed => show/hide date or artist sections
+    // Priority selection => show/hide sections
     prioritySelect.addEventListener('change',()=>{
-      datePriSec.classList.add('hidden');
-      dpSlotsContainer.classList.add('hidden');
-      artistPriSec.classList.add('hidden');
-      apDayslotsContainer.classList.add('hidden');
-      finalArtistId.value='';
-      finalDate.value='';
-      finalStartTime.value='';
-      finalEndTime.value='';
-
       const val=prioritySelect.value;
-      if(val==='date'){
-        datePriSec.classList.remove('hidden');
-      } else if(val==='artist'){
-        artistPriSec.classList.remove('hidden');
-        // load artists for location
-        loadArtists();
+      if(val==='datePriority'){
+        datePrioritySection.classList.remove('hidden');
+        artistPrioritySection.classList.add('hidden');
+      }else if(val==='artistPriority'){
+        artistPrioritySection.classList.remove('hidden');
+        datePrioritySection.classList.add('hidden');
+      }else{
+        datePrioritySection.classList.add('hidden');
+        artistPrioritySection.classList.add('hidden');
       }
+      clearSlots();
     });
 
-    // date-priority => when user picks dpDate => fetch free slots for all artists
-    dpDate.addEventListener('change', loadDatePrioritySlots);
+    function clearSlots(){
+      dateSlotsContainer.innerHTML='';
+      artistSlotsContainer.innerHTML='';
+    }
 
-    async function loadDatePrioritySlots(){
-      dpSlotsContainer.innerHTML='';
-      dpSlotsContainer.classList.add('hidden');
+    // If date is priority => pick date => find all artists available that day => show available times
+    dateChoice.addEventListener('change', ()=>{
+      loadTimesForDate();
+    });
+
+    async function loadTimesForDate(){
+      dateSlotsContainer.innerHTML='';
       const locId=locationSelect.value;
-      const dateVal=dpDate.value;
-      if(!locId||!dateVal) return;
+      const dateVal=dateChoice.value;
+      if(!locId||!dateVal)return;
 
-      const neededMins=getTattooMinutes();
-      if(!neededMins) return;
+      // 1) compute needed duration from height*width
+      const heightVal= parseFloat(document.getElementById('heightInches').value||'0');
+      const widthVal= parseFloat(document.getElementById('widthInches').value||'0');
+      const neededMins=computeTattooDurationSqInches(heightVal,widthVal);
 
-      // fetch all artists at that location
-      const {data:artists, error}=await supabase
+      // 2) fetch all artists from that location
+      let {data:artists,error}=await supabase
         .from('artists')
         .select('*')
         .eq('location_id', locId);
       if(error){console.error(error);return;}
-      if(!artists||!artists.length){
-        dpSlotsContainer.innerHTML='<p>No artists found in this location.</p>';
-        dpSlotsContainer.classList.remove('hidden');
-        return;
-      }
-      let slotArr=[];
-      for(let art of artists){
-        let freeSlots=await computeFreeSlots(art, dateVal, neededMins);
-        freeSlots.forEach(s=>{
-          slotArr.push({
-            artist_id:art.id,
-            artist_name:art.artist_name,
-            date:dateVal,
-            start_time:s.start_time,
-            end_time:s.end_time
-          });
-        });
-      }
-      if(!slotArr.length){
-        dpSlotsContainer.innerHTML='<p>No available slots for this date.</p>';
-        dpSlotsContainer.classList.remove('hidden');
-        return;
-      }
-      dpSlotsContainer.classList.remove('hidden');
-      slotArr.sort((a,b)=> a.start_time.localeCompare(b.start_time));
-      slotArr.forEach(s=>{
-        const div=document.createElement('div');
-        div.classList.add('slot-item');
-        div.textContent=`Artist: ${s.artist_name}, ${s.start_time}-${s.end_time}`;
-        div.addEventListener('click',()=>{
-          finalArtistId.value=s.artist_id;
-          finalDate.value=s.date;
-          finalStartTime.value=s.start_time;
-          finalEndTime.value=s.end_time;
-          alert(`Chosen: ${s.artist_name}, ${s.date} ${s.start_time}-${s.end_time}`);
-        });
-        dpSlotsContainer.appendChild(div);
-      });
-    }
 
-    // artist priority => load artist dropdown
-    async function loadArtists(){
-      apArtist.innerHTML='';
-      const blankOpt=document.createElement('option');
-      blankOpt.value='';
-      blankOpt.textContent='-- Select Artist --';
-      apArtist.appendChild(blankOpt);
-
-      const locId=locationSelect.value;
-      if(!locId)return;
-      const {data, error}=await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .eq('location_id', locId);
-      if(error){console.error(error);return;}
-      data.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        apArtist.appendChild(opt);
-      });
-    }
-    apArtist.addEventListener('change', loadArtistRangeSlots);
-    apRangeStart.addEventListener('change', loadArtistRangeSlots);
-    apRangeEnd.addEventListener('change', loadArtistRangeSlots);
-
-    async function loadArtistRangeSlots(){
-      apDayslotsContainer.innerHTML='';
-      apDayslotsContainer.classList.add('hidden');
-      const artistId=apArtist.value;
-      const startVal=apRangeStart.value;
-      const endVal=apRangeEnd.value;
-      if(!artistId||!startVal||!endVal)return;
-
-      const neededMins=getTattooMinutes();
-      if(!neededMins)return;
-
-      // fetch artist data
-      const {data:artist, error}=await supabase
-        .from('artists')
-        .select('*')
-        .eq('id', artistId)
-        .single();
-      if(error||!artist)return;
-
-      let dateArr=getDatesBetween(startVal, endVal);
-      let foundAny=false;
-      for(let d of dateArr){
-        let slots=await computeFreeSlots(artist, d, neededMins);
-        if(slots.length>0){
-          foundAny=true;
-          // label day
-          const p=document.createElement('p');
-          p.style.fontWeight='bold';
-          p.textContent=`${d}:`;
-          apDayslotsContainer.appendChild(p);
-
-          slots.forEach(s=>{
-            const div=document.createElement('div');
-            div.classList.add('slot-item');
-            div.textContent=`${s.start_time}-${s.end_time}`;
-            div.addEventListener('click',()=>{
-              finalArtistId.value=artist.id;
-              finalDate.value=d;
-              finalStartTime.value=s.start_time;
-              finalEndTime.value=s.end_time;
-              alert(`Chosen: ${artist.artist_name}, ${d} ${s.start_time}-${s.end_time}`);
-            });
-            apDayslotsContainer.appendChild(div);
-          });
-        }
-      }
-      apDayslotsContainer.classList.remove('hidden');
-      if(!foundAny){
-        apDayslotsContainer.innerHTML='<p>No slots found in this date range.</p>';
-      }
-    }
-
-    // compute free slots for one artist, one date, given needed minutes
-    async function computeFreeSlots(artist, dateStr, neededMins){
-      // >39 => entire day block
-      if(neededMins>9999){
-        // check if there's any appt => if yes => none, else => from schedule start->end
-        const check=await supabase
-          .from('artist_appointments')
-          .select('id')
-          .eq('artist_id', artist.id)
-          .eq('date', dateStr);
-        if(check.error){console.error(check.error);return[];}
-        if(check.data.length>0)return[];
-        // schedule
-        const dayIdx=new Date(dateStr).getDay();
-        const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-        const scStart=dayCols[dayIdx]+'_start';
-        const scEnd=dayCols[dayIdx]+'_end';
-        const st=artist[scStart];
-        const en=artist[scEnd];
-        if(!st||!en)return[];
-        return[{start_time:st, end_time:en}];
-      }
-      // normal
-      const dayIdx=new Date(dateStr).getDay();
+      // 3) For each artist => check if they have a schedule that day, then compute available times
+      const dayIndex=new Date(dateVal).getDay(); // 0=Sun,...6=Sat
       const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-      const scStart=dayCols[dayIdx]+'_start';
-      const scEnd=dayCols[dayIdx]+'_end';
-      const st=artist[scStart];
-      const en=artist[scEnd];
-      if(!st||!en)return[]; // off day
-      // fetch appointments
-      const {data:appts,error}=await supabase
+      const colStart= dayCols[dayIndex]+'_start';
+      const colEnd=   dayCols[dayIndex]+'_end';
+
+      let allSlots=[];
+
+      // get existing appointments that day => only appointment_type in ('appointment','walk-in','completed') or maybe just 'appointment'?
+      let {data:appts, error:apptsE}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('artist_id', artist.id)
-        .eq('date', dateStr)
-        .in('appointment_type',['appointment','walk-in','completed']);
-      if(error){console.error(error);return[];}
-      appts.sort((a,b)=> a.start_time.localeCompare(b.start_time));
-      let freeBlocks=[];
-      let currStart=st;
-      for(let ap of appts){
-        if(toMin(ap.start_time)>toMin(currStart)){
-          // there's a gap
-          let gapStart=currStart;
-          let gapEnd=ap.start_time;
-          if(toMin(gapEnd)>toMin(gapStart)){
-            freeBlocks.push({start_time:gapStart,end_time:gapEnd});
+        .eq('date', dateVal)
+        .in('appointment_type',['appointment','walk-in','completed']); 
+      if(apptsE){console.error(apptsE);return;}
+
+      artists.forEach(art=>{
+        const st=art[colStart];
+        const en=art[colEnd];
+        if(!st||!en)return; // off day
+        const startMin=toMinutes(st);
+        const endMin=toMinutes(en);
+        if(neededMins>=9999){
+          // Means entire day => if no conflicting appts, it's 1 big slot
+          const conflicts=appts.filter(a=> a.artist_id===art.id);
+          if(conflicts.length>0){
+            // not available
+            return;
+          }else{
+            // entire day is available
+            allSlots.push({
+              artistId:art.id,
+              artistName:art.artist_name,
+              slotLabel:`${art.artist_name} => All Day`,
+              startTime: st,
+              endTime: en
+            });
+            return;
           }
         }
-        if(toMin(ap.end_time)>toMin(currStart)){
-          currStart=ap.end_time;
-        }
-      }
-      if(toMin(currStart)<toMin(en)){
-        freeBlocks.push({start_time:currStart,end_time:en});
-      }
-      // produce 15-min stepped slots
-      let result=[];
-      for(let b of freeBlocks){
-        let bS=toMin(b.start_time);
-        let bE=toMin(b.end_time);
-        let avail=bE-bS;
-        if(avail<neededMins)continue;
-        let startHere=bS;
-        while(startHere+neededMins<=bE){
-          const slotStart=minToHHMM(startHere);
-          const slotEnd=minToHHMM(startHere+neededMins);
-          result.push({start_time:slotStart, end_time:slotEnd});
-          startHere+=15; // 15-min increments
-        }
-      }
-      return result;
+        // gather existing appointments for this artist
+        const artistAppts=appts.filter(a=> a.artist_id===art.id);
+        // build free slots
+        let freeIntervals= buildFreeIntervals(startMin, endMin, artistAppts);
+        // now from these intervals, only keep those >= neededMins
+        freeIntervals.forEach(int=>{
+          const length=int.end - int.start;
+          if(length>= neededMins){
+            // we can slice this interval into multiple smaller possible start times (every 5 mins) if you prefer
+            // or just present as "start any time within"
+            // For simplicity, let's produce possible starts in 30-min increments, or 5-min increments
+            let increment=5; // minutes
+            for(let t=int.start; t<=(int.end-neededMins); t+=increment){
+              allSlots.push({
+                artistId: art.id,
+                artistName: art.artist_name,
+                slotLabel:`${art.artist_name} => ${minsToHHMM(t)} - ${minsToHHMM(t+neededMins)}`,
+                startTime: minsToHHMM(t),
+                endTime:   minsToHHMM(t+neededMins)
+              });
+            }
+          }
+        });
+      });
+      // show them in dateSlotsContainer
+      allSlots.sort((a,b)=> a.slotLabel.localeCompare(b.slotLabel));
+      allSlots.forEach(sl=>{
+        const div=document.createElement('div');
+        div.classList.add('slot-item');
+        div.textContent=sl.slotLabel;
+        div.addEventListener('click',()=>{
+          // set hidden fields
+          finalArtistId.value=sl.artistId;
+          finalDate.value=dateVal;
+          finalStartTime.value=sl.startTime;
+          finalEndTime.value=sl.endTime;
+          alert(`Selected ${sl.slotLabel}`);
+        });
+        dateSlotsContainer.appendChild(div);
+      });
     }
 
-    function toMin(hhmm){
-      if(!hhmm)return 0;
-      const[h,m]=hhmm.split(':').map(Number);
-      return h*60+m;
-    }
-    function minToHHMM(mins){
-      const h=Math.floor(mins/60);
-      const mm=mins%60;
-      return h.toString().padStart(2,'0')+':'+mm.toString().padStart(2,'0');
-    }
-    function getTattooMinutes(){
-      const h=parseInt(heightInches.value,10);
-      const w=parseInt(widthInches.value,10);
-      if(!h||!w)return 0;
-      const sq=h*w;
-      if(sq<3)return 30;
-      if(sq<=6)return 45;
-      if(sq<=9)return 60;
-      if(sq<=12)return 75;
-      if(sq<=18)return 120;
-      if(sq<=25)return 190;
-      if(sq<=38)return 285;
-      return 999999; // block entire day
-    }
-    function getDatesBetween(startStr,endStr){
-      let arr=[];
-      let start=new Date(startStr);
-      let end=new Date(endStr);
-      while(start<=end){
-        arr.push(start.toISOString().split('T')[0]);
-        start.setDate(start.getDate()+1);
+    // If artist is priority => pick artist => date range => show day & times
+    artistChoice.addEventListener('change', ()=> {
+      loadArtistRangeSlots();
+    });
+    rangeStart.addEventListener('change', ()=> {
+      loadArtistRangeSlots();
+    });
+    rangeEnd.addEventListener('change', ()=> {
+      loadArtistRangeSlots();
+    });
+
+    async function loadArtistRangeSlots(){
+      artistSlotsContainer.innerHTML='';
+      const locId=locationSelect.value;
+      const artistVal=artistChoice.value;
+      const rS=rangeStart.value;
+      const rE=rangeEnd.value;
+      if(!locId||!artistVal||!rS||!rE)return;
+
+      // 1) compute neededMins
+      const hVal=parseFloat(document.getElementById('heightInches').value||'0');
+      const wVal=parseFloat(document.getElementById('widthInches').value||'0');
+      const neededMins=computeTattooDurationSqInches(hVal,wVal);
+
+      // 2) load that single artist
+      let {data:artists,error}=await supabase
+        .from('artists')
+        .select('*')
+        .eq('id', artistVal);
+      if(error||!artists||!artists.length){console.error(error);return;}
+      const art=artists[0];
+
+      // 3) load appointments in [rS,rE] for that artist
+      let {data:appts, error:apE}=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .gte('date', rS)
+        .lte('date', rE)
+        .in('appointment_type',['appointment','walk-in','completed'])
+        .eq('artist_id', artistVal);
+      if(apE){console.error(apE);return;}
+
+      // we'll go day by day from rS => rE
+      let allSlots=[];
+      let startD=new Date(rS);
+      let endD=new Date(rE);
+      for(let d=startD; d<=endD; d=new Date(d.getTime()+86400000)){
+        const dayVal=d.toISOString().split('T')[0];
+        const dayIndex=d.getDay();
+        const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        const scStart=dayCols[dayIndex]+'_start';
+        const scEnd=dayCols[dayIndex]+'_end';
+        const st=art[scStart];
+        const en=art[scEnd];
+        if(!st||!en) continue; // off
+        const sMin=toMinutes(st);
+        const eMin=toMinutes(en);
+        if(neededMins>=9999){
+          // entire day if no conflicts
+          const dayAppts=appts.filter(a=> a.date===dayVal);
+          if(dayAppts.length===0){
+            allSlots.push({
+              date: dayVal,
+              startTime: st,
+              endTime: en,
+              label:`${dayVal} => All Day`
+            });
+            continue;
+          } else {
+            // not available if any conflict
+            continue;
+          }
+        }
+        // gather dayAppts
+        const dayAppts=appts.filter(a=> a.date===dayVal);
+        let free=buildFreeIntervals(sMin,eMin,dayAppts);
+        free.forEach(int=>{
+          let length=int.end - int.start;
+          if(length>=neededMins){
+            // create possible slots
+            let increment=5;
+            for(let t=int.start; t<=(int.end-neededMins); t+=increment){
+              allSlots.push({
+                date: dayVal,
+                startTime: minsToHHMM(t),
+                endTime: minsToHHMM(t+neededMins),
+                label: `${dayVal} => ${minsToHHMM(t)} - ${minsToHHMM(t+neededMins)}`
+              });
+            }
+          }
+        });
       }
-      return arr;
+      // show
+      allSlots.sort((a,b)=> a.label.localeCompare(b.label));
+      allSlots.forEach(sl=>{
+        const div=document.createElement('div');
+        div.classList.add('slot-item');
+        div.textContent=sl.label;
+        div.addEventListener('click',()=>{
+          finalArtistId.value=artistVal;
+          finalDate.value=sl.date;
+          finalStartTime.value=sl.startTime;
+          finalEndTime.value=sl.endTime;
+          alert(`Selected ${sl.label}`);
+        });
+        artistSlotsContainer.appendChild(div);
+      });
     }
 
-    // form submission
+    // function to build free intervals [startMin, endMin, arrayOfAppts]
+    function buildFreeIntervals(startM, endM, appts){
+      // filter these appts => convert to minutes
+      let blocks=[];
+      appts.forEach(a=>{
+        const sN=toMinutes(a.start_time);
+        const eN=toMinutes(a.end_time);
+        blocks.push({start:sN,end:eN});
+      });
+      // sort by start
+      blocks.sort((x,y)=> x.start-y.start);
+      // merge or create free intervals
+      let free=[];
+      let currentStart=startM;
+      blocks.forEach(b=>{
+        if(b.start>currentStart){
+          // free block is [currentStart,b.start]
+          free.push({start:currentStart,end:b.start});
+        }
+        // update currentStart
+        if(b.end>currentStart){
+          currentStart=b.end;
+        }
+      });
+      if(currentStart<endM){
+        free.push({start:currentStart,end:endM});
+      }
+      return free;
+    }
+    function minsToHHMM(m){
+      const hh=Math.floor(m/60);
+      const mm=m%60;
+      return hh.toString().padStart(2,'0')+':'+mm.toString().padStart(2,'0');
+    }
+  </script>
+
+  <script>
+    // On form submit => sets final hidden fields => POST to Make webhook
     const form=document.getElementById('tattoo-form');
-    form.addEventListener('submit',async(e)=>{
+    form.addEventListener('submit', async(e)=>{
       e.preventDefault();
-      // must have finalDate/finalStartTime/finalEndTime/finalArtistId
-      if(!finalDate.value||!finalStartTime.value||!finalEndTime.value||!finalArtistId.value){
-        alert('Please choose a date/time slot before submitting.');
+      // check if finalArtistId, finalDate, finalStartTime, finalEndTime are set
+      if(!finalArtistId.value || !finalDate.value || !finalStartTime.value || !finalEndTime.value){
+        alert('Please select a valid slot first.');
         return;
       }
-      // post to Make
-      const formData=new FormData(form);
+      // Submit to Make
+      const fd=new FormData(form);
+
+      // send to webhook
       try{
-        const resp=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{
+        const resp=await fetch('YOUR_MAKE_WEBHOOK_URL',{
           method:'POST',
-          body:formData
+          body: fd
         });
         if(resp.ok){
           alert('Form submitted successfully! We will contact you soon via SMS or email.');
           form.reset();
+          // reset hidden
           finalArtistId.value='';
           finalDate.value='';
           finalStartTime.value='';
           finalEndTime.value='';
+          prioritySelect.value='';
+          datePrioritySection.classList.add('hidden');
+          artistPrioritySection.classList.add('hidden');
         } else {
-          alert('Error submitting form. Please try again later.');
+          alert('Error submitting form, please try again later.');
         }
-      } catch(err){
+      }catch(err){
         console.error(err);
-        alert('Error submitting form (see console).');
+        alert('Error submitting form, please see console.');
       }
     });
   </script>
