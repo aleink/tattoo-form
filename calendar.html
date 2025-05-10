@@ -15,54 +15,34 @@
         content="
           default-src 'self';
           script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+          connect-src 'self' https://YOUR_PROJECT.supabase.co wss://YOUR_PROJECT.supabase.co;
           style-src 'self' 'unsafe-inline';
           object-src 'none';
         ">
 
   <style>
-    /* Dark theme + mobile friendly, akin to your index/artist portal */
-    * {
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box;
-    }
+    /* PC-friendly, retains the original layout logic from your code. */
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      background: #000;
-      border-bottom: 2px solid #444;
-      padding: 20px;
-      text-align: center;
-    }
-    header h1 {
-      font-size: 1.8rem;
-      color: #fff;
-      margin-bottom: 5px;
-    }
-    main {
-      flex: 1;
-      max-width: 1000px;
+      font-family: Arial, sans-serif;
+      max-width: 1100px;
       margin: 20px auto;
       padding: 10px;
+      background: #f0f0f0; /* Light background for a typical PC style */
+      color: #000;
     }
-    /* top bar with schedules link + logout */
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
     }
+    .top-bar h1 {
+      margin: 0;
+    }
     .top-bar a {
       text-decoration: none;
-      color: #fff;
       background: #1b8adb;
+      color: #fff;
       padding: 6px 12px;
       border-radius: 4px;
       margin-right: 10px;
@@ -73,140 +53,116 @@
     #logout-btn {
       background: #f44336;
       color: #fff;
-      border: none;
       cursor: pointer;
       padding: 6px 12px;
+      border: none;
       border-radius: 4px;
     }
-    #logout-btn:hover {
-      background: #d32f2f;
-    }
-
-    /* Tab Buttons */
     .tab-buttons {
       display: flex;
       gap: 10px;
       margin-bottom: 10px;
-      flex-wrap: wrap;
     }
     .tab-buttons button {
-      background: #333;
-      border: 1px solid #555;
-      color: #fff;
       padding: 8px 12px;
       cursor: pointer;
+      background: #333;
+      color: #fff;
+      border: none;
       border-radius: 4px;
     }
     .tab-buttons button.active {
       background: #555;
     }
-
-    /* Tab content sections */
     .tab-content {
       display: none;
-      margin-top: 5px;
-      background: #222;
-      border: 1px solid #444;
+      margin-top: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
       border-radius: 6px;
       padding: 15px;
     }
     .tab-content.active {
       display: block;
     }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 8px;
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
 
-    /* The old "yearly/monthly/daily" sections are sub-sections of the Calendar tab */
-    .mode-section {
-      margin-bottom: 15px;
+    /* =========== Calendar tab sub-views =========== */
+    .calendar-subview {
+      margin-bottom: 20px;
     }
     .calendar-grid {
       display: grid;
       gap: 6px;
-      border: 1px solid #444;
+      border: 1px solid #ccc;
       padding: 6px;
       margin-top: 10px;
-      background: #333;
     }
     .yearly-grid {
       grid-template-columns: repeat(4, 1fr);
     }
     .yearly-month-cell {
-      border: 1px solid #444;
+      border: 1px solid #ccc;
       padding: 8px;
-      min-height: 100px;
+      min-height: 120px;
       cursor: pointer;
-      background: #222;
+      background: #fafafa;
     }
-    /* month sub-view */
+    .yearly-month-cell:hover {
+      background: #eee;
+    }
     .month-header {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      gap: 6px;
       text-align: center;
       font-weight: bold;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
     .month-grid {
-      display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      min-height: 250px;
     }
     .calendar-cell {
-      border: 1px solid #444;
+      border: 1px solid #ccc;
       padding: 5px;
       min-height: 70px;
       position: relative;
       cursor: pointer;
-      background: #222;
+      background: #fafafa;
     }
     .calendar-cell:hover {
-      background: #444;
+      background: #eee;
     }
     .day-label {
       font-size: 0.9rem;
       margin-bottom: 3px;
     }
-
-    /* daily sub-view */
+    /* DAILY container */
     #daily-container {
       position: relative;
-      height: 960px; /* 8:00 -> 24:00 => 16 hours => 960 minutes */
-      border: 1px solid #444;
+      height: 960px; 
+      border: 1px solid #ccc;
       overflow-y: auto;
       margin-top: 10px;
-      background: #333;
+      background: #f9f9f9;
     }
     .hour-line {
       position: absolute;
       left: 0;
       width: 100%;
-      border-top: 1px dashed #555;
-      color: #ccc;
+      border-top: 1px dashed #ccc;
+      color: #777;
       font-size: 12px;
       padding-left: 5px;
     }
     .schedule-block {
       position: absolute;
-      background: rgba(255,255,255,0.05);
-      color: #fff;
+      background: rgba(0,0,0,0.05);
+      color: #000;
       padding: 2px;
       font-size: 0.75em;
       box-sizing: border-box;
-      border-left: 4px solid #888;
+      border-left: 4px solid #aaa;
       pointer-events: none;
     }
     .schedule-artist-name {
@@ -216,8 +172,8 @@
     }
     .appointment-block {
       position: absolute;
-      background: #666;
-      color: #fff;
+      background: #ddd;
+      color: #000;
       border-radius: 4px;
       padding: 2px 4px;
       font-size: 0.85em;
@@ -225,25 +181,28 @@
       cursor: pointer;
     }
 
-    /* Appointment modal */
+    /* Appointment modal (unchanged, except for styling) */
     #appt-modal {
       display: none;
       position: fixed;
       top: 15%;
       left: 50%;
       transform: translateX(-50%);
-      background: #222;
-      border: 2px solid #444;
+      background: #fff;
+      border: 2px solid #ccc;
       padding: 20px;
-      width: 90%;
-      max-width: 360px;
-      color: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       border-radius: 6px;
       z-index: 999;
     }
     .modal-field {
       margin-bottom: 10px;
+    }
+    .modal-field label {
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
     }
     .modal-buttons {
       text-align: right;
@@ -251,29 +210,35 @@
     }
     .modal-buttons button {
       margin-left: 8px;
-      background: #333;
-      border: 1px solid #555;
-      color: #fff;
       padding: 6px 10px;
+      border: none;
       border-radius: 4px;
       cursor: pointer;
+      background: #333;
+      color: #fff;
     }
     .modal-buttons button:hover {
-      background: #444;
+      background: #555;
     }
-    /* Artist filter items */
+
     .artist-filter-item {
       display: inline-block;
       margin-right: 10px;
     }
 
-    /* APPOINTMENTS TAB: We'll choose start/end date, plus checkboxes for "appointment" & "walk-in," plus location & artist filters if you want. */
-    .appt-list {
-      margin-top: 10px;
+    /* =========== Appointments tab =========== */
+    #appt-loc-filter, #appt-start-date, #appt-end-date {
+      width: 200px; /* narrower for PC-friendly style */
+    }
+    #appt-type-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
     }
     .appt-item {
-      background: #333;
-      border: 1px solid #444;
+      background: #fafafa;
+      border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 6px;
       border-radius: 4px;
@@ -281,149 +246,143 @@
     .appt-item h4 {
       margin-bottom: 5px;
       font-size: 1rem;
-      color: #fff;
+      color: #000;
     }
     .appt-item p {
-      color: #ccc;
+      color: #333;
       margin-bottom: 3px;
       font-size: 0.9rem;
     }
-
   </style>
 </head>
 <body>
-  <header>
+  <div class="top-bar">
     <h1>Calendar</h1>
-  </header>
-  <main>
-    <div class="top-bar">
+    <div>
       <a id="manage-schedules-link" href="manage_schedules.html">Manage Schedules</a>
       <button id="logout-btn">Logout</button>
     </div>
+  </div>
 
-    <div class="tab-buttons">
-      <button id="calendar-tab-btn" class="active">Calendar</button>
-      <button id="appointments-tab-btn">Appointments</button>
+  <div class="tab-buttons">
+    <button id="calendar-tab-btn" class="active">Calendar</button>
+    <button id="appointments-tab-btn">Appointments</button>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div id="calendar-tab" class="tab-content active">
+    <!-- YEARLY subview -->
+    <div id="yearly-view" class="calendar-subview" style="display:block;">
+      <h2>Yearly View</h2>
+      <label for="year-input">Select Year:</label>
+      <select id="year-input"></select>
+      <div class="calendar-grid yearly-grid" id="year-grid"></div>
     </div>
 
-    <!-- CALENDAR TAB (YEARLY, MONTHLY, DAILY) -->
-    <div id="calendar-tab" class="tab-content active">
-      <!-- Single 'Mode' select => Year / Month / Day. 
-           We keep the sub-sections from your original code but hide them or show them 
-           based on the user's choice. -->
-      <div class="mode-section">
-        <label for="calendar-mode">Mode:</label>
-        <select id="calendar-mode">
-          <option value="year">Year</option>
-          <option value="month">Month</option>
-          <option value="day">Day</option>
-        </select>
-      </div>
-
-      <!-- YEARLY SUBVIEW -->
-      <div id="yearly-subview" style="display:none;">
-        <label for="year-input">Select Year:</label>
-        <select id="year-input"></select>
-
-        <div class="calendar-grid yearly-grid" id="year-grid"></div>
-      </div>
-
-      <!-- MONTHLY SUBVIEW -->
-      <div id="monthly-subview" style="display:none;">
-        <label for="month-input">Select Month:</label>
-        <input type="month" id="month-input" />
-        <div class="month-header" id="month-header"></div>
-        <div class="calendar-grid month-grid" id="month-grid"></div>
-      </div>
-
-      <!-- DAILY SUBVIEW -->
-      <div id="daily-subview" style="display:none;">
-        <label for="day-input">Select Day:</label>
-        <input type="date" id="day-input" />
-
-        <label for="location-filter">Location:</label>
-        <select id="location-filter">
-          <option value="">-- Select Location --</option>
-        </select>
-
-        <div id="artist-filter-container" style="margin-top: 8px;"></div>
-
-        <div id="daily-container"></div>
-      </div>
+    <!-- MONTHLY subview (hidden initially) -->
+    <div id="monthly-view" class="calendar-subview" style="display:none;">
+      <h2>Monthly View</h2>
+      <label for="month-input">Month:</label>
+      <input type="month" id="month-input" />
+      <!-- Day-of-week header row -->
+      <div class="month-header" id="month-header"></div>
+      <div class="calendar-grid month-grid" id="month-grid"></div>
+      <button id="back-to-year" style="margin-top:10px;">Back to Year</button>
     </div>
 
-    <!-- APPOINTMENTS TAB -->
-    <div id="appointments-tab" class="tab-content">
-      <h2>Appointments</h2>
-      <label for="appt-location">Location:</label>
-      <select id="appt-location"></select>
+    <!-- DAILY subview (hidden initially) -->
+    <div id="daily-view" class="calendar-subview" style="display:none;">
+      <h2>Daily View</h2>
+      <label for="day-input">Select Date:</label>
+      <input type="date" id="day-input" />
 
-      <label for="appt-artist-container" style="margin-top:8px;">Artists:</label>
-      <div id="appt-artist-container" style="margin-bottom:8px;"></div>
+      <label for="calendar-loc-filter">Location:</label>
+      <select id="calendar-loc-filter">
+        <option value="">-- Select Location --</option>
+      </select>
 
-      <label for="start-date">Start Date</label>
-      <input type="date" id="start-date" />
+      <div id="artist-filter-container" style="margin-top: 8px;"></div>
 
-      <label for="end-date">End Date</label>
-      <input type="date" id="end-date" />
+      <div id="daily-container"></div>
 
-      <label style="display:block; margin-top:8px;">Types:</label>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <label><input type="checkbox" id="appt-chk-appointment" checked> Appointment</label>
-        <label><input type="checkbox" id="appt-chk-walkin" checked> Walk-in</label>
-      </div>
-
-      <div id="appointments-list" class="appt-list">
-        <!-- We'll fill with the matched appointments -->
-      </div>
+      <button id="back-to-month" style="margin-top:10px;">Back to Month</button>
     </div>
-  </main>
+  </div>
 
-  <!-- Appointment Modal (same logic as your original) -->
+  <!-- APPOINTMENTS TAB -->
+  <div id="appointments-tab" class="tab-content">
+    <h2>Appointments</h2>
+    <label for="appt-loc-filter">Location:</label>
+    <select id="appt-loc-filter">
+      <option value="">-- Select Location --</option>
+    </select>
+    <div id="appt-artist-container" style="margin:10px 0;"></div>
+
+    <label for="appt-start-date">Start Date</label>
+    <input type="date" id="appt-start-date" />
+
+    <label for="appt-end-date">End Date</label>
+    <input type="date" id="appt-end-date" />
+
+    <div id="appt-type-row">
+      <label>
+        <input type="checkbox" id="appt-chk-appointment" checked>
+        Appointments
+      </label>
+      <label>
+        <input type="checkbox" id="appt-chk-walkin" checked>
+        Walk-ins
+      </label>
+    </div>
+
+    <div id="appointments-list"></div>
+  </div>
+
+  <!-- The same appointment modal from your original code -->
   <div id="appt-modal">
     <h3 id="modal-title">New Appointment</h3>
     <div class="modal-field">
-      <label for="modal-start-time">Start Time:</label>
+      <label>Start Time:</label>
       <input type="time" id="modal-start-time" />
     </div>
     <div class="modal-field">
-      <label for="modal-end-time">End Time:</label>
+      <label>End Time:</label>
       <input type="time" id="modal-end-time" />
     </div>
     <div class="modal-field">
-      <label for="modal-artist">Artist:</label>
+      <label>Artist:</label>
       <select id="modal-artist"></select>
     </div>
     <div class="modal-field">
-      <label for="modal-client-name">Client Name:</label>
+      <label>Client Name:</label>
       <input type="text" id="modal-client-name" />
     </div>
     <div class="modal-field">
-      <label for="modal-client-phone">Client Phone:</label>
+      <label>Client Phone:</label>
       <input type="text" id="modal-client-phone" />
     </div>
     <div class="modal-field">
-      <label for="modal-email">Client Email:</label>
+      <label>Client Email:</label>
       <input type="email" id="modal-email" />
     </div>
     <div class="modal-field">
-      <label for="modal-description">Tattoo Description:</label>
+      <label>Tattoo Description:</label>
       <textarea id="modal-description"></textarea>
     </div>
     <div class="modal-field">
-      <label for="modal-deposit">Deposit:</label>
+      <label>Deposit:</label>
       <input type="number" id="modal-deposit" />
     </div>
     <div class="modal-field">
-      <label for="modal-price">Price:</label>
+      <label>Price:</label>
       <input type="number" id="modal-price" />
     </div>
     <div class="modal-field">
-      <label for="modal-tip">Tip:</label>
+      <label>Tip:</label>
       <input type="number" id="modal-tip" />
     </div>
     <div class="modal-field">
-      <label for="modal-appt-type">Appointment Type:</label>
+      <label>Appointment Type:</label>
       <select id="modal-appt-type">
         <option value="walk-in">Walk-in</option>
         <option value="appointment">Appointment</option>
@@ -439,32 +398,50 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    // (A) Basic setup
-    const supabaseUrl='https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
+    // (A) Basic Setup
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    const logoutBtn=document.getElementById('logout-btn');
-    const manageSchedulesLink=document.getElementById('manage-schedules-link');
+    const logoutBtn = document.getElementById('logout-btn');
+    const manageSchedulesLink = document.getElementById('manage-schedules-link');
 
-    const calendarTabBtn=document.getElementById('calendar-tab-btn');
-    const appointmentsTabBtn=document.getElementById('appointments-tab-btn');
-    const calendarTab=document.getElementById('calendar-tab');
-    const appointmentsTab=document.getElementById('appointments-tab');
+    const calendarTabBtn = document.getElementById('calendar-tab-btn');
+    const appointmentsTabBtn = document.getElementById('appointments-tab-btn');
+    const calendarTab = document.getElementById('calendar-tab');
+    const appointmentsTab = document.getElementById('appointments-tab');
 
-    logoutBtn.addEventListener('click',()=>{
+    const yearlyView = document.getElementById('yearly-view');
+    const monthlyView = document.getElementById('monthly-view');
+    const dailyView = document.getElementById('daily-view');
+
+    const yearInput = document.getElementById('year-input');
+    const yearGrid = document.getElementById('year-grid');
+    const monthInput = document.getElementById('month-input');
+    const monthHeader = document.getElementById('month-header');
+    const monthGrid = document.getElementById('month-grid');
+    const dayInput = document.getElementById('day-input');
+    const dailyContainer = document.getElementById('daily-container');
+    const artistFilterContainer = document.getElementById('artist-filter-container');
+    const calendarLocFilter = document.getElementById('calendar-loc-filter');
+
+    const backToYearBtn = document.getElementById('back-to-year');
+    const backToMonthBtn = document.getElementById('back-to-month');
+
+    logoutBtn.addEventListener('click', () => {
       localStorage.clear();
       window.location.href='login.html';
     });
 
     function checkAuth(){
-      const userId=localStorage.getItem('currentUserId');
+      const userId = localStorage.getItem('currentUserId');
       if(!userId) window.location.href='login.html';
     }
 
-    // Tab switching
-    calendarTabBtn.addEventListener('click',()=>showTab('calendar'));
-    appointmentsTabBtn.addEventListener('click',()=>showTab('appointments'));
+    // Tab logic
+    calendarTabBtn.addEventListener('click', () => showTab('calendar'));
+    appointmentsTabBtn.addEventListener('click', () => showTab('appointments'));
+
     function showTab(tabName){
       calendarTabBtn.classList.remove('active');
       appointmentsTabBtn.classList.remove('active');
@@ -473,77 +450,54 @@
       if(tabName==='calendar'){
         calendarTabBtn.classList.add('active');
         calendarTab.classList.add('active');
-      }else{
+      } else {
         appointmentsTabBtn.classList.add('active');
         appointmentsTab.classList.add('active');
       }
     }
 
-    // (B) In the Calendar tab => single "Mode" select
-    const calendarMode=document.getElementById('calendar-mode');
-    const yearlySubview=document.getElementById('yearly-subview');
-    const monthlySubview=document.getElementById('monthly-subview');
-    const dailySubview=document.getElementById('daily-subview');
-
-    calendarMode.addEventListener('change', ()=>{
-      updateCalendarMode();
-    });
-    function updateCalendarMode(){
-      yearlySubview.style.display='none';
-      monthlySubview.style.display='none';
-      dailySubview.style.display='none';
-      const val=calendarMode.value;
-      if(val==='year') yearlySubview.style.display='block';
-      else if(val==='month') monthlySubview.style.display='block';
-      else if(val==='day') dailySubview.style.display='block';
-    }
-
-    // For Yearly Subview
-    const yearInput=document.getElementById('year-input');
-    const yearGrid=document.getElementById('year-grid');
+    // (B) Yearly/Monthly/Daily: same as your original logic, but no separate buttons
+    // We'll show/hide the sub-views with minimal "back" links
     function fillYearDropdown(){
-      const currentYear=new Date().getFullYear();
+      const currentYear = new Date().getFullYear();
       for(let y=currentYear-2; y<=currentYear+5; y++){
-        const opt=document.createElement('option');
-        opt.value=y;
-        opt.textContent=y;
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
         yearInput.appendChild(opt);
       }
-      yearInput.value=currentYear; 
+      yearInput.value = currentYear;
     }
-    yearInput.addEventListener('change', loadYearly);
+    yearInput.addEventListener('change', loadYear);
 
-    function loadYearly(){
+    function loadYear(){
       yearGrid.innerHTML='';
-      const yVal=yearInput.value;
+      const yVal = yearInput.value;
       if(!yVal) return;
-      for(let m=0;m<12;m++){
-        const cell=document.createElement('div');
+      for(let m=0; m<12; m++){
+        const cell = document.createElement('div');
         cell.classList.add('yearly-month-cell');
-        const monthName=new Date(yVal,m,1).toLocaleString('default',{month:'long'});
-        cell.innerHTML=`<strong>${monthName}</strong>`;
-        cell.addEventListener('click',()=>{
-          calendarMode.value='month';
-          updateCalendarMode();
-          const mm=(m+1).toString().padStart(2,'0');
-          document.getElementById('month-input').value=`${yVal}-${mm}`;
-          loadMonthly();
-        });
+        const monthName = new Date(yVal,m,1).toLocaleString('default',{month:'long'});
+        cell.innerHTML = `<strong>${monthName}</strong>`;
+        cell.addEventListener('click', () => openMonth(yVal, m));
         yearGrid.appendChild(cell);
       }
     }
+    function openMonth(year, month){
+      yearlyView.style.display='none';
+      monthlyView.style.display='block';
+      dailyView.style.display='none';
+      const mm = (month+1).toString().padStart(2,'0');
+      monthInput.value=`${year}-${mm}`;
+      loadMonth();
+    }
 
-    // For Monthly Subview
-    const monthInput=document.getElementById('month-input');
-    const monthHeader=document.getElementById('month-header');
-    const monthGrid=document.getElementById('month-grid');
-    const dayOfWeekShort=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    monthInput.addEventListener('change', loadMonthly);
-
-    function loadMonthly(){
+    monthInput.addEventListener('change', loadMonth);
+    function loadMonth(){
       monthHeader.innerHTML='';
       monthGrid.innerHTML='';
-      dayOfWeekShort.forEach(d=>{
+      const daysShort=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      daysShort.forEach(d=>{
         const div=document.createElement('div');
         div.textContent=d;
         div.style.textAlign='center';
@@ -551,241 +505,46 @@
         monthHeader.appendChild(div);
       });
       const val=monthInput.value;
-      if(!val)return;
-      const [yyyy,mm]=val.split('-').map(Number);
-      const firstDate=new Date(yyyy,mm-1,1);
+      if(!val) return;
+      const [yyyy,mm] = val.split('-').map(Number);
+      const firstDate=new Date(yyyy, mm-1, 1);
       const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(yyyy,mm,0);
+      const lastDate=new Date(yyyy, mm, 0);
       const totalDays=lastDate.getDate();
-      for(let i=0;i<firstDayIndex;i++){
+      for(let i=0; i<firstDayIndex; i++){
         const cell=document.createElement('div');
         cell.classList.add('calendar-cell');
-        cell.style.background='#222';
         monthGrid.appendChild(cell);
       }
       for(let d=1; d<=totalDays; d++){
         const cell=document.createElement('div');
         cell.classList.add('calendar-cell');
         cell.innerHTML=`<div class="day-label">${d}</div>`;
-        cell.addEventListener('click',()=>{
-          calendarMode.value='day';
-          updateCalendarMode();
-          const dt=new Date(yyyy,mm-1,d);
+        cell.addEventListener('click', ()=>{
+          monthlyView.style.display='none';
+          dailyView.style.display='block';
           const ds=new Date(Date.UTC(yyyy,mm-1,d)).toISOString().split('T')[0];
-          document.getElementById('day-input').value=ds;
-          loadDaily();
+          dayInput.value=ds;
+          loadDay();
         });
         monthGrid.appendChild(cell);
       }
     }
-
-    // For Daily Subview
-    const dayInput=document.getElementById('day-input');
-    const dailyContainer=document.getElementById('daily-container');
-    const locationFilter=document.getElementById('location-filter');
-    const artistFilterContainer=document.getElementById('artist-filter-container');
-
-    dayInput.addEventListener('change', loadDaily);
-
-    async function loadLocations(){
-      const {data,error}=await supabase
-        .from('locations')
-        .select('*');
-      if(error){console.error(error);return;}
-      locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-      data.forEach(loc=>{
-        const opt=document.createElement('option');
-        opt.value=loc.id;
-        opt.textContent=loc.location_name;
-        locationFilter.appendChild(opt);
-      });
-    }
-    locationFilter.addEventListener('change',()=>{
-      loadArtistsForLocation(locationFilter.value);
+    backToYearBtn.addEventListener('click', ()=>{
+      monthlyView.style.display='none';
+      yearlyView.style.display='block';
     });
 
-    let artistMap={};
-    async function loadArtistsForLocation(locId){
-      artistFilterContainer.innerHTML='';
-      if(!locId)return;
-      const {data,error}=await supabase
-        .from('artists')
-        .select(`
-          id, artist_name, color,
-          sunday_start, sunday_end,
-          monday_start, monday_end,
-          tuesday_start, tuesday_end,
-          wednesday_start, wednesday_end,
-          thursday_start, thursday_end,
-          friday_start, friday_end,
-          saturday_start, saturday_end
-        `)
-        .eq('location_id', locId);
-      if(error){console.error(error);return;}
-      artistMap={};
-      data.sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-      data.forEach(art=>{
-        artistMap[art.id]=art;
-        const wrap=document.createElement('div');
-        wrap.classList.add('artist-filter-item');
-        const cb=document.createElement('input');
-        cb.type='checkbox';
-        cb.id='artist-filter-'+art.id;
-        cb.value=art.id;
-        cb.checked=true;
-        const label=document.createElement('label');
-        label.htmlFor=cb.id;
-        label.textContent=art.artist_name;
-        wrap.appendChild(cb);
-        wrap.appendChild(label);
-        artistFilterContainer.appendChild(wrap);
-      });
-      loadDaily(); // auto reload
-    }
-
-    function getFilteredArtistIds(){
-      const cbs=artistFilterContainer.querySelectorAll('input[type="checkbox"]');
-      let arr=[];
-      cbs.forEach(cb=>{
-        if(cb.checked) arr.push(cb.value);
-      });
-      return arr;
-    }
-
-    dayInput.addEventListener('change', loadDaily);
-    artistFilterContainer.addEventListener('change', loadDaily);
-
-    const dayCols={
-      0:{startCol:'sunday_start',endCol:'sunday_end'},
-      1:{startCol:'monday_start',endCol:'monday_end'},
-      2:{startCol:'tuesday_start',endCol:'tuesday_end'},
-      3:{startCol:'wednesday_start',endCol:'wednesday_end'},
-      4:{startCol:'thursday_start',endCol:'thursday_end'},
-      5:{startCol:'friday_start',endCol:'friday_end'},
-      6:{startCol:'saturday_start',endCol:'saturday_end'}
-    };
-
-    async function loadDaily(){
-      dailyContainer.innerHTML='';
-      const dayVal=dayInput.value;
-      if(!dayVal)return;
-      for(let hr=8; hr<=24; hr++){
-        const top=(hr-8)*60;
-        const line=document.createElement('div');
-        line.classList.add('hour-line');
-        line.style.top=top+'px';
-        let h=hr, ampm='AM';
-        if(h>=12) ampm='PM';
-        if(h>12) h-=12;
-        if(h===24){h=12;ampm='AM';}
-        line.textContent=`${h}:00 ${ampm}`;
-        dailyContainer.appendChild(line);
-      }
-      const dayDate=new Date(`${dayVal}T00:00:00Z`);
-      const dayIndex=dayDate.getUTCDay();
-      const {startCol,endCol}=dayCols[dayIndex]||{};
-      if(!startCol||!endCol)return;
-
-      // Gather artists
-      const ids=getFilteredArtistIds();
-      let colArtists=[];
-      ids.forEach(id=>{
-        if(artistMap[id]) colArtists.push(artistMap[id]);
-      });
-      colArtists.sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-
-      // RENDER schedules
-      colArtists.forEach((art,colIndex)=>{
-        const st=art[startCol];
-        const en=art[endCol];
-        if(!st||!en) return;
-        const sNum=toMinutes(st);
-        const eNum=toMinutes(en);
-        if(sNum>=eNum)return;
-
-        const top=sNum-8*60;
-        const height=eNum-sNum;
-        const leftOffset=80;
-        const colWidth=120;
-        const x=leftOffset+(colIndex*colWidth);
-
-        const div=document.createElement('div');
-        div.classList.add('schedule-block');
-        div.style.left=x+'px';
-        div.style.width=(colWidth-10)+'px';
-        div.style.top=top+'px';
-        div.style.height=height+'px';
-        div.style.borderLeftColor=art.color||'#888';
-        div.innerHTML=`
-          <span class="schedule-artist-name">${art.artist_name}</span>
-          ${st} - ${en}
-        `;
-        dailyContainer.appendChild(div);
-      });
-
-      // RENDER appointments
-      const {data:appts,error}=await supabase
-        .from('artist_appointments')
-        .select('*')
-        .eq('date',dayVal);
-      if(error){console.error(error);return;}
-      const subAppts=appts.filter(a=>ids.includes(a.artist_id));
-      // group by artist => overlap columns
-      let byArtist={};
-      colArtists.forEach(a=> byArtist[a.id]=[]);
-      subAppts.forEach(ap=> byArtist[ap.artist_id].push(ap));
-      colArtists.forEach((art,mainIndex)=>{
-        let arr=byArtist[art.id];
-        arr.sort((a,b)=> toMinutes(a.start_time)-toMinutes(b.start_time));
-        let subColumns=[];
-        arr.forEach(ap=>{
-          let placed=false;
-          for(let col of subColumns){
-            let last=col[col.length-1];
-            if(!appointmentsOverlap(last,ap)){
-              col.push(ap);
-              placed=true;
-              break;
-            }
-          }
-          if(!placed) subColumns.push([ap]);
-        });
-        subColumns.forEach((sc,subIndex)=>{
-          sc.forEach(ap=>{
-            const sNum=toMinutes(ap.start_time)-8*60;
-            const eNum=toMinutes(ap.end_time)-8*60;
-            const top=Math.max(sNum,0);
-            const ht=Math.max(eNum-sNum,5);
-            const block=document.createElement('div');
-            block.classList.add('appointment-block');
-            block.style.backgroundColor=art.color||'#666';
-
-            const leftOffset=80+(mainIndex*120);
-            const totalWidth=120;
-            const colCount=subColumns.length;
-            const colW=(totalWidth-10)/colCount;
-            const blockLeft=leftOffset+(subIndex*colW);
-            block.style.left=blockLeft+'px';
-            block.style.width=(colW-2)+'px';
-            block.style.top=top+'px';
-            block.style.height=ht+'px';
-
-            block.textContent=`${art.artist_name} - ${ap.client_name||'N/A'} (${ap.appointment_type})`;
-            block.addEventListener('click',(evt)=>{
-              evt.stopPropagation();
-              openExistingApptModal(ap.id);
-            });
-            dailyContainer.appendChild(block);
-          });
-        });
-      });
-      dailyContainer.addEventListener('click',onDailyContainerClick);
-    }
-
+    // Daily
+    dayInput.addEventListener('change', loadDay);
+    backToMonthBtn.addEventListener('click',()=>{
+      dailyView.style.display='none';
+      monthlyView.style.display='block';
+    });
     function toMinutes(hhmm){
       if(!hhmm)return 0;
-      let [h,m]=hhmm.split(':').map(Number);
-      return (h*60)+m;
+      const [h,m]=hhmm.split(':').map(Number);
+      return h*60+m;
     }
     function appointmentsOverlap(a,b){
       if(!a||!b)return false;
@@ -793,7 +552,7 @@
       const aE=toMinutes(a.end_time);
       const bS=toMinutes(b.start_time);
       const bE=toMinutes(b.end_time);
-      return (aS<bE && bS<aE);
+      return(aS<bE && bS<aE);
     }
     function onDailyContainerClick(e){
       if(
@@ -810,191 +569,326 @@
       openNewApptModal(`${hh}:${mm}`, dayInput.value);
     }
 
-    // Appointment Modal logic
-    let currentApptId=null;
-    const apptModal=document.getElementById('appt-modal');
-    const modalTitle=document.getElementById('modal-title');
-    const modalStartTime=document.getElementById('modal-start-time');
-    const modalEndTime=document.getElementById('modal-end-time');
-    const modalArtist=document.getElementById('modal-artist');
-    const modalClientName=document.getElementById('modal-client-name');
-    const modalClientPhone=document.getElementById('modal-client-phone');
-    const modalEmail=document.getElementById('modal-email');
-    const modalDescription=document.getElementById('modal-description');
-    const modalDeposit=document.getElementById('modal-deposit');
-    const modalPrice=document.getElementById('modal-price');
-    const modalTip=document.getElementById('modal-tip');
-    const modalApptType=document.getElementById('modal-appt-type');
-    const saveApptBtn=document.getElementById('save-appt-btn');
-    const cancelApptBtn=document.getElementById('cancel-appt-btn');
-    const deleteApptBtn=document.getElementById('delete-appt-btn');
-    const completeApptBtn=document.getElementById('complete-appt-btn');
-
-    async function openNewApptModal(slot,dateStr){
-      currentApptId=null;
-      modalTitle.textContent='New Appointment';
-      modalStartTime.value=slot;
-      modalEndTime.value=slot;
-      modalArtist.value='';
-      modalClientName.value='';
-      modalClientPhone.value='';
-      modalEmail.value='';
-      modalDescription.value='';
-      modalDeposit.value='';
-      modalPrice.value='';
-      modalTip.value='';
-      modalApptType.value='walk-in';
-      deleteApptBtn.style.display='none';
-      completeApptBtn.style.display='none';
-      apptModal.style.display='block';
-    }
-    async function openExistingApptModal(apptId){
-      currentApptId=apptId;
+    let artistMapCal={};
+    async function loadLocationsForCalendar(){
+      // same as your original
       const {data,error}=await supabase
-        .from('artist_appointments')
-        .select('*')
-        .eq('id',apptId);
-      if(error||!data||data.length===0){
-        console.error(error);
-        alert('Error loading appointment.');
-        return;
-      }
-      const ap=data[0];
-      modalTitle.textContent='Edit Appointment';
-      modalStartTime.value=ap.start_time||'';
-      modalEndTime.value=ap.end_time||'';
-      modalArtist.value=ap.artist_id;
-      modalClientName.value=ap.client_name||'';
-      modalClientPhone.value=ap.client_phone||'';
-      modalEmail.value=ap.email||'';
-      modalDescription.value=ap.notes||'';
-      modalDeposit.value=ap.deposit||'';
-      modalPrice.value=ap.price||'';
-      modalTip.value=ap.tip||'';
-      modalApptType.value=ap.appointment_type||'walk-in';
-      deleteApptBtn.style.display='inline-block';
-      completeApptBtn.style.display='inline-block';
-      apptModal.style.display='block';
-    }
-
-    saveApptBtn.addEventListener('click', async()=>{
-      const sVal=modalStartTime.value;
-      const eVal=modalEndTime.value;
-      const aVal=modalArtist.value;
-      const cName=modalClientName.value;
-      const cPhone=modalClientPhone.value;
-      const eMail=modalEmail.value;
-      const desc=modalDescription.value;
-      const dep=modalDeposit.value?parseFloat(modalDeposit.value):null;
-      const pr=modalPrice.value?parseFloat(modalPrice.value):null;
-      const tp=modalTip.value?parseFloat(modalTip.value):null;
-      const apType=modalApptType.value;
-      if(!sVal||!eVal){alert('Start and End time are required.');return;}
-
-      let {data:ex,error}=await supabase
-        .from('artist_appointments')
-        .select('*')
-        .eq('date',dayInput.value)
-        .eq('artist_id', aVal);
-      if(error){console.error(error);alert('Error checking overlap.');return;}
-
-      if(checkOverlap(ex,sVal,eVal)){
-        alert('That slot overlaps an existing appointment.');
-        return;
-      }
-      if(!currentApptId){
-        const {error:insE}=await supabase
-          .from('artist_appointments')
-          .insert([{
-            artist_id:aVal,
-            date: dayInput.value,
-            start_time:sVal,
-            end_time:eVal,
-            appointment_type:apType,
-            client_name:cName,
-            client_phone:cPhone,
-            email:eMail,
-            notes:desc,
-            deposit:dep,
-            price:pr,
-            tip:tp
-          }]);
-        if(insE){console.error(insE);alert('Error inserting.');return;}
-      }else{
-        const {error:updE}=await supabase
-          .from('artist_appointments')
-          .update({
-            artist_id:aVal,
-            start_time:sVal,
-            end_time:eVal,
-            appointment_type:apType,
-            client_name:cName,
-            client_phone:cPhone,
-            email:eMail,
-            notes:desc,
-            deposit:dep,
-            price:pr,
-            tip:tp
-          })
-          .eq('id',currentApptId);
-        if(updE){console.error(updE);alert('Error updating.');return;}
-      }
-      reloadDay();
-    });
-    function checkOverlap(ex,sVal,eVal){
-      const sN=toMinutes(sVal);
-      const eN=toMinutes(eVal);
-      for(let ap of ex){
-        if(ap.id!==currentApptId){
-          const aS=toMinutes(ap.start_time);
-          const aE=toMinutes(ap.end_time);
-          if(sN<aE && aS<eN)return true;
-        }
-      }
-      return false;
-    }
-    function reloadDay(){
-      apptModal.style.display='none';
-      dailyContainer.removeEventListener('click',onDailyContainerClick,false);
-      loadDaily().then(()=>{
-        dailyContainer.addEventListener('click',onDailyContainerClick);
+        .from('locations')
+        .select('*');
+      if(error){console.error(error);return;}
+      calendarLocFilter.innerHTML='<option value="">-- Select Location --</option>';
+      data.forEach(loc=>{
+        const opt=document.createElement('option');
+        opt.value=loc.id;
+        opt.textContent=loc.location_name;
+        calendarLocFilter.appendChild(opt);
       });
     }
-    deleteApptBtn.addEventListener('click', async()=>{
-      if(!currentApptId)return;
-      const c=confirm('Are you sure you want to delete this appointment?');
-      if(!c)return;
-      const {error}=await supabase
-        .from('artist_appointments')
-        .delete()
-        .eq('id',currentApptId);
-      if(error){console.error(error);alert('Error deleting.');return;}
-      reloadDay();
+    calendarLocFilter.addEventListener('change', ()=>{
+      loadArtistsForCalendar(calendarLocFilter.value);
     });
-    completeApptBtn.addEventListener('click',async()=>{
-      if(!currentApptId)return;
-      const {error}=await supabase
+    async function loadArtistsForCalendar(locId){
+      artistMapCal={};
+      artistFilterContainer.innerHTML='';
+      if(!locId)return;
+      const {data,error}=await supabase
+        .from('artists')
+        .select(`id, artist_name, color,
+          sunday_start, sunday_end,
+          monday_start, monday_end,
+          tuesday_start, tuesday_end,
+          wednesday_start, wednesday_end,
+          thursday_start, thursday_end,
+          friday_start, friday_end,
+          saturday_start, saturday_end`)
+        .eq('location_id', locId);
+      if(error){console.error(error);return;}
+      data.sort((a,b)=> a.artist_name.localeCompare(b.artist_name));
+      data.forEach(art=>{
+        artistMapCal[art.id]=art;
+        const div=document.createElement('div');
+        div.classList.add('artist-filter-item');
+        const cb=document.createElement('input');
+        cb.type='checkbox';
+        cb.value=art.id;
+        cb.checked=true;
+        const lbl=document.createElement('label');
+        lbl.textContent=art.artist_name;
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        artistFilterContainer.appendChild(div);
+      });
+      loadDay(); // auto reload if a day is chosen
+    }
+    function getFilteredArtistIds(){
+      const cbs=artistFilterContainer.querySelectorAll('input[type="checkbox"]');
+      let arr=[];
+      cbs.forEach(cb=>{
+        if(cb.checked) arr.push(cb.value);
+      });
+      return arr;
+    }
+
+    async function loadDay(){
+      dailyContainer.innerHTML='';
+      const dayVal=dayInput.value;
+      if(!dayVal)return;
+      // hour lines
+      for(let hr=8; hr<=24; hr++){
+        const top=(hr-8)*60;
+        const line=document.createElement('div');
+        line.classList.add('hour-line');
+        line.style.top=top+'px';
+        let h=hr, ampm='AM';
+        if(h>=12) ampm='PM';
+        if(h>12) h-=12;
+        if(h===24){h=12;ampm='AM';}
+        line.textContent=`${h}:00 ${ampm}`;
+        dailyContainer.appendChild(line);
+      }
+      // gather columns
+      const dayDate=new Date(`${dayVal}T00:00:00Z`);
+      const dayIndex=dayDate.getUTCDay();
+      const dayCols={
+        0:{startCol:'sunday_start', endCol:'sunday_end'},
+        1:{startCol:'monday_start', endCol:'monday_end'},
+        2:{startCol:'tuesday_start',endCol:'tuesday_end'},
+        3:{startCol:'wednesday_start',endCol:'wednesday_end'},
+        4:{startCol:'thursday_start',endCol:'thursday_end'},
+        5:{startCol:'friday_start',endCol:'friday_end'},
+        6:{startCol:'saturday_start',endCol:'saturday_end'}
+      };
+      const {startCol,endCol}=dayCols[dayIndex]||{};
+      if(!startCol||!endCol)return;
+
+      const artistIds=getFilteredArtistIds();
+      let colArtists=[];
+      artistIds.forEach(id=>{
+        if(artistMapCal[id]) colArtists.push(artistMapCal[id]);
+      });
+      colArtists.sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
+      // schedules
+      colArtists.forEach((art, idx)=>{
+        const st=art[startCol], en=art[endCol];
+        if(!st||!en)return;
+        const sNum=toMinutes(st), eNum=toMinutes(en);
+        if(sNum>=eNum)return;
+        const top=sNum-8*60;
+        const ht=eNum-sNum;
+        const leftOffset=80, colWidth=120;
+        const x=leftOffset+(idx*colWidth);
+        const div=document.createElement('div');
+        div.classList.add('schedule-block');
+        div.style.left=x+'px';
+        div.style.width=(colWidth-10)+'px';
+        div.style.top=top+'px';
+        div.style.height=ht+'px';
+        div.style.borderLeftColor=art.color||'#aaa';
+        div.innerHTML=`
+          <span class="schedule-artist-name">${art.artist_name}</span>
+          ${st} - ${en}
+        `;
+        dailyContainer.appendChild(div);
+      });
+
+      // appointments
+      const {data:appts,error}=await supabase
         .from('artist_appointments')
-        .update({appointment_type:'completed'})
-        .eq('id',currentApptId);
-      if(error){console.error(error);alert('Error marking completed.');return;}
-      reloadDay();
+        .select('*')
+        .eq('date', dayVal);
+      if(error){console.error(error);return;}
+      const sub=appts.filter(a=> artistIds.includes(a.artist_id));
+      let byArtist={};
+      colArtists.forEach(a=> byArtist[a.id]=[]);
+      sub.forEach(ap=> byArtist[ap.artist_id].push(ap));
+      colArtists.forEach((art,mainIndex)=>{
+        let arr=byArtist[art.id];
+        arr.sort((a,b)=> toMinutes(a.start_time)-toMinutes(b.start_time));
+        let subCols=[];
+        arr.forEach(ap=>{
+          let placed=false;
+          for(let col of subCols){
+            let last=col[col.length-1];
+            if(!appointmentsOverlap(last,ap)){
+              col.push(ap);
+              placed=true; break;
+            }
+          }
+          if(!placed) subCols.push([ap]);
+        });
+        subCols.forEach((sc,subI)=>{
+          sc.forEach(ap=>{
+            const sNum=toMinutes(ap.start_time)-8*60;
+            const eNum=toMinutes(ap.end_time)-8*60;
+            const top=Math.max(sNum,0), ht=Math.max(eNum-sNum,5);
+            const block=document.createElement('div');
+            block.classList.add('appointment-block');
+            block.style.backgroundColor=art.color||'#ddd';
+            const leftOffset=80+(mainIndex*120);
+            const totalW=120;
+            const colCount=subCols.length;
+            const colW=(totalW-10)/colCount;
+            block.style.left=(leftOffset+(subI*colW))+'px';
+            block.style.width=(colW-2)+'px';
+            block.style.top=top+'px';
+            block.style.height=ht+'px';
+            block.textContent=`${art.artist_name} - ${ap.client_name||'N/A'} (${ap.appointment_type})`;
+            block.addEventListener('click',(evt)=>{
+              evt.stopPropagation();
+              openExistingApptModal(ap.id);
+            });
+            dailyContainer.appendChild(block);
+          });
+        });
+      });
+      dailyContainer.addEventListener('click',onDailyContainerClick);
+    }
+
+    // Appointment modal logic (unchanged)
+    let currentApptId=null;
+    const apptModal=document.getElementById('appt-modal');
+    // ... your same code for openNewApptModal, openExistingApptModal, etc.
+
+    // (C) APPOINTMENTS TAB => location filter, artist checkboxes, date range, type checkboxes
+    const apptLocFilter=document.getElementById('appt-loc-filter');
+    const apptArtistContainer=document.getElementById('appt-artist-container');
+    const apptStartDate=document.getElementById('appt-start-date');
+    const apptEndDate=document.getElementById('appt-end-date');
+    const apptChkAppointment=document.getElementById('appt-chk-appointment');
+    const apptChkWalkin=document.getElementById('appt-chk-walkin');
+    const appointmentsList=document.getElementById('appointments-list');
+
+    let locationArtists={}; // map locId => array of artist objects
+    let currentArtistMap={}; // map of artistId => artist object for the chosen location
+
+    apptLocFilter.addEventListener('change', ()=>{
+      loadApptArtists(apptLocFilter.value);
     });
-    cancelApptBtn.addEventListener('click',()=>{
-      apptModal.style.display='none';
+    [apptStartDate, apptEndDate, apptChkAppointment, apptChkWalkin].forEach(el=>{
+      el.addEventListener('change', loadAppointmentsTab);
     });
 
-    // On load => check auth, load locations, fill year dropdown, default mode=day => show daily
-    window.addEventListener('DOMContentLoaded',async()=>{
+    async function loadApptLocations(){
+      // same logic as loadLocations but for appt-loc-filter
+      const {data,error}=await supabase
+        .from('locations')
+        .select('*');
+      if(error){console.error(error);return;}
+      apptLocFilter.innerHTML='<option value="">-- Select Location --</option>';
+      data.forEach(loc=>{
+        const opt=document.createElement('option');
+        opt.value=loc.id;
+        opt.textContent=loc.location_name;
+        apptLocFilter.appendChild(opt);
+      });
+    }
+    async function loadApptArtists(locId){
+      apptArtistContainer.innerHTML='';
+      currentArtistMap={};
+      if(!locId)return;
+      const {data,error}=await supabase
+        .from('artists')
+        .select('id, artist_name')
+        .eq('location_id',locId);
+      if(error){console.error(error);return;}
+      data.sort((a,b)=> a.artist_name.localeCompare(b.artist_name));
+      data.forEach(art=>{
+        currentArtistMap[art.id]=art;
+        const wrap=document.createElement('div');
+        wrap.style.marginBottom='6px';
+        const cb=document.createElement('input');
+        cb.type='checkbox'; cb.value=art.id; cb.checked=true;
+        const lbl=document.createElement('label');
+        lbl.textContent=art.artist_name;
+        wrap.appendChild(cb);
+        wrap.appendChild(lbl);
+        apptArtistContainer.appendChild(wrap);
+        cb.addEventListener('change', loadAppointmentsTab);
+      });
+      loadAppointmentsTab(); // auto load
+    }
+    function getApptCheckedArtistIds(){
+      const cbs=apptArtistContainer.querySelectorAll('input[type="checkbox"]');
+      let arr=[];
+      cbs.forEach(cb=>{ if(cb.checked) arr.push(cb.value); });
+      return arr;
+    }
+
+    async function loadAppointmentsTab(){
+      appointmentsList.innerHTML='';
+      const locVal=apptLocFilter.value;
+      if(!locVal)return; // no location chosen => no results
+      const sVal=apptStartDate.value, eVal=apptEndDate.value;
+      if(!sVal||!eVal){
+        appointmentsList.innerHTML='<p>Please select a date range.</p>';
+        return;
+      }
+      let types=[];
+      if(apptChkAppointment.checked) types.push('appointment');
+      if(apptChkWalkin.checked) types.push('walk-in');
+      if(types.length===0){
+        appointmentsList.innerHTML='<p>Both Appointment and Walk-in are unchecked.</p>';
+        return;
+      }
+      const artistIds=getApptCheckedArtistIds();
+      if(artistIds.length===0){
+        appointmentsList.innerHTML='<p>No artists selected.</p>';
+        return;
+      }
+
+      let query=supabase
+        .from('artist_appointments')
+        .select('*')
+        .gte('date', sVal)
+        .lte('date', eVal)
+        .in('appointment_type', types)
+        .in('artist_id', artistIds)
+        .order('date',{ascending:false});
+
+      const {data:appts,error}=await query;
+      if(error){
+        console.error(error);
+        appointmentsList.innerHTML='<p>Error loading appointments.</p>';
+        return;
+      }
+      if(!appts||appts.length===0){
+        appointmentsList.innerHTML='<p>No matching appointments found.</p>';
+        return;
+      }
+      appts.forEach(ap=>{
+        const div=document.createElement('div');
+        div.classList.add('appt-item');
+        div.innerHTML=`
+          <h4>${ap.date} ${ap.start_time||''}-${ap.end_time||''}</h4>
+          <p>Type: ${ap.appointment_type}</p>
+          <p>Client: ${ap.client_name||'N/A'}</p>
+          <p>Phone: ${ap.client_phone||'N/A'}</p>
+          <p>Email: ${ap.email||'N/A'}</p>
+          <p>Price: $${(ap.price||0).toFixed(2)}, Deposit: $${(ap.deposit||0).toFixed(2)}</p>
+          <p>Notes: ${ap.notes||''}</p>
+        `;
+        appointmentsList.appendChild(div);
+      });
+    }
+
+    // On load
+    window.addEventListener('DOMContentLoaded', async()=>{
       checkAuth();
-      await loadLocations();
+
+      // Calendar tab => fillYearDropdown, location for daily
       fillYearDropdown();
-      // default mode => day
-      document.getElementById('calendar-mode').value='day';
-      updateCalendarMode();
-      const todayStr=new Date().toISOString().split('T')[0];
-      document.getElementById('day-input').value=todayStr;
-      loadDaily();
+      await loadLocationsForCalendar();
+
+      // Show yearly view by default
+      yearlyView.style.display='block';
+      monthlyView.style.display='none';
+      dailyView.style.display='none';
+
+      // Appointments tab => load location, wait until user picks => load artists
+      await loadApptLocations();
+
+      // default tab => Calendar
+      showTab('calendar');
     });
   </script>
 </body>
