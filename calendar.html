@@ -8,7 +8,8 @@
   <!-- 
     Content-Security-Policy for production:
       - 'unsafe-eval' so Supabase can function
-      - connect-src includes your Supabase domain
+      - connect-src includes your domain
+      - style-src allows inline for simplicity
   -->
   <meta http-equiv="Content-Security-Policy"
         content="
@@ -20,132 +21,104 @@
         ">
 
   <style>
-    /* Dark style reminiscent of your payroll/artist portal */
+    /* Dark color palette reminiscent of index / artist portal, for PC layout */
     * {
-      margin: 0; 
-      padding: 0; 
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       background: #111;
       color: #fff;
-      min-height: 100vh;
       max-width: 1200px;
       margin: 20px auto;
       padding: 10px;
-      display: flex;
-      flex-direction: column;
     }
     header {
       background: #000;
       border-bottom: 2px solid #444;
       padding: 20px;
       text-align: center;
-      margin-bottom: 10px;
     }
     header h1 {
-      font-size: 1.8rem;
       color: #fff;
       margin: 0;
-    }
-    main {
-      flex: 1;
+      font-size: 1.8rem;
     }
     .top-controls {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      margin: 15px 0;
+      gap: 20px;
     }
     #logout-btn {
       background: #f44336;
       color: #fff;
       cursor: pointer;
-      padding: 6px 12px;
+      padding: 8px 16px;
       border: none;
       border-radius: 4px;
     }
     label {
-      display: block;
-      margin-bottom: 4px;
       font-weight: bold;
-      color: #ccc;
+      margin-right: 8px;
     }
-    select, input[type="date"] {
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 6px;
-      margin-bottom: 5px;
-    }
-    /* Monthly Calendar */
-    .calendar-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .calendar-nav button {
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    .calendar-nav button:hover {
-      background: #444;
-    }
-    .calendar-month-label {
-      font-weight: bold;
-      font-size: 1rem;
-      text-align: center;
-    }
-    .month-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      border: 1px solid #444;
-      padding: 6px;
-      margin-bottom: 20px;
-    }
-    .calendar-cell {
+    select, input[type="date"], input[type="time"], input[type="text"], input[type="number"], input[type="email"], textarea {
       background: #222;
+      color: #fff;
       border: 1px solid #444;
-      min-height: 80px;
-      padding: 4px;
-      cursor: pointer;
+      border-radius: 4px;
+      padding: 6px;
+    }
+    select option {
+      color: #000;
+    }
+    /* Daily scheduler container */
+    #daily-scheduler {
       position: relative;
+      height: 960px; /* 8:00 -> 24:00 => 16 hours => 960 minutes */
+      border: 1px solid #444;
+      overflow-y: auto;
+      margin-top: 10px;
+      background: #222;
     }
-    .calendar-cell:hover {
-      background: #333;
+    .hour-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      border-top: 1px dashed #444;
+      color: #bbb;
+      font-size: 12px;
+      padding-left: 5px;
     }
-    .day-label {
-      font-size: 0.9rem;
-      margin-bottom: 4px;
+    .schedule-block {
+      position: absolute;
+      background: rgba(255,255,255,0.05);
+      color: #ddd;
+      padding: 2px;
+      font-size: 0.75em;
+      box-sizing: border-box;
+      border-left: 4px solid #555;
+      pointer-events: none;
+    }
+    .schedule-artist-name {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 2px;
       color: #fff;
     }
-    .artist-filter-container {
-      margin-top: 5px;
-      margin-bottom: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    .appointment-block {
+      position: absolute;
+      background: #444;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 0.85em;
+      box-sizing: border-box;
+      cursor: pointer;
     }
-    .artist-filter-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .artist-filter-item label {
-      margin: 0;
-      font-weight: normal;
-      color: #ccc;
-    }
-    /* Appointment Modal (unchanged) */
+    /* offset the main columns (both schedule and appt) 80px right so hour lines remain visible on the left */
     #appt-modal {
       display: none;
       position: fixed;
@@ -153,89 +126,99 @@
       left: 50%;
       transform: translateX(-50%);
       background: #222;
-      border: 2px solid #444;
+      border: 1px solid #444;
       padding: 20px;
       width: 320px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       color: #fff;
-      border-radius: 6px;
+      z-index: 999;
     }
     #appt-modal h3 {
       margin-top: 0;
-      margin-bottom: 10px;
     }
     .modal-field {
       margin-bottom: 10px;
     }
     .modal-field label {
-      color: #ccc;
+      display: block;
+      margin-bottom: 4px;
     }
-    .modal-field input, .modal-field select, .modal-field textarea {
+    #appt-modal input, #appt-modal select, #appt-modal textarea {
       width: 100%;
       background: #333;
-      color: #fff;
       border: 1px solid #555;
+      color: #fff;
       border-radius: 4px;
       padding: 6px;
-      box-sizing: border-box;
     }
     .modal-buttons {
       text-align: right;
       margin-top: 10px;
     }
     .modal-buttons button {
+      margin-left: 8px;
       background: #333;
       color: #fff;
       border: 1px solid #555;
-      border-radius: 4px;
       padding: 6px 10px;
-      margin-left: 8px;
+      border-radius: 4px;
       cursor: pointer;
     }
     .modal-buttons button:hover {
-      background: #444;
+      background: #555;
     }
-    /* New “Appointments Box” */
-    .appointments-box {
+
+    /* Artist filter */
+    #artist-filter-container {
+      margin-top: 10px;
+    }
+    .artist-filter-item {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .artist-filter-item label {
+      margin-right: 4px;
+    }
+
+    /* bottom box for upcoming/past appointments */
+    #appointments-list-section {
+      margin-top: 20px;
       background: #222;
       border: 1px solid #444;
       border-radius: 6px;
       padding: 15px;
-      margin-bottom: 20px;
     }
-    .appointments-box h2 {
-      margin-top: 0;
+    #appointments-list-section h2 {
       margin-bottom: 10px;
     }
-    .appointments-filters {
+    .filters-row {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
       margin-bottom: 10px;
     }
-    .appointments-list {
+    .appointments-container {
       max-height: 300px;
       overflow-y: auto;
       border: 1px solid #444;
       padding: 10px;
     }
     .appt-item {
-      margin-bottom: 8px;
       background: #333;
       border: 1px solid #555;
-      border-radius: 4px;
       padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
     }
     .appt-item h4 {
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       font-size: 1rem;
       color: #fff;
     }
     .appt-item p {
       margin-bottom: 2px;
-      color: #ccc;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      color: #bbb;
     }
   </style>
 </head>
@@ -243,142 +226,120 @@
   <header>
     <h1>Calendar</h1>
   </header>
-  <main>
-    <!-- Top Row: location, logout, etc. -->
-    <div class="top-controls">
-      <label for="location-filter">Location:</label>
-      <select id="location-filter">
-        <option value="">-- Select Location --</option>
+
+  <div class="top-controls">
+    <button id="logout-btn">Logout</button>
+
+    <label for="location-filter">Location:</label>
+    <select id="location-filter">
+      <option value="">-- Select Location --</option>
+    </select>
+
+    <label for="day-input">Date:</label>
+    <input type="date" id="day-input" />
+  </div>
+
+  <!-- Artist checkboxes -->
+  <div id="artist-filter-container"></div>
+
+  <!-- The daily scheduler (hourly view) -->
+  <div id="daily-scheduler"></div>
+
+  <!-- Appointment Modal -->
+  <div id="appt-modal">
+    <h3 id="modal-title">New Appointment</h3>
+    <div class="modal-field">
+      <label for="modal-start-time">Start Time:</label>
+      <input type="time" id="modal-start-time" step="300" />
+      <!-- step="300" => 5 minute increments -->
+    </div>
+    <div class="modal-field">
+      <label for="modal-end-time">End Time:</label>
+      <input type="time" id="modal-end-time" step="300" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-artist">Artist:</label>
+      <select id="modal-artist" title="Appointment Artist"></select>
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-name">Client Name:</label>
+      <input type="text" id="modal-client-name" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-client-phone">Client Phone:</label>
+      <input type="text" id="modal-client-phone" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-email">Client Email:</label>
+      <input type="email" id="modal-email" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-description">Tattoo Description:</label>
+      <textarea id="modal-description"></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="modal-deposit">Deposit:</label>
+      <input type="number" id="modal-deposit" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-price">Price:</label>
+      <input type="number" id="modal-price" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-tip">Tip:</label>
+      <input type="number" id="modal-tip" />
+    </div>
+    <div class="modal-field">
+      <label for="modal-appt-type" title="Appointment Type">Appointment Type:</label>
+      <select id="modal-appt-type" title="Appointment Type">
+        <option value="walk-in">Walk-in</option>
+        <option value="appointment">Appointment</option>
       </select>
-
-      <button id="logout-btn">Logout</button>
     </div>
-
-    <!-- Artist Filter -->
-    <div class="artist-filter-container" id="artist-filter-container"></div>
-
-    <!-- Monthly Calendar -->
-    <div class="calendar-nav">
-      <button id="prev-month-btn"><< Prev</button>
-      <span id="month-label" class="calendar-month-label"></span>
-      <button id="next-month-btn">Next >></button>
+    <div class="modal-buttons">
+      <button id="save-appt-btn">Save</button>
+      <button id="cancel-appt-btn">Cancel</button>
+      <button id="delete-appt-btn" style="display: none;">Delete</button>
+      <button id="complete-appt-btn" style="display: none;">Mark Completed</button>
     </div>
-    <div class="month-grid" id="month-grid"></div>
+  </div>
 
-    <!-- Appointment Modal -->
-    <div id="appt-modal">
-      <h3 id="modal-title">New Appointment</h3>
+  <!-- New bottom box for upcoming / past appointments -->
+  <div id="appointments-list-section">
+    <h2>Appointments & Walk-ins</h2>
+    <div class="filters-row">
+      <label for="range-start">From:</label>
+      <input type="date" id="range-start" />
 
-      <div class="modal-field">
-        <label for="modal-start-time">Start Time:</label>
-        <input type="time" id="modal-start-time" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-end-time">End Time:</label>
-        <input type="time" id="modal-end-time" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-artist">Artist:</label>
-        <select id="modal-artist" title="Appointment Artist"></select>
-      </div>
-      <div class="modal-field">
-        <label for="modal-client-name">Client Name:</label>
-        <input type="text" id="modal-client-name" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-client-phone">Client Phone:</label>
-        <input type="text" id="modal-client-phone" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-email">Client Email:</label>
-        <input type="email" id="modal-email" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-description">Tattoo Description:</label>
-        <textarea id="modal-description"></textarea>
-      </div>
-      <div class="modal-field">
-        <label for="modal-deposit">Deposit:</label>
-        <input type="number" id="modal-deposit" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-price">Price:</label>
-        <input type="number" id="modal-price" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-tip">Tip:</label>
-        <input type="number" id="modal-tip" />
-      </div>
-      <div class="modal-field">
-        <label for="modal-appt-type">Appointment Type:</label>
-        <select id="modal-appt-type" title="Appointment Type">
-          <option value="walk-in">Walk-in</option>
-          <option value="appointment">Appointment</option>
-        </select>
-      </div>
-      <div class="modal-buttons">
-        <button id="save-appt-btn">Save</button>
-        <button id="cancel-appt-btn">Cancel</button>
-        <button id="delete-appt-btn" style="display: none;">Delete</button>
-        <button id="complete-appt-btn" style="display: none;">Mark Completed</button>
+      <label for="range-end">To:</label>
+      <input type="date" id="range-end" />
+
+      <!-- checkboxes for type filtering -->
+      <div>
+        <label><input type="checkbox" id="show-appointments" checked /> Appointments</label>
+        <label><input type="checkbox" id="show-walkins" checked /> Walk-ins</label>
       </div>
     </div>
+    <div class="appointments-container" id="appointments-list"></div>
+  </div>
 
-    <!-- Box for appointments (past/upcoming) with date range + checkboxes for type -->
-    <div class="appointments-box">
-      <h2>Appointments</h2>
-      <div class="appointments-filters">
-        <label for="appts-start">Start Date:</label>
-        <input type="date" id="appts-start" />
-
-        <label for="appts-end">End Date:</label>
-        <input type="date" id="appts-end" />
-
-        <div>
-          <input type="checkbox" id="check-appointment" value="appointment" checked />
-          <label for="check-appointment">Appointments</label>
-        </div>
-        <div>
-          <input type="checkbox" id="check-walkin" value="walk-in" checked />
-          <label for="check-walkin">Walk-ins</label>
-        </div>
-      </div>
-      <div class="appointments-list" id="appointments-list">
-        <!-- we’ll fill with a list of appt items -->
-      </div>
-    </div>
-  </main>
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    /***************************************
-     * AUTH + SUPABASE INIT
-     ***************************************/
-    function checkAuth(){
-      const userId = localStorage.getItem('currentUserId');
-      if(!userId) {
-        window.location.href='login.html';
-      }
-    }
-    const supabaseUrl='https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
+    // Basic supabase init
+    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+    const supabase=window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    /***************************************
-     * DOM REFS
-     ***************************************/
-    const logoutBtn=document.getElementById('logout-btn');
-    const locationFilter=document.getElementById('location-filter');
-
-    const prevMonthBtn=document.getElementById('prev-month-btn');
-    const nextMonthBtn=document.getElementById('next-month-btn');
-    const monthLabel=document.getElementById('month-label');
-    const monthGrid=document.getElementById('month-grid');
+    // references
+    const logoutBtn = document.getElementById('logout-btn');
+    const locationFilter = document.getElementById('location-filter');
+    const dayInput = document.getElementById('day-input');
+    const dailyScheduler = document.getElementById('daily-scheduler');
+    const artistFilterContainer = document.getElementById('artist-filter-container');
 
     // Appt modal
-    const apptModal=document.getElementById('appt-modal');
-    const modalTitle=document.getElementById('modal-title');
+    const apptModal = document.getElementById('appt-modal');
+    const modalTitle = document.getElementById('modal-title');
     const modalStartTime=document.getElementById('modal-start-time');
     const modalEndTime=document.getElementById('modal-end-time');
     const modalArtist=document.getElementById('modal-artist');
@@ -394,37 +355,30 @@
     const cancelApptBtn=document.getElementById('cancel-appt-btn');
     const deleteApptBtn=document.getElementById('delete-appt-btn');
     const completeApptBtn=document.getElementById('complete-appt-btn');
-
-    // Artist filter
-    const artistFilterContainer=document.getElementById('artist-filter-container');
-
-    // Appts bottom box
-    const apptsStart=document.getElementById('appts-start');
-    const apptsEnd=document.getElementById('appts-end');
-    const checkAppointment=document.getElementById('check-appointment');
-    const checkWalkin=document.getElementById('check-walkin');
-    const appointmentsList=document.getElementById('appointments-list');
-
-    /***************************************
-     * STATE
-     ***************************************/
-    let currentMonth = { year:0, month:0 };
-    let artistMap={};
     let currentApptId=null;
+    let artistMap={};
 
-    /***************************************
-     * LOGOUT
-     ***************************************/
+    // bottom list
+    const rangeStart = document.getElementById('range-start');
+    const rangeEnd = document.getElementById('range-end');
+    const showAppointmentsCb = document.getElementById('show-appointments');
+    const showWalkinsCb = document.getElementById('show-walkins');
+    const appointmentsList = document.getElementById('appointments-list');
+
     logoutBtn.addEventListener('click',()=>{
       localStorage.clear();
       window.location.href='login.html';
     });
 
-    /***************************************
-     * LOCATION + ARTISTS
-     ***************************************/
+    // check if user is logged
+    function checkAuth(){
+      const currentUserId=localStorage.getItem('currentUserId');
+      if(!currentUserId) window.location.href='login.html';
+    }
+
+    // location => artists
     async function loadLocations(){
-      const {data,error} = await supabase
+      const {data, error} = await supabase
         .from('locations')
         .select('*');
       if(error){console.error(error);return;}
@@ -436,11 +390,12 @@
         locationFilter.appendChild(opt);
       });
     }
-    locationFilter.addEventListener('change', ()=>{
+    locationFilter.addEventListener('change',()=>{
       loadArtistsForLocation(locationFilter.value);
-      // Also refresh the monthly calendar and the bottom appointments
-      initMonth(new Date()); 
-      loadAppointmentsBox();
+      // reload daily if we have a date
+      if(dayInput.value) loadDay();
+      // reload bottom list
+      loadAppointmentsList();
     });
 
     async function loadArtistsForLocation(locId){
@@ -448,42 +403,37 @@
       modalArtist.innerHTML='';
       artistFilterContainer.innerHTML='';
       if(!locId)return;
-      let {data,error}=await supabase
+      const { data, error } = await supabase
         .from('artists')
-        .select('id, artist_name, color')
+        .select('*')
         .eq('location_id', locId);
-      if(error){
-        console.error(error);
-        return;
-      }
+
+      if(error){console.error(error);return;}
       data.sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
       data.forEach(art=>{
-        artistMap[art.id] = art;
-        // Appt modal select
+        artistMap[art.id]=art;
+        // add to the appt modal select
         const opt=document.createElement('option');
         opt.value=art.id;
         opt.textContent=art.artist_name;
         modalArtist.appendChild(opt);
-
-        // top filter checkboxes
-        const wrapper=document.createElement('div');
-        wrapper.classList.add('artist-filter-item');
+        // add a filter checkbox
+        const div=document.createElement('div');
+        div.classList.add('artist-filter-item');
         const cb=document.createElement('input');
         cb.type='checkbox';
         cb.id='artist-filter-'+art.id;
         cb.value=art.id;
         cb.checked=true;
-        const lbl=document.createElement('label');
-        lbl.htmlFor=cb.id;
-        lbl.textContent=art.artist_name;
-        wrapper.appendChild(cb);
-        wrapper.appendChild(lbl);
-        artistFilterContainer.appendChild(wrapper);
+        const label=document.createElement('label');
+        label.htmlFor=cb.id;
+        label.textContent=art.artist_name;
+        div.appendChild(cb);
+        div.appendChild(label);
+        artistFilterContainer.appendChild(div);
       });
-      // after we load new artists, reload the monthly cal & bottom list
-      drawMonth();
-      loadAppointmentsBox();
     }
+
     function getFilteredArtistIds(){
       const cbs=artistFilterContainer.querySelectorAll('input[type=checkbox]');
       let arr=[];
@@ -493,184 +443,170 @@
       return arr;
     }
 
-    /***************************************
-     * MONTHLY CALENDAR
-     ***************************************/
-    prevMonthBtn.addEventListener('click',()=>{
-      currentMonth.month--;
-      if(currentMonth.month<1){
-        currentMonth.month=12;
-        currentMonth.year--;
-      }
-      drawMonth();
-    });
-    nextMonthBtn.addEventListener('click',()=>{
-      currentMonth.month++;
-      if(currentMonth.month>12){
-        currentMonth.month=1;
-        currentMonth.year++;
-      }
-      drawMonth();
+    // date => daily schedule
+    dayInput.addEventListener('change',()=>{
+      loadDay();
     });
 
-    function initMonth(dateObj){
-      currentMonth.year=dateObj.getFullYear();
-      currentMonth.month=dateObj.getMonth()+1;
-      drawMonth();
-    }
+    async function loadDay(){
+      dailyScheduler.innerHTML='';
+      if(!dayInput.value)return;
+      const dayVal=dayInput.value;
 
-    async function drawMonth(){
-      monthGrid.innerHTML='';
-      // label
-      monthLabel.textContent= monthName(currentMonth.month) +' '+ currentMonth.year;
-
-      const firstDate=new Date(currentMonth.year, currentMonth.month-1,1);
-      const firstDayIndex=firstDate.getDay();
-      const lastDate=new Date(currentMonth.year, currentMonth.month,0).getDate();
-
-      // get all appointments for location + filtered artists, for the entire month
-      const locationVal=locationFilter.value;
-      if(!locationVal)return;
-
-      const filteredArtistIds=getFilteredArtistIds();
-      if(filteredArtistIds.length===0)return;
-
-      const startStr=`${currentMonth.year}-${String(currentMonth.month).padStart(2,'0')}-01`;
-      const endStr=`${currentMonth.year}-${String(currentMonth.month).padStart(2,'0')}-${lastDate}`;
-
-      let {data:appts,error}=await supabase
-        .from('artist_appointments')
-        .select('artist_id,date')
-        .gte('date',startStr)
-        .lte('date',endStr);
-      if(error){
-        console.error(error);
-        return;
+      // draw hour lines from 8:00 to 24:00
+      for(let hr=8; hr<=24; hr++){
+        const top=(hr-8)*60;
+        const line=document.createElement('div');
+        line.classList.add('hour-line');
+        line.style.top=top+'px';
+        let displayHr=hr; let ampm='AM';
+        if(displayHr>=12) ampm='PM';
+        if(displayHr>12) displayHr-=12;
+        if(displayHr===24){displayHr=12;ampm='AM';}
+        line.textContent=`${displayHr}:00 ${ampm}`;
+        dailyScheduler.appendChild(line);
       }
-      // filter by artist + location
-      appts=appts.filter(ap=> filteredArtistIds.includes(ap.artist_id));
+      // load schedules
+      const dayIndex=new Date(dayVal).getDay();
+      const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      const colNameStart=dayCols[dayIndex]+'_start';
+      const colNameEnd=dayCols[dayIndex]+'_end';
 
-      // collect days with appts
-      let daysWithAppts={};
-      appts.forEach(ap=>{
-        const dNum=parseInt(ap.date.split('-')[2],10);
-        daysWithAppts[dNum]=true;
+      // filtered artists
+      const cbs=artistFilterContainer.querySelectorAll('input[type=checkbox]');
+      let colArtists=[];
+      cbs.forEach(cb=>{
+        if(cb.checked){
+          const art=artistMap[cb.value];
+          if(art) colArtists.push(art);
+        }
+      });
+      colArtists.sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
+
+      // place schedule
+      colArtists.forEach((art, colIndex)=>{
+        const st=art[colNameStart];
+        const en=art[colNameEnd];
+        if(!st||!en)return;
+        const sNum=toMinutes(st);
+        const eNum=toMinutes(en);
+        if(sNum>=eNum)return;
+
+        const top=sNum-8*60;
+        const height=eNum-sNum;
+        const leftOffset=80;
+        const colWidth=120;
+        const x=leftOffset+colIndex*colWidth;
+
+        const div=document.createElement('div');
+        div.classList.add('schedule-block');
+        div.style.left=x+'px';
+        div.style.width=(colWidth-10)+'px';
+        div.style.top=top+'px';
+        div.style.height=height+'px';
+        div.style.borderLeftColor=art.color||'#999';
+        div.innerHTML=`
+          <span class="schedule-artist-name">${art.artist_name}</span>
+          ${st} - ${en}
+        `;
+        dailyScheduler.appendChild(div);
       });
 
-      // fill blank cells for offset
-      for(let i=0; i<firstDayIndex;i++){
-        const c=document.createElement('div');
-        c.classList.add('calendar-cell');
-        c.style.background='#000'; // blank
-        monthGrid.appendChild(c);
-      }
-      // fill day cells
-      for(let d=1; d<=lastDate; d++){
-        const c=document.createElement('div');
-        c.classList.add('calendar-cell');
-        c.innerHTML=`<div class="day-label">${d}</div>`;
-        if(daysWithAppts[d]){
-          c.style.background='#333';
-          c.title='Appointments on this day.';
-        }
-        // date click => open day in a "daily" sense or open modal?
-        // We'll do: open a new Appt or show a day detail
-        // For now, let's create a new Appt
-        const dt=new Date(currentMonth.year, currentMonth.month-1,d);
-        c.addEventListener('click',()=>{
-          // you can do something, e.g. open daily or new Appt
-          openNewApptModal('08:00', dt.toISOString().split('T')[0]);
-        });
-        monthGrid.appendChild(c);
-      }
-    }
-
-    function monthName(m){
-      const names=["January","February","March","April","May","June","July","August","September","October","November","December"];
-      return names[m-1];
-    }
-
-    /***************************************
-     * APPOINTMENTS BOX (Past / Upcoming)
-     ***************************************/
-    // date range + type check => automatically reload
-    [apptsStart, apptsEnd, checkAppointment, checkWalkin].forEach(el=>{
-      el.addEventListener('change', loadAppointmentsBox);
-    });
-    artistFilterContainer.addEventListener('change', loadAppointmentsBox);
-
-    async function loadAppointmentsBox(){
-      appointmentsList.innerHTML='';
-      const startVal=apptsStart.value;
-      const endVal=apptsEnd.value;
-      if(!startVal||!endVal)return; // no load if incomplete
-
-      const locationVal=locationFilter.value;
-      if(!locationVal)return; // must pick location
-
-      const selectedArtistIds=getFilteredArtistIds();
-      if(selectedArtistIds.length===0)return;
-
-      let types=[];
-      if(checkAppointment.checked) types.push('appointment');
-      if(checkWalkin.checked) types.push('walk-in');
-      if(types.length===0)return; // nothing to show
-
-      // query
+      // load appointments
       let {data:appts,error}=await supabase
         .from('artist_appointments')
         .select('*')
-        .gte('date',startVal)
-        .lte('date',endVal)
-        .in('appointment_type', types);
-      if(error){
-        console.error(error);
-        return;
-      }
-      // filter by location via artist => we need the location of each appointment’s artist
-      // we can do an in statement? or we can just filter in JS
-      // simpler: in JS for now
-      appts=appts.filter(ap=> selectedArtistIds.includes(ap.artist_id));
-      if(appts.length===0){
-        const div=document.createElement('div');
-        div.textContent='No appointments found.';
-        div.style.color='#ccc';
-        appointmentsList.appendChild(div);
-        return;
-      }
-      // sort by date desc or asc?
-      // let's do ascending
-      appts.sort((a,b)=>{
-        if(a.date===b.date){
-          return (a.start_time||'00:00').localeCompare(b.start_time||'00:00');
-        }
-        return a.date.localeCompare(b.date);
+        .eq('date',dayVal);
+      if(error){console.error(error);return;}
+      const filteredArtistIds=getFilteredArtistIds();
+      appts=appts.filter(a=>filteredArtistIds.includes(a.artist_id));
+      // group by artist => overlap subcolumns
+      let byArtist={};
+      colArtists.forEach(a=>byArtist[a.id]=[]);
+      appts.forEach(ap=> byArtist[ap.artist_id].push(ap));
+      colArtists.forEach((art,mainIdx)=>{
+        const arr=byArtist[art.id];
+        arr.sort((a,b)=>toMinutes(a.start_time)-toMinutes(b.start_time));
+        let subCols=[];
+        arr.forEach(ap=>{
+          let placed=false;
+          for(let col of subCols){
+            let last=col[col.length-1];
+            if(!overlaps(last,ap)){
+              col.push(ap);placed=true;break;
+            }
+          }
+          if(!placed) subCols.push([ap]);
+        });
+        subCols.forEach((subCol, subIdx)=>{
+          subCol.forEach(ap=>{
+            const sN=toMinutes(ap.start_time)-8*60;
+            const eN=toMinutes(ap.end_time)-8*60;
+            const top=Math.max(sN,0);
+            const ht=Math.max(eN-sN,5);
+            const block=document.createElement('div');
+            block.classList.add('appointment-block');
+            block.style.backgroundColor=art.color||'#444';
+
+            const leftOffset=80;
+            const colW=120;
+            const x=leftOffset+mainIdx*colW;
+            const totalSubs=subCols.length;
+            const eachW=(colW-10)/totalSubs;
+            const leftPos=x+(subIdx*eachW);
+            block.style.left=leftPos+'px';
+            block.style.width=(eachW-2)+'px';
+            block.style.top=top+'px';
+            block.style.height=ht+'px';
+
+            const cName=ap.client_name||'N/A';
+            block.textContent=`${art.artist_name} - ${cName} (${ap.appointment_type})`;
+            block.addEventListener('click',(evt)=>{
+              evt.stopPropagation();
+              openExistingApptModal(ap.id);
+            });
+            dailyScheduler.appendChild(block);
+          });
+        });
       });
-      appts.forEach(ap=>{
-        const it=document.createElement('div');
-        it.classList.add('appt-item');
-        const dtLabel=`${ap.date} ${ap.start_time||''}-${ap.end_time||''}`;
-        const tType=`${ap.appointment_type}`;
-        it.innerHTML=`
-          <h4>${dtLabel} (${tType})</h4>
-          <p>Client: ${ap.client_name||'N/A'}</p>
-          <p>Phone: ${ap.client_phone||'N/A'}</p>
-          <p>Email: ${ap.email||'N/A'}</p>
-          <p>Price: $${(ap.price||0).toFixed(2)}, Tip: $${(ap.tip||0).toFixed(2)}</p>
-          <p>Notes: ${ap.notes||''}</p>
-        `;
-        appointmentsList.appendChild(it);
-      });
+      dailyScheduler.addEventListener('click',onSchedulerClick);
+    }
+    function overlaps(a,b){
+      if(!a||!b)return false;
+      const aS=toMinutes(a.start_time);
+      const aE=toMinutes(a.end_time);
+      const bS=toMinutes(b.start_time);
+      const bE=toMinutes(b.end_time);
+      return(aS<bE && bS<aE);
+    }
+    function toMinutes(hhmm){
+      if(!hhmm)return 0;
+      const [h,m]=hhmm.split(':').map(Number);
+      return h*60+m;
+    }
+    function onSchedulerClick(e){
+      if(
+        e.target.classList.contains('appointment-block')||
+        e.target.classList.contains('schedule-block')||
+        e.target.classList.contains('hour-line')
+      )return;
+      const rect=dailyScheduler.getBoundingClientRect();
+      const offsetY=e.clientY-rect.top;
+      const mins=Math.floor(offsetY);
+      const hr=Math.floor(mins/60)+8;
+      const m=(mins%60).toString().padStart(2,'0');
+      const hh=hr.toString().padStart(2,'0');
+      if(dayInput.value){
+        openNewApptModal(`${hh}:${m}`, dayInput.value);
+      }
     }
 
-    /***************************************
-     * APPT MODAL
-     ***************************************/
-    function openNewApptModal(slot,dateStr){
+    // open new
+    function openNewApptModal(startTime, dateStr){
       currentApptId=null;
       modalTitle.textContent='New Appointment';
-      modalStartTime.value=slot;
-      modalEndTime.value=slot;
+      modalStartTime.value=startTime;
+      modalEndTime.value=startTime;
       modalArtist.value='';
       modalClientName.value='';
       modalClientPhone.value='';
@@ -684,21 +620,20 @@
       completeApptBtn.style.display='none';
       apptModal.style.display='block';
     }
-    async function openExistingApptModal(apptId){
-      currentApptId=apptId;
-      const {data,error}=await supabase
+    // open existing
+    async function openExistingApptModal(id){
+      currentApptId=id;
+      const {data, error}=await supabase
         .from('artist_appointments')
         .select('*')
-        .eq('id',apptId);
-      if(error||!data||data.length===0){
-        console.error(error);
-        alert('Error loading appointment.');
-        return;
+        .eq('id',id);
+      if(error||!data||!data.length){
+        alert('Error loading appointment.');return;
       }
       const ap=data[0];
       modalTitle.textContent='Edit Appointment';
-      modalStartTime.value=ap.start_time||'';
-      modalEndTime.value=ap.end_time||'';
+      modalStartTime.value=ap.start_time||'08:00';
+      modalEndTime.value=ap.end_time||'08:00';
       modalArtist.value=ap.artist_id;
       modalClientName.value=ap.client_name||'';
       modalClientPhone.value=ap.client_phone||'';
@@ -713,53 +648,53 @@
       apptModal.style.display='block';
     }
 
-    saveApptBtn.addEventListener('click',saveAppt);
-    async function saveAppt(){
+    // Save
+    saveApptBtn.addEventListener('click', async()=>{
       const sVal=modalStartTime.value;
       const eVal=modalEndTime.value;
       const aVal=modalArtist.value;
       const cName=modalClientName.value;
       const cPhone=modalClientPhone.value;
-      const eMail=modalEmail.value;
+      const cEmail=modalEmail.value;
       const desc=modalDescription.value;
       const dep=modalDeposit.value?parseFloat(modalDeposit.value):null;
       const pr=modalPrice.value?parseFloat(modalPrice.value):null;
       const tp=modalTip.value?parseFloat(modalTip.value):null;
       const apType=modalApptType.value;
-
-      if(!sVal||!eVal){alert('Start and End time are required.');return;}
-
-      // no date in this modal, so let's assume "today" or we can let user specify
-      // for now, let's do:
-      const dateStr=new Date().toISOString().split('T')[0];
-
-      // Overlap check? Omitted for brevity or implement if needed
+      if(!sVal||!eVal){alert('Start and End Time are required.');return;}
+      const dayVal=dayInput.value;
+      // check overlap
+      let {data:exAppts, error}=await supabase
+        .from('artist_appointments')
+        .select('*')
+        .eq('date',dayVal)
+        .eq('artist_id',aVal);
+      if(error){console.error(error);alert('Error checking appts.');return;}
+      if(checkAnyOverlap(exAppts,sVal,eVal,currentApptId)){
+        alert('This slot overlaps existing appointment.');return;
+      }
       if(!currentApptId){
-        // Insert
-        const { error:insE }=await supabase
+        // insert
+        const {error:e2}=await supabase
           .from('artist_appointments')
           .insert([{
             artist_id:aVal,
-            date: dateStr,
+            date:dayVal,
             start_time:sVal,
             end_time:eVal,
             appointment_type:apType,
             client_name:cName,
             client_phone:cPhone,
-            email:eMail,
+            email:cEmail,
             notes:desc,
             deposit:dep,
             price:pr,
             tip:tp
           }]);
-        if(insE){
-          console.error(insE);
-          alert('Error inserting appointment.');
-          return;
-        }
+        if(e2){console.error(e2);alert('Error inserting appt.');return;}
       } else {
-        // Update
-        const { error:updE }=await supabase
+        // update
+        const {error:e3}=await supabase
           .from('artist_appointments')
           .update({
             artist_id:aVal,
@@ -768,84 +703,153 @@
             appointment_type:apType,
             client_name:cName,
             client_phone:cPhone,
-            email:eMail,
+            email:cEmail,
             notes:desc,
             deposit:dep,
             price:pr,
             tip:tp
           })
           .eq('id',currentApptId);
-        if(updE){
-          console.error(updE);
-          alert('Error updating appointment.');
-          return;
+        if(e3){console.error(e3);alert('Error updating appt.');return;}
+      }
+      reloadDaily();
+    });
+    function checkAnyOverlap(arr, sVal, eVal, skipId){
+      const sN=toMinutes(sVal);
+      const eN=toMinutes(eVal);
+      for(let ap of arr){
+        if(ap.id!==skipId){
+          const aS=toMinutes(ap.start_time);
+          const aE=toMinutes(ap.end_time);
+          if(sN<aE && aS<eN)return true;
         }
       }
-      apptModal.style.display='none';
-      drawMonth();         // refresh calendar
-      loadAppointmentsBox(); // refresh the bottom list
+      return false;
     }
-
-    deleteApptBtn.addEventListener('click',async()=>{
+    function reloadDaily(){
+      apptModal.style.display='none';
+      loadDay();
+      // also reload bottom list
+      loadAppointmentsList();
+    }
+    // delete
+    deleteApptBtn.addEventListener('click', async()=>{
       if(!currentApptId)return;
-      const c=confirm('Delete this appointment?');
-      if(!c)return;
-      const { error }=await supabase
+      if(!confirm('Delete this appointment?'))return;
+      const {error}=await supabase
         .from('artist_appointments')
         .delete()
         .eq('id',currentApptId);
-      if(error){
-        console.error(error);
-        alert('Error deleting appointment.');
-        return;
-      }
-      apptModal.style.display='none';
-      drawMonth();
-      loadAppointmentsBox();
+      if(error){console.error(error);alert('Error deleting.');return;}
+      reloadDaily();
     });
-    completeApptBtn.addEventListener('click',async()=>{
+    // completed
+    completeApptBtn.addEventListener('click', async()=>{
       if(!currentApptId)return;
-      const { error }=await supabase
+      const {error}=await supabase
         .from('artist_appointments')
-        .update({ appointment_type:'completed' })
+        .update({appointment_type:'completed'})
         .eq('id',currentApptId);
-      if(error){
-        console.error(error);
-        alert('Error marking completed.');
-        return;
-      }
-      apptModal.style.display='none';
-      drawMonth();
-      loadAppointmentsBox();
+      if(error){console.error(error);alert('Error marking completed.');return;}
+      reloadDaily();
     });
+    // cancel
     cancelApptBtn.addEventListener('click',()=>{
       apptModal.style.display='none';
     });
 
-    /***************************************
-     * ON LOAD
-     ***************************************/
+    // bottom list
+    rangeStart.addEventListener('change', loadAppointmentsList);
+    rangeEnd.addEventListener('change', loadAppointmentsList);
+    showAppointmentsCb.addEventListener('change', loadAppointmentsList);
+    showWalkinsCb.addEventListener('change', loadAppointmentsList);
+    artistFilterContainer.addEventListener('change', loadAppointmentsList);
+    locationFilter.addEventListener('change', loadAppointmentsList);
+
+    async function loadAppointmentsList(){
+      appointmentsList.innerHTML='';
+      const locId = locationFilter.value;
+      const rStart=rangeStart.value;
+      const rEnd=rangeEnd.value;
+      // which types?
+      let types=[];
+      if(showAppointmentsCb.checked) types.push('appointment');
+      if(showWalkinsCb.checked) types.push('walk-in');
+      if(types.length===0){
+        // nothing to show
+        appointmentsList.innerHTML='<p>No appointment types selected.</p>';
+        return;
+      }
+      if(!rStart||!rEnd){
+        // require both
+        appointmentsList.innerHTML='<p>Please select a date range.</p>';
+        return;
+      }
+      const filteredArtistIds = getFilteredArtistIds();
+      if(filteredArtistIds.length===0){
+        appointmentsList.innerHTML='<p>No artists selected.</p>';
+        return;
+      }
+
+      // build query
+      let query = supabase
+        .from('artist_appointments')
+        .select('*')
+        .gte('date', rStart)
+        .lte('date', rEnd)
+        .in('appointment_type', types)
+        .in('artist_id', filteredArtistIds);
+      if(locId){
+        // we also need to ensure the appointment's artist is in that location
+        query=query.eq('location_id', locId); 
+        // If we store location_id in the artist_appointments or join to artists 
+        // For simplicity, we skip if location_id is stored in artists
+      }
+
+      const {data:appts, error}=await query;
+      if(error){console.error(error);appointmentsList.innerHTML='<p>Error loading appointments.</p>';return;}
+      if(!appts||appts.length===0){
+        appointmentsList.innerHTML='<p>No matching appointments/walk-ins found.</p>';return;
+      }
+      // sort by date desc or asc
+      appts.sort((a,b)=>{
+        if(a.date===b.date){
+          return toMinutes(a.start_time)-toMinutes(b.start_time);
+        }
+        return a.date<b.date?-1:1;
+      });
+      appts.forEach(ap=>{
+        const div=document.createElement('div');
+        div.classList.add('appt-item');
+        const dateStr=`${ap.date} ${ap.start_time||''}-${ap.end_time||''}`;
+        const cName=ap.client_name||'N/A';
+        const type=ap.appointment_type;
+        div.innerHTML=`
+          <h4>${dateStr} [${type}]</h4>
+          <p>Artist: ${ap.artist_id}</p>
+          <p>Client: ${cName}</p>
+          <p>Price: ${ap.price||'0'}</p>
+          <p>Tip: ${ap.tip||'0'}</p>
+        `;
+        appointmentsList.appendChild(div);
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', async()=>{
-      checkAuth();         // ensure logged in
+      checkAuth();
       await loadLocations();
-      // init the month with “today”
+      // default day => today
+      const todayStr=new Date().toISOString().split('T')[0];
+      dayInput.value=todayStr;
+      // load daily
+      loadDay();
+      // default range => past week-> next week?
       const now=new Date();
-      currentMonth.year= now.getFullYear();
-      currentMonth.month= now.getMonth()+1;
-      drawMonth();
-
-      // default date range for bottom box => last 7 days to next 30 days
-      const nowStr= now.toISOString().split('T')[0];
-      const past7=new Date(now);
-      past7.setDate(past7.getDate()-7);
-      const past7Str= past7.toISOString().split('T')[0];
-      const next30=new Date(now);
-      next30.setDate(next30.getDate()+30);
-      const next30Str=next30.toISOString().split('T')[0];
-      apptsStart.value= past7Str;
-      apptsEnd.value= next30Str;
-
-      loadAppointmentsBox();
+      const past=new Date(now.getTime()-7*86400000);
+      const future=new Date(now.getTime()+7*86400000);
+      rangeStart.value=past.toISOString().split('T')[0];
+      rangeEnd.value=future.toISOString().split('T')[0];
+      loadAppointmentsList();
     });
   </script>
 </body>
