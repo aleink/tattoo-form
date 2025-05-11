@@ -50,12 +50,13 @@
     <h2>Tattoo Info</h2>
     <label>Placement *</label><input id="placement" name="placement" required placeholder="forearm, shoulder…">
     <div class="size-container">
-      <div><label>Height (in)</label><input id="heightInches" type="number" step="0.5" min="0.5" required></div>
-      <div><label>Width (in)</label><input id="widthInches"  type="number" step="0.5" min="0.5" required></div>
+      <div><label>Height (in)</label><input id="heightInches" name="heightInches" type="number" step="0.5" min="0.5" required></div>
+      <div><label>Width (in)</label><input id="widthInches"  name="widthInches" type="number" step="0.5" min="0.5" required></div>
     </div>
 
     <label>Colour / Style *</label>
-    <select id="styleSelect" required>
+    <!-- keeps id for JS, but name is the original key -->
+    <select id="styleSelect" name="colorOrBlack" required>
       <option value="base">Single colour (e.g. black, red) *</option>
       <option value="plus10a">Color (2 + solid colours) **</option>
       <option value="plus25a">Black & grey (with shading) ***</option>
@@ -67,19 +68,19 @@
       <option value="plus40b">Blended colours ****</option>
     </select>
 
-    <label>Description *</label><textarea id="description" rows="4" required></textarea>
-    <label>Reference Image 1</label><input type="file" id="reference-image1" accept="image/*">
-    <label>Reference Image 2</label><input type="file" id="reference-image2" accept="image/*">
-    <label>Reference Image 3</label><input type="file" id="reference-image3" accept="image/*">
+    <label>Description *</label><textarea id="description" name="description" rows="4" required></textarea>
+    <label>Reference Image 1</label><input type="file" id="reference-image1" name="reference-image1" accept="image/*">
+    <label>Reference Image 2</label><input type="file" id="reference-image2" name="reference-image2" accept="image/*">
+    <label>Reference Image 3</label><input type="file" id="reference-image3" name="reference-image3" accept="image/*">
   </div>
 
   <!-- LOCATION & PRIORITY -->
   <div class="form-section">
     <label>Preferred Location *</label>
-    <select id="locationSelect" required><option value="">-- Select Location --</option></select>
+    <select id="locationSelect" name="locationSelect" required><option value="">-- Select Location --</option></select>
 
     <label style="margin-top:10px">Which is more important?</label>
-    <select id="prioritySelect" required>
+    <select id="prioritySelect" name="prioritySelect" required>
       <option value="">-- Choose --</option>
       <option value="datePriority">I need a specific date</option>
       <option value="artistPriority">I have a specific artist in mind</option>
@@ -104,15 +105,15 @@
 
   <!-- CONSENT -->
   <div class="form-section">
-    <label><input type="checkbox" id="opt-in-marketing" required> I agree to receive emails/SMS about my appointment and marketing.</label>
+    <label><input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required> I agree to receive emails/SMS about my appointment and marketing.</label>
     <p style="font-size:.9em">By checking, you consent to be contacted in compliance with ADA & privacy regulations.</p>
   </div>
 
   <!-- hidden -->
-  <input type="hidden" id="finalArtistId" name="finalArtistId">
-  <input type="hidden" id="finalDate"     name="finalDate">
-  <input type="hidden" id="finalStartTime" name="finalStartTime">
-  <input type="hidden" id="finalEndTime"   name="finalEndTime">
+  <input type="hidden" id="finalArtistId"   name="finalArtistId">
+  <input type="hidden" id="finalDate"       name="finalDate">
+  <input type="hidden" id="finalStartTime"  name="finalStartTime">
+  <input type="hidden" id="finalEndTime"    name="finalEndTime">
 
   <button type="submit">Submit</button>
 </form>
@@ -150,20 +151,12 @@ const hidE=document.getElementById('finalEndTime');
 /* ---------- Load locations ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   const {data}=await supabase.from('locations').select('id,location_name');
-  data?.forEach(l=>{
-    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locSel.appendChild(o);
-  });
+  data?.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locSel.appendChild(o);});
 });
 
-/* ---------- Size rounding to 0.5" ---------- */
-function roundHalf(val){return Math.ceil(val*2)/2;}
-[hIn,wIn].forEach(el=>{
-  el.addEventListener('change',()=>{
-    const v=parseFloat(el.value);if(!v)return;
-    const r=roundHalf(v);if(r!==v)el.value=r;
-    clearSel();updateUI();
-  });
-});
+/* ---------- Size rounding (0.5") ---------- */
+function roundHalf(v){return Math.ceil(v*2)/2;}
+[hIn,wIn].forEach(el=>el.addEventListener('change',()=>{const v=parseFloat(el.value);if(!v)return;const r=roundHalf(v);if(r!==v)el.value=r;clearSel();updateUI();}));
 
 /* ---------- Helpers ---------- */
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
