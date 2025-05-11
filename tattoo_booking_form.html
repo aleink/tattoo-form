@@ -220,11 +220,21 @@ function updateUI(){
 /* ---------- DATE-priority flow ---------- */
 async function loadArtistsForDate(){
   if(!locSel.value||!dateInput.value)return;
+
   const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
+  const artIds=arts.map(a=>a.id);
+  const {data:vac}=await supabase.from('artist_vacations')
+        .select('artist_id')
+        .in('artist_id',artIds)
+        .lte('vacation_start',dateInput.value)
+        .gte('vacation_end',dateInput.value);                       /* artists on vacation that day */
+
+  const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
   const idx=new Date(dateInput.value+'T00:00:00Z').getUTCDay();
   const need=needMin(), cStart=cols[idx]+'_start',cEnd=cols[idx]+'_end';
   const avail=arts.filter(a=>{
+    if(vacationSet.has(a.id))return false;                           /* skip if on vacation */
     const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
     if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
     const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
@@ -265,9 +275,14 @@ async function loadDays(){
   if(!artistPick.value||!rangeStart.value||!rangeEnd.value)return;
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).gte('date',rangeStart.value).lte('date',rangeEnd.value);
+  const {data:vac}=await supabase.from('artist_vacations').select('*').eq('artist_id',artist.id)
+                             .lte('vacation_start',rangeEnd.value).gte('vacation_end',rangeStart.value);
   const need=needMin();const days=[];
   for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1)){
-    const iso=d.toISOString().slice(0,10),idx=d.getUTCDay(),st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en)continue;
+    const iso=d.toISOString().slice(0,10),
+          inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
+    if(inVac)continue;                                               /* skip vacation days */
+    const idx=d.getUTCDay(),st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en)continue;
     if(need>=9999){if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});continue;}
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
     if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
@@ -278,6 +293,10 @@ async function loadDays(){
 async function showSlotsArtistDay(day){
   listSlotsArtist.innerHTML='';listSlotsArtist.classList.remove('hidden');
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
+  const {data:vac}=await supabase.from('artist_vacations').select('id').eq('artist_id',artist.id)
+                            .lte('vacation_start',day).gte('vacation_end',day);
+  if(vac?.length){listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;} /* vacation guard */
+
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artistPick.value).eq('date',day);
   const idx=new Date(day+'T00:00:00Z').getUTCDay();const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
   const need=needMin();
@@ -301,7 +320,7 @@ function slotBtn(txt,start,end,artistId,date,container){
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
-  const fd=new FormData(e.target);              // includes all named fields
+  const fd=new FormData(e.target);
   const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
   if(r.ok){alert('Form submitted – we’ll contact you soon.');e.target.reset();clearSel();updateUI();}
   else alert('Submission error – please try again.');
