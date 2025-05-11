@@ -50,8 +50,8 @@
     <h2>Tattoo Info</h2>
     <label>Placement *</label><input id="placement" name="placement" required placeholder="forearm, shoulder…">
     <div class="size-container">
-      <div><label>Height (in)</label><input id="heightInches" type="number" required></div>
-      <div><label>Width (in)</label><input id="widthInches"  type="number" required></div>
+      <div><label>Height (in)</label><input id="heightInches" type="number" step="0.5" min="0.5" required></div>
+      <div><label>Width (in)</label><input id="widthInches"  type="number" step="0.5" min="0.5" required></div>
     </div>
 
     <label>Colour / Style *</label>
@@ -120,7 +120,7 @@
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ---------- Supabase init (keys unchanged) ---------- */
+/* ---------- Supabase init ---------- */
 const supabase=window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
@@ -139,11 +139,9 @@ const rangeStart=document.getElementById('rangeStart');
 const rangeEnd=document.getElementById('rangeEnd');
 const listDays=document.getElementById('availableDaysForArtist');
 const listSlotsArtist=document.getElementById('artistTimesContainer');
-
 const hIn=document.getElementById('heightInches');
 const wIn=document.getElementById('widthInches');
 const styleSel=document.getElementById('styleSelect');
-
 const hidA=document.getElementById('finalArtistId');
 const hidD=document.getElementById('finalDate');
 const hidS=document.getElementById('finalStartTime');
@@ -153,8 +151,17 @@ const hidE=document.getElementById('finalEndTime');
 document.addEventListener('DOMContentLoaded',async()=>{
   const {data}=await supabase.from('locations').select('id,location_name');
   data?.forEach(l=>{
-    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;
-    locSel.appendChild(o);
+    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locSel.appendChild(o);
+  });
+});
+
+/* ---------- Size rounding to 0.5" ---------- */
+function roundHalf(val){return Math.ceil(val*2)/2;}
+[hIn,wIn].forEach(el=>{
+  el.addEventListener('change',()=>{
+    const v=parseFloat(el.value);if(!v)return;
+    const r=roundHalf(v);if(r!==v)el.value=r;
+    clearSel();updateUI();
   });
 });
 
@@ -168,20 +175,16 @@ function needMin(){const b=baseMinutes();if(b>=9999)return 9999;return Math.ceil
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
 /* ---------- Watchers ---------- */
-[
-  locSel,prioSel,dateInput,rangeStart,rangeEnd,hIn,wIn,styleSel
-].forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
-
+[locSel,prioSel,dateInput,rangeStart,rangeEnd,styleSel].forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
 artistPick.addEventListener('change',()=>{clearSel();listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');loadDays();});
 
-/* ---------- Clear slot highlight/hidden values ---------- */
+/* ---------- Clear selection ---------- */
 function clearSel(){document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));hidA.value=hidD.value=hidS.value=hidE.value='';}
 
-/* ---------- Main UI refresh ---------- */
+/* ---------- UI refresh ---------- */
 function updateUI(){
   listArtistsDate.innerHTML='';listSlotsDate.innerHTML='';listSlotsDate.classList.add('hidden');
   listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
-
   if(prioSel.value==='datePriority'){dateSect.classList.remove('hidden');artistSect.classList.add('hidden');loadArtistsForDate();}
   else if(prioSel.value==='artistPriority'){artistSect.classList.remove('hidden');dateSect.classList.add('hidden');loadArtistDropdown();}
   else{dateSect.classList.add('hidden');artistSect.classList.add('hidden');}
@@ -193,7 +196,7 @@ async function loadArtistsForDate(){
   const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
   const idx=new Date(dateInput.value+'T00:00:00Z').getUTCDay();
-  const need=needMin(), cStart=cols[idx]+'_start',cEnd=cols[idx]+'_end';
+  const need=needMin(),cStart=cols[idx]+'_start',cEnd=cols[idx]+'_end';
   const avail=arts.filter(a=>{
     const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
     if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
@@ -203,7 +206,7 @@ async function loadArtistsForDate(){
   if(!avail.length){listArtistsDate.innerHTML='<p>No artists available for that date.</p>';return;}
   avail.forEach(a=>{
     const div=document.createElement('div');div.className='list-item';div.textContent=a.artist_name;
-    div.onclick=()=>showSlotsDate(a);
+    div.onclick=()=>{document.querySelectorAll('#availableArtistsForDate .list-item').forEach(li=>li.classList.remove('selected'));div.classList.add('selected');showSlotsDate(a);};
     listArtistsDate.appendChild(div);
   });
 }
@@ -216,11 +219,9 @@ async function showSlotsDate(artist){
   if(!st||!en){listSlotsDate.innerHTML='<p>Artist is off that day.</p>';return;}
   if(need>=9999){
     if(apps.length){listSlotsDate.innerHTML='<p>No full-day slot available.</p>';return;}
-    slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);return;
-  }
+    slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);return;}
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);made=true;}});
-  if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
+  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);made=true;}});if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
 /* ---------- ARTIST-priority flow ---------- */
@@ -251,13 +252,9 @@ async function showSlotsArtistDay(day){
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artistPick.value).eq('date',day);
   const idx=new Date(day+'T00:00:00Z').getUTCDay();const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
   const need=needMin();
-  if(need>=9999){
-    if(apps.length){listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';return;}
-    slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);return;
-  }
+  if(need>=9999){if(apps.length){listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';return;}slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);return;}
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);made=true;}});
-  if(!made)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
+  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);made=true;}});if(!made)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
 /* ---------- slot button helper ---------- */
@@ -267,7 +264,7 @@ function slotBtn(txt,start,end,artistId,date,container){
   container.appendChild(div);
 }
 
-/* ---------- submit to Make ---------- */
+/* ---------- submit ---------- */
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
