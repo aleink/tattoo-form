@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title>Tattoo Booking Form</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-  <!-- CSP -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -14,7 +12,6 @@
           style-src 'self' 'unsafe-inline';
           object-src 'none';
         ">
-
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Helvetica Neue',Arial,sans-serif;background:#111;color:#fff;max-width:600px;margin:0 auto;padding:20px}
@@ -163,7 +160,24 @@ document.addEventListener('DOMContentLoaded',async()=>{
 /* ---------- Helpers ---------- */
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
 const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,am='AM';if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;};
-function buildFree(s,e,apps){const busy=apps.map(a=>({s:toMin(a.start_time),e:toMin(a.end_time)})).sort((a,b)=>a.s-b.s);const free=[];let cur=s;busy.forEach(b=>{if(b.s>cur)free.push({s:cur,e:b.s});if(b.e>cur)cur=b.e;});if(cur<e)free.push({s:cur,e});return free;}
+
+/* buildFree now applies a 15-minute buffer around every existing appt */
+function buildFree(sDayStart,sDayEnd,apps){
+  const BUFFER=15;
+  const busy=apps.map(a=>{
+    const st=Math.max(sDayStart,toMin(a.start_time)-BUFFER);
+    const en=Math.min(sDayEnd,toMin(a.end_time)+BUFFER);
+    return {s:st,e:en};
+  }).sort((a,b)=>a.s-b.s);
+
+  const free=[];let cur=sDayStart;
+  busy.forEach(b=>{
+    if(b.s>cur)free.push({s:cur,e:b.s});
+    if(b.e>cur)cur=b.e;
+  });
+  if(cur<sDayEnd)free.push({s:cur,e:sDayEnd});
+  return free;
+}
 
 /* fractions rounding */
 [hIn,wIn].forEach(inp=>{
@@ -174,13 +188,20 @@ function buildFree(s,e,apps){const busy=apps.map(a=>({s:toMin(a.start_time),e:to
   });
 });
 
-/* base minutes by area */
+/* base minutes by area – calibrated */
 function baseMinutes(){
   const area=(+hIn.value||0)*(+wIn.value||0);
-  if(area<3)return 30;if(area<=6)return 45;if(area<=9)return 60;if(area<=12)return 75;
-  if(area<=18)return 120;if(area<=25)return 190;if(area<=38)return 285;return 9999;
+  if(area<1)  return 10;   // micro
+  if(area<=2) return 15;
+  if(area<=6) return 20;   // updated from 45
+  if(area<=9) return 60;
+  if(area<=12)return 90;   // updated from 75
+  if(area<=18)return 120;
+  if(area<=25)return 180;  // mid-range 3 hr
+  if(area<=38)return 300;  // updated from 285
+  return 9999;             // >39 sq-in full day
 }
-/* multiplier by style text */
+/* multiplier by style */
 const multiMap={
   'Single colour (e.g. black, red)':1,
   'Color (2 + solid colours)':1.1,
@@ -192,8 +213,11 @@ const multiMap={
   'Watercolor':1.25,
   'Blended colours':1.4
 };
-function needMin(){const b=baseMinutes();if(b>=9999)return 9999;
-  const mult=multiMap[styleSel.value]??1;return Math.ceil(b*mult/5)*5;
+function needMin(){
+  const b=baseMinutes();
+  if(b>=9999)return 9999;
+  const mult=multiMap[styleSel.value]??1;
+  return Math.ceil(b*mult/5)*5;      // round to nearest 5
 }
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
@@ -227,14 +251,14 @@ async function loadArtistsForDate(){
         .select('artist_id')
         .in('artist_id',artIds)
         .lte('vacation_start',dateInput.value)
-        .gte('vacation_end',dateInput.value);                       /* artists on vacation that day */
+        .gte('vacation_end',dateInput.value);
 
   const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
   const idx=new Date(dateInput.value+'T00:00:00Z').getUTCDay();
   const need=needMin(), cStart=cols[idx]+'_start',cEnd=cols[idx]+'_end';
   const avail=arts.filter(a=>{
-    if(vacationSet.has(a.id))return false;                           /* skip if on vacation */
+    if(vacationSet.has(a.id))return false;
     const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
     if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
     const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
@@ -281,7 +305,7 @@ async function loadDays(){
   for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1)){
     const iso=d.toISOString().slice(0,10),
           inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
-    if(inVac)continue;                                               /* skip vacation days */
+    if(inVac)continue;
     const idx=d.getUTCDay(),st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en)continue;
     if(need>=9999){if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});continue;}
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
@@ -295,10 +319,12 @@ async function showSlotsArtistDay(day){
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:vac}=await supabase.from('artist_vacations').select('id').eq('artist_id',artist.id)
                             .lte('vacation_start',day).gte('vacation_end',day);
-  if(vac?.length){listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;} /* vacation guard */
+  if(vac?.length){listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;}
 
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artistPick.value).eq('date',day);
-  const idx=new Date(day+'T00:00:00Z').getUTCDay();const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
+  const idx=new Date(day+'T00:00:00Z').getUTCDay();
+  const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];
+  if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
   const need=needMin();
   if(need>=9999){
     if(apps.length){listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';return;}
