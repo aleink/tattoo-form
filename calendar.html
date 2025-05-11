@@ -51,7 +51,7 @@
     #appointments-list-section h2{margin-bottom:10px;}
     .filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap;}
     .appointments-container{max-height:300px;overflow-y:auto;border:1px solid #444;padding:10px;}
-    .appt-item{background:#333;border:1px solid #555;padding:8px;border-radius:4px;margin-bottom:8px;}
+    .appt-item{background:#333;border:1px solid #555;padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer;}
     .appt-item h4{margin-bottom:3px;font-size:1rem;color:#fff;}
     .appt-item p{margin-bottom:2px;font-size:.85rem;color:#bbb;}
   </style>
@@ -100,6 +100,7 @@
     <div class="filters-row">
       <label>From: <input type="date" id="range-start"></label>
       <label>To:   <input type="date" id="range-end"></label>
+      <label>Client search: <input type="text" id="client-search" placeholder="name / phone / email"></label>
       <div>
         <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
         <label><input type="checkbox" id="cb-walkins" checked> Walk-ins</label>
@@ -118,10 +119,9 @@
     );
 
     /* -------- HELPERS -------- */
-    const toMinutes = t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m;};
-    const overlaps  =(a,b)=>a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
-    /* correct weekday: 0=Sun … 6=Sat */
-    const weekdayIndex = d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay();};
+    const toMinutes=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m;};
+    const overlaps=(a,b)=>a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
+    const weekdayIndex=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay();};
 
     /* -------- DOM refs -------- */
     const logoutBtn=document.getElementById('logout-btn');
@@ -131,11 +131,10 @@
     const artistFilterContainer=document.getElementById('artist-filter-container');
     const modalArtist=document.getElementById('modal-artist');
 
-    /* modal refs */
     const apptModal=document.getElementById('appt-modal');
     const modalTitle=document.getElementById('modal-title');
     const modalStart=document.getElementById('modal-start-time');
-    const modalEnd  =document.getElementById('modal-end-time');
+    const modalEnd=document.getElementById('modal-end-time');
     const modalClientName=document.getElementById('modal-client-name');
     const modalClientPhone=document.getElementById('modal-client-phone');
     const modalEmail=document.getElementById('modal-email');
@@ -149,12 +148,12 @@
     const deleteBtn=document.getElementById('delete-appt-btn');
     const completeBtn=document.getElementById('complete-appt-btn');
 
-    /* bottom list refs */
     const rangeStart=document.getElementById('range-start');
     const rangeEnd=document.getElementById('range-end');
     const cbAppt=document.getElementById('cb-appointments');
     const cbWalk=document.getElementById('cb-walkins');
     const appointmentsList=document.getElementById('appointments-list');
+    const clientSearch=document.getElementById('client-search');
 
     /* -------- STATE -------- */
     let artistMap={}, currentApptId=null;
@@ -166,8 +165,8 @@
     /* -------- INIT -------- */
     document.addEventListener('DOMContentLoaded',async()=>{
       await loadLocations();
-      dayInput.value=new Date().toISOString().split('T')[0];     // today
-      await loadArtistsForLocation(locationFilter.value);        // default (maybe none)
+      dayInput.value=new Date().toISOString().split('T')[0];
+      await loadArtistsForLocation(locationFilter.value);
       setDefaultRange();
       loadDay();
       loadAppointmentsList();
@@ -178,6 +177,7 @@
     locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadAppointmentsList();};
     artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList();});
     [rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
+    clientSearch.addEventListener('input',loadAppointmentsList);
 
     /* -------- LOAD LOCATIONS -------- */
     async function loadLocations(){
@@ -196,9 +196,7 @@
       const {data}=await supabase.from('artists').select('*').eq('location_id',locId);
       data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
         artistMap[a.id]=a;
-        /* modal dropdown */
         const opt=document.createElement('option');opt.value=a.id;opt.textContent=a.artist_name;modalArtist.appendChild(opt);
-        /* filter checkbox */
         const wrap=document.createElement('div');wrap.className='artist-filter-item';
         const cb=document.createElement('input');cb.type='checkbox';cb.value=a.id;cb.checked=true;
         const lb=document.createElement('label');lb.textContent=a.artist_name;wrap.append(cb,lb);
@@ -211,7 +209,6 @@
     async function loadDay(){
       dailyScheduler.innerHTML='';
       const date=dayInput.value;if(!date) return;
-      /* hour grid */
       for(let h=8;h<=24;h++){
         const div=document.createElement('div');div.className='hour-line';div.style.top=(h-8)*60+'px';
         const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;dailyScheduler.appendChild(div);
@@ -222,14 +219,25 @@
       const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
       const cStart=cols[wIdx]+'_start', cEnd=cols[wIdx]+'_end';
 
+      /* vacation set */
+      const {data:vac}=await supabase.from('artist_vacations')
+        .select('artist_id').in('artist_id',ids)
+        .lte('vacation_start',date).gte('vacation_end',date);
+      const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
+
       const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
 
       /* schedule blocks */
       artists.forEach((a,i)=>{
         const st=a[cStart],en=a[cEnd];if(!st||!en) return;
         const block=document.createElement('div');block.className='schedule-block';
-        block.style.cssText=`left:${80+i*120}px;width:110px;top:${toMinutes(st)-480}px;height:${toMinutes(en)-toMinutes(st)}px;border-left-color:${a.color||'#999'}`;
-        block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}</span>${st}-${en}`;dailyScheduler.appendChild(block);
+        const top=toMinutes(st)-480, ht=toMinutes(en)-toMinutes(st);
+        block.style.cssText=`left:${80+i*120}px;width:110px;top:${top}px;height:${ht}px;`;
+        const vac=vacationSet.has(a.id);
+        block.style.borderLeftColor=vac?'#888':(a.color||'#999');
+        if(vac){block.style.background='rgba(128,128,128,.4)';}
+        block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vac?' (vacation)':''}</span>${st}-${en}`;
+        dailyScheduler.appendChild(block);
       });
 
       /* appointments */
@@ -326,7 +334,7 @@
       apptModal.style.display='none';loadDay();loadAppointmentsList();
     };
 
-    /* -------- APPOINTMENTS LIST (bottom) -------- */
+    /* -------- APPOINTMENTS LIST -------- */
     function setDefaultRange(){
       const now=new Date();
       rangeStart.value=new Date(now-7*86400000).toISOString().split('T')[0];
@@ -346,6 +354,12 @@
         .gte('date',rangeStart.value).lte('date',rangeEnd.value)
         .in('appointment_type',types).in('artist_id',ids);
       if(locationFilter.value) q=q.eq('artists.location_id',locationFilter.value);
+
+      const term=clientSearch.value.trim();
+      if(term){
+        q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
+      }
+
       const {data,error}=await q;
       if(error){console.error(error);appointmentsList.textContent='Error.';return;}
       if(!data||!data.length){appointmentsList.textContent='No matching records.';return;}
@@ -357,6 +371,7 @@
           <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
           <p>Client: ${ap.client_name||'N/A'}</p>
           <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
+        div.onclick=()=>{dayInput.value=ap.date;loadDay();};
         appointmentsList.appendChild(div);
       });
     }
