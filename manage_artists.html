@@ -4,67 +4,76 @@
   <meta charset="UTF-8">
   <title>Manage Artists</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ─────  VISUAL THEME (dark, consistent with all other pages)  ───── -->
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 10px;
-      overflow-y: auto; /* Global scroll if needed */
+    :root{
+      --bg-0:#111;   /* body background   */
+      --bg-1:#222;   /* card / section    */
+      --bg-2:#333;   /* button / hover bg */
+      --border:#444; /* borders           */
+      --text:#fff;   /* main text         */
+      --text-dim:#ccc;
+      --accent:#28a745;
     }
-    h1 {
-      text-align: center;
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+    body{
+      background:var(--bg-0);color:var(--text);
+      max-width:700px;margin:20px auto;padding:20px;
     }
-    .login-section, .manage-section {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 20px;
+    h1{text-align:center;margin-bottom:18px}
+    h2{margin:8px 0 14px}
+
+    /* card-style sections */
+    .login-section,.manage-section{
+      background:var(--bg-1);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:18px;margin-bottom:24px;
     }
-    label {
-      font-weight: bold;
-      display: block;
-      margin: 8px 0 4px;
+
+    label{font-weight:700;display:block;margin:10px 0 4px}
+    input,select{
+      width:100%;padding:8px;
+      background:var(--bg-0);color:var(--text);
+      border:1px solid var(--border);border-radius:4px;
+      margin-bottom:12px;
     }
-    input, select {
-      width: 100%;
-      padding: 7px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
+    input:focus,select:focus{outline:2px solid var(--accent)}
+
+    /* primary buttons */
+    button{
+      background:var(--bg-2);color:var(--text);
+      border:none;border-radius:4px;
+      padding:8px 16px;cursor:pointer;
+      transition:background .2s;
     }
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-      margin-right: 10px;
+    button:hover{background:#555}
+    .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
+
+    .message{color:#ff6b6b;margin-top:8px;font-size:.9em}
+    .hidden{display:none}
+
+    /* table */
+    .table-container{
+      max-height:320px;overflow-y:auto;margin-top:10px;
+      border:1px solid var(--border);
     }
-    .message {
-      color: red;
-      margin-top: 8px;
+    table{width:100%;border-collapse:collapse;font-size:.9em}
+    th{
+      position:sticky;top:0;
+      background:var(--bg-1);color:var(--text);
+      border-bottom:2px solid var(--border);
+      padding:10px;
     }
-    .hidden {
-      display: none;
-    }
-    /* Make table container scrollable if content is too large */
-    .table-container {
-      max-height: 300px;
-      overflow-y: auto;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
+    td{padding:8px;border-bottom:1px solid var(--border);color:var(--text-dim)}
+    tr:nth-child(even){background:#1a1a1a}
   </style>
 </head>
 <body>
   <h1>Manage Artists</h1>
 
-  <!-- Login Section for GM -->
+  <!-- Login Section -->
   <div class="login-section" id="login-section">
     <label for="gm-email">GM Email</label>
     <input type="email" id="gm-email">
@@ -79,7 +88,7 @@
   <!-- Artist Management Section -->
   <div class="manage-section hidden" id="manage-section">
     <h2>Add / Edit Artist</h2>
-    <!-- Form for new or existing artist -->
+
     <label for="artist-name">Artist Name</label>
     <input type="text" id="artist-name" />
 
@@ -107,9 +116,7 @@
     </select>
 
     <label for="artist-location">Location</label>
-    <select id="artist-location">
-      <!-- We'll load all locations here -->
-    </select>
+    <select id="artist-location"></select>
 
     <div>
       <button id="save-artist-btn">Save Artist</button>
@@ -117,12 +124,10 @@
       <div class="message" id="artist-message"></div>
     </div>
 
-    <hr />
+    <hr style="border-color:var(--border);margin:20px 0">
 
-    <!-- Filter by location at the top of the table -->
     <label for="filter-location">Filter by Location</label>
     <select id="filter-location">
-      <!-- We'll load the same set of locations -->
       <option value="">-- All Locations --</option>
     </select>
 
@@ -139,16 +144,15 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Will populate via JS -->
-        </tbody>
+        <tbody><!-- JS populates --></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Supabase (v1.35.7) -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
+    /*  ───────────── JS logic unchanged ───────────── */
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -175,37 +179,25 @@
     const filterLocationSelect = document.getElementById('filter-location');
 
     let currentGM = null;
-    let currentArtistId = null; // if editing existing
+    let currentArtistId = null;
 
-    // GM login
     gmLoginBtn.addEventListener('click', async () => {
+      loginMessage.textContent='';
       const emailVal = gmEmailInput.value.trim();
       const passVal = gmPasswordInput.value.trim();
-      if (!emailVal || !passVal) {
-        loginMessage.textContent = 'Email and Password required.';
-        return;
-      }
-      // check user with role='gm'
+      if (!emailVal || !passVal) { loginMessage.textContent='Email and Password required.'; return; }
+
       let { data: users, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', emailVal)
         .eq('role', 'gm');
-      if (error) {
-        console.error(error);
-        loginMessage.textContent = 'Error checking GM credentials.';
-        return;
-      }
-      if (!users || users.length === 0) {
-        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
-        return;
-      }
+      if (error) { loginMessage.textContent='Error checking GM credentials.'; return; }
+      if (!users?.length) { loginMessage.textContent='Invalid GM credentials or not a GM.'; return; }
+
       const user = users[0];
-      if (user.password_hash !== passVal) {
-        loginMessage.textContent = 'Invalid credentials.';
-        return;
-      }
-      // logged in
+      if (user.password_hash !== passVal) { loginMessage.textContent='Invalid credentials.'; return; }
+
       currentGM = user;
       loginSection.classList.add('hidden');
       manageSection.classList.remove('hidden');
@@ -213,204 +205,94 @@
       loadAllArtists();
     });
 
-    // load all locations in both "artistLocationSelect" and "filterLocationSelect"
     async function loadLocations() {
       artistLocationSelect.innerHTML = '';
-      filterLocationSelect.innerHTML = '<option value="">-- All Locations --</option>';
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*');
-      if (error) {
-        console.error(error);
-        return;
-      }
+      filterLocationSelect.innerHTML  = '<option value="">-- All Locations --</option>';
+      const { data, error } = await supabase.from('locations').select('*');
+      if (error) return;
       data.forEach(loc => {
-        const opt1 = document.createElement('option');
-        opt1.value = loc.id;
-        opt1.textContent = loc.location_name;
-        artistLocationSelect.appendChild(opt1);
-
-        const opt2 = document.createElement('option');
-        opt2.value = loc.id;
-        opt2.textContent = loc.location_name;
-        filterLocationSelect.appendChild(opt2);
+        const o1=document.createElement('option');o1.value=loc.id;o1.textContent=loc.location_name;artistLocationSelect.appendChild(o1);
+        const o2=document.createElement('option');o2.value=loc.id;o2.textContent=loc.location_name;filterLocationSelect.appendChild(o2);
       });
     }
 
-    // load artists with optional location filter
     async function loadAllArtists() {
-      artistsTableBody.innerHTML = '';
-      let filterVal = filterLocationSelect.value;
-      let query = supabase
-        .from('artists')
-        .select('*, locations(location_name)')
-        .order('artist_name', { ascending: true });
-
-      if (filterVal) {
-        query = query.eq('location_id', filterVal);
-      }
-      let { data, error } = await query;
-      if (error) {
-        console.error(error);
-        return;
-      }
-      data.forEach(artist => {
-        const tr = document.createElement('tr');
-        const tdName = document.createElement('td');
-        const tdPhone = document.createElement('td');
-        const tdEmail = document.createElement('td');
-        const tdSplit = document.createElement('td');
-        const tdColor = document.createElement('td');
-        const tdLoc   = document.createElement('td');
-        const tdActions = document.createElement('td');
-
-        tdName.textContent = artist.artist_name;
-        tdPhone.textContent = artist.phone || '';
-        tdEmail.textContent = artist.email || '';
-        tdSplit.textContent = artist.percentage_split || '';
-        tdColor.textContent = artist.color || '';
-        tdLoc.textContent   = artist.locations ? artist.locations.location_name : '';
-
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', () => {
-          editArtist(artist);
-        });
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', () => {
-          deleteArtist(artist.id);
-        });
-
-        tdActions.appendChild(editBtn);
-        tdActions.appendChild(delBtn);
-
-        tr.appendChild(tdName);
-        tr.appendChild(tdPhone);
-        tr.appendChild(tdEmail);
-        tr.appendChild(tdSplit);
-        tr.appendChild(tdColor);
-        tr.appendChild(tdLoc);
-        tr.appendChild(tdActions);
+      artistsTableBody.innerHTML='';
+      let query=supabase.from('artists').select('*, locations(location_name)').order('artist_name',{ascending:true});
+      if(filterLocationSelect.value)query=query.eq('location_id',filterLocationSelect.value);
+      const {data,error}=await query;
+      if(error)return;
+      data.forEach(a=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${a.artist_name}</td>
+          <td>${a.phone||''}</td>
+          <td>${a.email||''}</td>
+          <td>${a.percentage_split||''}</td>
+          <td><span style="color:${a.color||'#aaa'}">${a.color||''}</span></td>
+          <td>${a.locations? a.locations.location_name : ''}</td>
+          <td>
+            <button class="btn-mini" onclick="editArtist(${a.id})">Edit</button>
+            <button class="btn-mini" onclick="deleteArtist(${a.id})">Delete</button>
+          </td>`;
+        tr.dataset.full=JSON.stringify(a); // stash full object for edit
         artistsTableBody.appendChild(tr);
       });
     }
 
-    filterLocationSelect.addEventListener('change', () => {
-      loadAllArtists();
+    filterLocationSelect.addEventListener('change',loadAllArtists);
+
+    window.editArtist=function(id){
+      const row=[...artistsTableBody.children].find(r=>JSON.parse(r.dataset.full).id===id);
+      if(!row)return;
+      const a=JSON.parse(row.dataset.full);
+      currentArtistId=a.id;
+      artistNameInput.value=a.artist_name||'';
+      artistPhoneInput.value=a.phone||'';
+      artistEmailInput.value=a.email||'';
+      artistCalendarInput.value=a.calendar_id||'';
+      artistSplitInput.value=a.percentage_split||'';
+      artistColorSelect.value=a.color||'';
+      artistLocationSelect.value=a.location_id||'';
+      artistMessage.textContent='Editing existing artist. Save to update.';
+    };
+
+    window.deleteArtist=async(id)=>{
+      if(!confirm('Are you sure you want to delete this artist?'))return;
+      const {error}=await supabase.from('artists').delete().eq('id',id);
+      artistMessage.textContent= error ? 'Error deleting artist.' : 'Artist deleted.';
+      if(!error){loadAllArtists();clearArtistForm();}
+    };
+
+    saveArtistBtn.addEventListener('click',async()=>{
+      artistMessage.textContent='';
+      if(!artistNameInput.value.trim()){artistMessage.textContent='Artist name is required.';return;}
+      const payload={
+        artist_name:artistNameInput.value.trim(),
+        phone:artistPhoneInput.value.trim()||null,
+        email:artistEmailInput.value.trim()||null,
+        calendar_id:artistCalendarInput.value.trim()||null,
+        percentage_split:artistSplitInput.value.trim()?parseFloat(artistSplitInput.value):null,
+        color:artistColorSelect.value||null,
+        location_id:artistLocationSelect.value||null
+      };
+      let res;
+      if(currentArtistId){
+        res=await supabase.from('artists').update(payload).eq('id',currentArtistId);
+      }else{
+        res=await supabase.from('artists').insert([payload]);
+      }
+      artistMessage.textContent=res.error?'Error saving artist.':'Artist saved!';
+      if(!res.error){loadAllArtists();clearArtistForm();}
     });
 
-    function editArtist(artist) {
-      currentArtistId = artist.id;
-      artistNameInput.value = artist.artist_name || '';
-      artistPhoneInput.value = artist.phone || '';
-      artistEmailInput.value = artist.email || '';
-      artistCalendarInput.value = artist.calendar_id || '';
-      artistSplitInput.value = artist.percentage_split || '';
-      artistColorSelect.value = artist.color || '';
-      artistLocationSelect.value = artist.location_id || '';
-      artistMessage.textContent = 'Editing existing artist. Save to update.';
+    clearArtistBtn.addEventListener('click',clearArtistForm);
+    function clearArtistForm(){
+      currentArtistId=null;artistNameInput.value=artistPhoneInput.value=artistEmailInput.value=artistCalendarInput.value=artistSplitInput.value='';
+      artistColorSelect.value='';artistLocationSelect.value='';artistMessage.textContent='';
     }
 
-    async function deleteArtist(artistId) {
-      const confirmDel = confirm('Are you sure you want to delete this artist?');
-      if (!confirmDel) return;
-      const { data, error } = await supabase
-        .from('artists')
-        .delete()
-        .eq('id', artistId);
-      if (error) {
-        console.error(error);
-        artistMessage.textContent = 'Error deleting artist.';
-        return;
-      }
-      artistMessage.textContent = 'Artist deleted.';
-      loadAllArtists();
-      clearArtistForm();
-    }
-
-    saveArtistBtn.addEventListener('click', async () => {
-      artistMessage.textContent = '';
-      const nameVal = artistNameInput.value.trim();
-      if (!nameVal) {
-        artistMessage.textContent = 'Artist name is required.';
-        return;
-      }
-      const phoneVal = artistPhoneInput.value.trim() || null;
-      const emailVal = artistEmailInput.value.trim() || null;
-      const calVal   = artistCalendarInput.value.trim() || null;
-      const splitVal = artistSplitInput.value.trim() ? parseFloat(artistSplitInput.value) : null;
-      let colorVal   = artistColorSelect.value;
-      if (!colorVal) colorVal = null;
-      const locVal   = artistLocationSelect.value || null;
-
-      if (!currentArtistId) {
-        // Insert
-        const { data, error } = await supabase
-          .from('artists')
-          .insert([{
-            artist_name: nameVal,
-            phone: phoneVal,
-            email: emailVal,
-            calendar_id: calVal,
-            percentage_split: splitVal,
-            color: colorVal,
-            location_id: locVal
-          }]);
-        if (error) {
-          console.error(error);
-          artistMessage.textContent = 'Error inserting artist.';
-          return;
-        }
-        artistMessage.textContent = 'New artist added!';
-      } else {
-        // Update
-        const { data, error } = await supabase
-          .from('artists')
-          .update({
-            artist_name: nameVal,
-            phone: phoneVal,
-            email: emailVal,
-            calendar_id: calVal,
-            percentage_split: splitVal,
-            color: colorVal,
-            location_id: locVal
-          })
-          .eq('id', currentArtistId);
-
-        console.log('Update result:', { data, error });
-        if (error) {
-          console.error(error);
-          artistMessage.textContent = 'Error updating artist.';
-          return;
-        }
-        artistMessage.textContent = 'Artist updated!';
-      }
-      loadAllArtists();
-      clearArtistForm();
-    });
-
-    clearArtistBtn.addEventListener('click', () => {
-      clearArtistForm();
-    });
-
-    function clearArtistForm() {
-      currentArtistId = null;
-      artistNameInput.value = '';
-      artistPhoneInput.value = '';
-      artistEmailInput.value = '';
-      artistCalendarInput.value = '';
-      artistSplitInput.value = '';
-      artistColorSelect.value = '';
-      artistLocationSelect.value = '';
-      artistMessage.textContent = '';
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      // Hide manage section until GM logs in
-      manageSection.classList.add('hidden');
-    });
+    window.addEventListener('DOMContentLoaded',()=>manageSection.classList.add('hidden'));
   </script>
 </body>
 </html>
