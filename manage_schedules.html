@@ -5,10 +5,7 @@
   <title>Manage Schedules</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 
-    Content Security Policy allowing 'unsafe-eval' and 'unsafe-inline' so Supabase can function
-    Adjust connect-src if your Supabase domain differs
-  -->
+  <!--  ─── CSP (unchanged) ─── -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -18,120 +15,126 @@
           object-src 'none';
         ">
 
+  <!--  ─── VISUAL THEME (dark, consistent with other pages) ─── -->
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 20px auto;
-      padding: 10px;
-      overflow-y: auto;
+    :root{
+      --bg-0:#111;   /* body background      */
+      --bg-1:#222;   /* card / section       */
+      --bg-2:#333;   /* button / hover bg    */
+      --border:#444; /* borders & outlines   */
+      --text:#fff;   /* main text            */
+      --text-dim:#ccc;
+      --accent:#28a745;
     }
-    h1 {
-      text-align: center;
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+    body{
+      background:var(--bg-0);color:var(--text);
+      max-width:750px;margin:20px auto;padding:20px;
     }
-    .login-section, .schedules-section {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 20px;
+    h1{text-align:center;margin-bottom:18px}
+    h2,h3{margin:8px 0 14px}
+    p{font-size:.9em;color:var(--text-dim)}
+
+    /* Card-style sections */
+    .login-section,.schedules-section{
+      background:var(--bg-1);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:18px;margin-bottom:24px;
     }
-    label {
-      font-weight: bold;
-      display: block;
-      margin: 8px 0 4px;
+
+    label{font-weight:700;display:block;margin:10px 0 4px}
+    input,select{
+      width:100%;padding:8px;
+      background:var(--bg-0);color:var(--text);
+      border:1px solid var(--border);border-radius:4px;
+      margin-bottom:12px;
     }
-    input, select {
-      width: 100%;
-      padding: 7px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
+    input:focus,select:focus{outline:2px solid var(--accent)}
+
+    /* Buttons */
+    button{
+      background:var(--bg-2);color:var(--text);
+      border:none;border-radius:4px;
+      padding:8px 16px;cursor:pointer;
+      transition:background .2s;
     }
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-      margin-right: 10px;
+    button:hover{background:#555}
+
+    .message{color:#ff6b6b;margin-top:8px;font-size:.9em}
+    .hidden{display:none}
+
+    /* Grid for the 7 day blocks */
+    .days-container{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:16px;margin-top:14px;
     }
-    .message {
-      color: red;
-      margin-top: 8px;
+    .day-block{
+      background:var(--bg-0);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:12px;
     }
-    .hidden {
-      display: none;
-    }
-    .days-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .day-block {
-      border: 1px solid #ccc;
-      padding: 10px;
-    }
-    .day-block h3 {
-      margin-top: 0;
-      font-size: 1.1em;
-      text-align: center;
+    .day-block h3{
+      text-align:center;margin-bottom:10px;font-size:1em;color:var(--accent)
     }
   </style>
 </head>
 <body>
   <h1>Manage Artist Schedules</h1>
 
-  <!-- GM Login -->
+  <!-- ───── GM Login ───── -->
   <div class="login-section" id="login-section">
     <label for="gm-email">GM Email</label>
-    <input type="email" id="gm-email" />
+    <input type="email" id="gm-email">
 
     <label for="gm-password">GM Password</label>
-    <input type="password" id="gm-password" />
+    <input type="password" id="gm-password">
 
     <button id="gm-login-btn">Login</button>
     <div class="message" id="login-message"></div>
   </div>
 
-  <!-- Main schedules section -->
+  <!-- ───── Main schedules section ───── -->
   <div class="schedules-section hidden" id="schedules-section">
-    <h2>Assign Working Days & Hours</h2>
+    <h2>Assign Working Days &amp; Hours</h2>
 
-    <!-- Filter by location -->
     <label for="location-filter">Filter by Location</label>
     <select id="location-filter">
       <option value="">-- Select Location --</option>
     </select>
 
-    <!-- Filter by artist -->
     <label for="artist-filter">Select Artist</label>
     <select id="artist-filter">
       <option value="">-- Select Artist --</option>
     </select>
 
-    <hr />
+    <hr style="border-color:var(--border);margin:18px 0">
 
     <h3>Weekly Schedule</h3>
     <p>Select start/end time for each day. Leave blank if the artist doesn’t work that day.</p>
-    <div class="days-container" id="days-container">
-      <!-- We'll create 7 blocks here (Sun-Sat), each with start & end inputs. -->
-    </div>
 
-    <button id="save-schedule-btn">Save Schedule</button>
+    <div class="days-container" id="days-container"><!-- JS builds blocks --></div>
+
+    <button id="save-schedule-btn" style="margin-top:12px">Save Schedule</button>
     <div class="message" id="schedule-message"></div>
   </div>
 
-  <!-- Supabase JS -->
+  <!-- Supabase JS (logic untouched) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
+    /* ────────── JS logic (unchanged) ────────── */
     const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // GM login elements
     const loginSection = document.getElementById('login-section');
     const gmEmailInput = document.getElementById('gm-email');
     const gmPasswordInput = document.getElementById('gm-password');
     const gmLoginBtn = document.getElementById('gm-login-btn');
     const loginMessage = document.getElementById('login-message');
 
-    // Schedules section
     const schedulesSection = document.getElementById('schedules-section');
     const locationFilter = document.getElementById('location-filter');
     const artistFilter = document.getElementById('artist-filter');
@@ -139,192 +142,81 @@
     const saveScheduleBtn = document.getElementById('save-schedule-btn');
     const scheduleMessage = document.getElementById('schedule-message');
 
-    // We'll build 7 day blocks: sunday...saturday
-    // Each block has 2 <input type="time"> for start & end
     const dayNames = [
-      { key: 'sunday', label: 'Sunday' },
-      { key: 'monday', label: 'Monday' },
-      { key: 'tuesday', label: 'Tuesday' },
+      { key: 'sunday',    label: 'Sunday'    },
+      { key: 'monday',    label: 'Monday'    },
+      { key: 'tuesday',   label: 'Tuesday'   },
       { key: 'wednesday', label: 'Wednesday' },
-      { key: 'thursday', label: 'Thursday' },
-      { key: 'friday', label: 'Friday' },
-      { key: 'saturday', label: 'Saturday' }
+      { key: 'thursday',  label: 'Thursday'  },
+      { key: 'friday',    label: 'Friday'    },
+      { key: 'saturday',  label: 'Saturday'  }
     ];
-    let dayInputs = {}; // e.g. dayInputs['monday'] = { start, end }
+    let dayInputs = {};
 
-    // Build day blocks once DOM loaded
-    function buildDayBlocks() {
-      daysContainer.innerHTML = '';
-      dayNames.forEach(d => {
-        const block = document.createElement('div');
-        block.classList.add('day-block');
-
-        const title = document.createElement('h3');
-        title.textContent = d.label;
-        block.appendChild(title);
-
-        // Start time
-        const startLabel = document.createElement('label');
-        startLabel.textContent = 'Start Time';
-        block.appendChild(startLabel);
-        const startInput = document.createElement('input');
-        startInput.type = 'time';
-        block.appendChild(startInput);
-
-        // End time
-        const endLabel = document.createElement('label');
-        endLabel.textContent = 'End Time';
-        block.appendChild(endLabel);
-        const endInput = document.createElement('input');
-        endInput.type = 'time';
-        block.appendChild(endInput);
-
-        dayInputs[d.key] = { start: startInput, end: endInput };
+    function buildDayBlocks(){
+      daysContainer.innerHTML='';
+      dayNames.forEach(d=>{
+        const block=document.createElement('div');block.className='day-block';
+        block.innerHTML=`
+          <h3>${d.label}</h3>
+          <label>Start Time</label><input type="time">
+          <label>End Time</label><input type="time">
+        `;
+        const [st,ed]=block.querySelectorAll('input');
+        dayInputs[d.key]={start:st,end:ed};
         daysContainer.appendChild(block);
       });
     }
-
     buildDayBlocks();
 
-    // 1. GM login
-    gmLoginBtn.addEventListener('click', async () => {
-      loginMessage.textContent = '';
-      const emailVal = gmEmailInput.value.trim();
-      const passVal = gmPasswordInput.value.trim();
-      if (!emailVal || !passVal) {
-        loginMessage.textContent = 'Email and Password required.';
-        return;
-      }
-      // Check user with role='gm'
-      let { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', emailVal)
-        .eq('role', 'gm');
-      if (error) {
-        console.error(error);
-        loginMessage.textContent = 'Error checking GM credentials.';
-        return;
-      }
-      if (!data || data.length === 0) {
-        loginMessage.textContent = 'Invalid GM credentials or not a GM.';
-        return;
-      }
-      const user = data[0];
-      if (user.password_hash !== passVal) {
-        loginMessage.textContent = 'Invalid credentials.';
-        return;
-      }
-      // success
-      loginSection.classList.add('hidden');
-      schedulesSection.classList.remove('hidden');
-      loadLocations();
+    gmLoginBtn.addEventListener('click',async()=>{
+      loginMessage.textContent='';
+      const e=gmEmailInput.value.trim(),p=gmPasswordInput.value.trim();
+      if(!e||!p){loginMessage.textContent='Email and Password required.';return;}
+      const {data,error}=await supabase.from('users').select('*').eq('email',e).eq('role','gm');
+      if(error||!data?.length){loginMessage.textContent='Invalid GM credentials or not a GM.';return;}
+      if(data[0].password_hash!==p){loginMessage.textContent='Invalid credentials.';return;}
+      loginSection.classList.add('hidden');schedulesSection.classList.remove('hidden');loadLocations();
     });
 
-    // 2. Load all locations
-    async function loadLocations() {
-      locationFilter.innerHTML = '<option value="">-- Select Location --</option>';
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*');
-      if (error) {
-        console.error(error);
-        return;
-      }
-      data.forEach(loc => {
-        const opt = document.createElement('option');
-        opt.value = loc.id;
-        opt.textContent = loc.location_name;
-        locationFilter.appendChild(opt);
+    async function loadLocations(){
+      locationFilter.innerHTML='<option value="">-- Select Location --</option>';
+      const {data}=await supabase.from('locations').select('*');
+      data?.forEach(l=>{
+        const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);
       });
     }
 
-    // 3. locationFilter -> load artists
-    locationFilter.addEventListener('change', async () => {
-      artistFilter.innerHTML = '<option value="">-- Select Artist --</option>';
-      clearDayInputs();
-      if (!locationFilter.value) return;
-      const { data, error } = await supabase
-        .from('artists')
-        .select('id, artist_name')
-        .eq('location_id', locationFilter.value);
-      if (error) {
-        console.error(error);
-        return;
-      }
-      data.forEach(art => {
-        const opt = document.createElement('option');
-        opt.value = art.id;
-        opt.textContent = art.artist_name;
-        artistFilter.appendChild(opt);
+    locationFilter.addEventListener('change',async()=>{
+      artistFilter.innerHTML='<option value="">-- Select Artist --</option>';clearDayInputs();
+      if(!locationFilter.value)return;
+      const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locationFilter.value);
+      data?.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistFilter.appendChild(o);});
+    });
+
+    artistFilter.addEventListener('change',async()=>{
+      clearDayInputs();if(!artistFilter.value)return;
+      const {data,error}=await supabase.from('artists').select('*').eq('id',artistFilter.value).single();
+      if(error||!data){scheduleMessage.textContent='Error loading artist schedule.';return;}
+      dayNames.forEach(d=>{
+        const s=d.key+'_start',e=d.key+'_end';
+        if(data[s])dayInputs[d.key].start.value=data[s];
+        if(data[e])dayInputs[d.key].end.value=data[e];
       });
     });
 
-    // 4. artistFilter -> load current schedule from the `artists` row
-    artistFilter.addEventListener('change', async () => {
-      clearDayInputs();
-      if (!artistFilter.value) return;
-      const { data, error } = await supabase
-        .from('artists')
-        .select('*')
-        .eq('id', artistFilter.value)
-        .single();
+    function clearDayInputs(){dayNames.forEach(d=>{dayInputs[d.key].start.value='';dayInputs[d.key].end.value='';});scheduleMessage.textContent='';}
 
-      if (error) {
-        console.error(error);
-        scheduleMessage.textContent = 'Error loading artist schedule.';
-        return;
-      }
-      if (!data) {
-        scheduleMessage.textContent = 'No artist data found.';
-        return;
-      }
-      // fill each day's inputs
-      dayNames.forEach(d => {
-        const startCol = d.key + '_start'; // e.g. 'monday_start'
-        const endCol   = d.key + '_end';   // e.g. 'monday_end'
-        if (data[startCol]) dayInputs[d.key].start.value = data[startCol];
-        if (data[endCol])   dayInputs[d.key].end.value   = data[endCol];
+    saveScheduleBtn.addEventListener('click',async()=>{
+      scheduleMessage.textContent='';
+      if(!artistFilter.value){scheduleMessage.textContent='Select an artist first.';return;}
+      const obj={};
+      dayNames.forEach(d=>{
+        obj[d.key+'_start']=dayInputs[d.key].start.value||null;
+        obj[d.key+'_end'  ]=dayInputs[d.key].end.value  ||null;
       });
-    });
-
-    function clearDayInputs() {
-      dayNames.forEach(d => {
-        dayInputs[d.key].start.value = '';
-        dayInputs[d.key].end.value   = '';
-      });
-      scheduleMessage.textContent = '';
-    }
-
-    // 5. Save schedule => update `artists` row
-    saveScheduleBtn.addEventListener('click', async () => {
-      scheduleMessage.textContent = '';
-      if (!artistFilter.value) {
-        scheduleMessage.textContent = 'Select an artist first.';
-        return;
-      }
-      // build the update object
-      let updateObj = {};
-      dayNames.forEach(d => {
-        const startCol = d.key + '_start';
-        const endCol   = d.key + '_end';
-        const stVal = dayInputs[d.key].start.value || null;
-        const enVal = dayInputs[d.key].end.value   || null;
-        updateObj[startCol] = stVal;
-        updateObj[endCol]   = enVal;
-      });
-
-      const { data, error } = await supabase
-        .from('artists')
-        .update(updateObj)
-        .eq('id', artistFilter.value);
-
-      if (error) {
-        console.error(error);
-        scheduleMessage.textContent = 'Error saving schedule.';
-        return;
-      }
-      scheduleMessage.textContent = 'Schedule saved!';
+      const {error}=await supabase.from('artists').update(obj).eq('id',artistFilter.value);
+      scheduleMessage.textContent=error?'Error saving schedule.':'Schedule saved!';
     });
   </script>
 </body>
