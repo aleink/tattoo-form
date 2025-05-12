@@ -4,94 +4,46 @@
   <meta charset="UTF-8">
   <title>Artist Pricing Form • Club Tattoo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- ======== dark-theme / mobile-first styles ========= -->
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{
-      font-family:'Helvetica Neue',Arial,sans-serif;
-      background:#111;
-      color:#eee;
-      line-height:1.5;
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      padding:20px;
-    }
+    body{font-family:'Helvetica Neue',Arial,sans-serif;background:#111;color:#eee;
+      min-height:100vh;display:flex;flex-direction:column;padding:20px;line-height:1.5}
     h1{font-size:1.8rem;font-weight:700;margin-bottom:10px;text-align:center}
-    #msg{margin-top:12px}
-
-    /* card that holds each sample */
-    .card{
-      background:#222;
-      border:1px solid #444;
-      border-radius:8px;
-      padding:16px;
-      margin-bottom:18px;
-    }
-    .card h3{
-      font-size:1.1rem;
-      margin-bottom:6px;
-      color:#fff;
-    }
-    .small{font-size:.85em;color:#aaa;margin-bottom:12px}
-
+    .small{font-size:.85em;color:#aaa;margin-bottom:12px;text-align:center}
+    .card{background:#222;border:1px solid #444;border-radius:8px;padding:16px;margin-bottom:18px}
+    .card h3{font-size:1.1rem;margin-bottom:6px;color:#fff}
     label{display:block;font-weight:600;margin:0 0 4px}
-    input[type=number]{
-      width:100%;
-      background:#111;
-      color:#fff;
-      border:1px solid #555;
-      border-radius:4px;
-      padding:8px;
-      font-size:0.95rem;
-    }
-    input[type=number]::placeholder{color:#777}
-
-    /* two-column grid on desktop, 1 column on phones */
-    .grid{
-      display:grid;
-      gap:14px;
-      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    }
-
-    button{
-      align-self:center;
-      background:#2c7be5;
-      color:#fff;
-      border:none;
-      border-radius:4px;
-      padding:12px 28px;
-      font-size:1rem;
-      cursor:pointer;
-      margin-top:20px;
-    }
-    button:disabled{background:#666;cursor:default}
+    input[type=number]{width:100%;background:#111;color:#fff;padding:8px;
+      border:1px solid #555;border-radius:4px;font-size:.95rem}
+    .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+    .time-wrap{display:flex;gap:6px}
+    button{align-self:center;background:#2c7be5;color:#fff;border:none;border-radius:4px;
+      padding:12px 28px;font-size:1rem;cursor:pointer;margin-top:20px}
+    button:disabled{background:#666}
   </style>
 </head>
 <body>
 
   <h1>Artist Pricing & Time Estimates</h1>
-  <p class="small" style="text-align:center;max-width:600px;margin:0 auto 20px;">
-    Enter your price (USD) and how long each piece would take you
-    <br>(time in multiples of 5 minutes). Fill as many as you like, then tap **Send**.
+  <p class="small">
+    Enter price (USD) and time for <b>one session</b>.  
+    If a design needs more than one session, set the sessions field.
   </p>
 
-  <!-- sample cards injected here -->
   <div id="samples"></div>
 
   <button id="submitBtn">Send answers</button>
   <p id="msg" class="small"></p>
 
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-  /* ---- Supabase connection ---- */
-  const SUPABASE_URL  = 'https://shlvjhipxnslrncczopn.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  /* Supabase keys */
+  const sb = window.supabase.createClient(
+    'https://shlvjhipxnslrncczopn.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+  );
 
-  /* ---- 1. Load all samples ---- */
+  /* Load reference samples */
   async function loadSamples(){
     const {data,error}=await sb.from('samples').select('*').order('id');
     if(error){document.getElementById('msg').textContent='Cannot load samples.';return;}
@@ -104,11 +56,23 @@
         <div class="grid">
           <div>
             <label>Price (USD)</label>
-            <input type="number" min="0" step="1" placeholder="0" data-price data-sample="${s.id}">
+            <input type="number" min="0" step="1" placeholder="0"
+                   data-price data-sample="${s.id}">
           </div>
           <div>
-            <label>Time (mins)</label>
-            <input type="number" min="5" step="5" placeholder="0" data-time data-sample="${s.id}">
+            <label>Hours</label>
+            <input type="number" min="0" step="1" placeholder="0"
+                   data-hours data-sample="${s.id}">
+          </div>
+          <div>
+            <label>Minutes</label>
+            <input type="number" min="0" max="55" step="5" placeholder="0"
+                   data-mins data-sample="${s.id}">
+          </div>
+          <div>
+            <label>Sessions</label>
+            <input type="number" min="1" step="1" value="1"
+                   data-sessions data-sample="${s.id}">
           </div>
         </div>`;
       wrap.appendChild(div);
@@ -116,29 +80,33 @@
   }
   loadSamples();
 
-  /* ---- 2. Submit answers ---- */
+  /* Submit rows */
   document.getElementById('submitBtn').onclick = async ()=>{
     const rows=[];
     document.querySelectorAll('[data-price]').forEach(el=>{
-      const sampleId  = +el.dataset.sample;
-      const price     = +el.value||0;
-      const timeField = document.querySelector(`[data-time][data-sample="${sampleId}"]`);
-      const time      = +timeField.value||0;
-      if(price>0 && time>0){
-        rows.push({sample_id:sampleId,price_usd:price,time_minutes:time});
+      const id = +el.dataset.sample;
+      const price = +el.value||0;
+      const hrs = +document.querySelector(`[data-hours][data-sample="${id}"]`).value||0;
+      const mins= +document.querySelector(`[data-mins][data-sample="${id}"]`).value||0;
+      const sessions = +document.querySelector(`[data-sessions][data-sample="${id}"]`).value||1;
+      const totalMinutes = hrs*60 + mins;
+      if(price>0 && totalMinutes>0){
+        rows.push({
+          sample_id:id,
+          price_usd:price,
+          time_minutes:totalMinutes,
+          sessions:sessions
+        });
       }
     });
 
     if(!rows.length){
-      alert('Please enter at least one complete pair of values.');
+      alert('Please fill at least one complete estimate.');
       return;
     }
 
     const {error}=await sb.from('artists_answers').insert(rows);
-    if(error){
-      alert('Save error – please try again.');
-      return;
-    }
+    if(error){alert('Save error');return;}
 
     document.getElementById('msg').textContent='Thanks! Your answers were saved.';
     document.getElementById('submitBtn').disabled=true;
