@@ -54,7 +54,7 @@
 
     <label>Colour / Style *</label>
     <select id="styleSelect" name="colour_style" required>
-      <option value="" selected disabled hidden>-- Choose Style --</option>
+      <option value="" disabled selected hidden>-- Select Colour / Style --</option>
       <option value="Single colour (e.g. black, red)">Single colour (e.g. black, red)</option>
       <option value="Color (2 + solid colours)">Color (2 + solid colours)</option>
       <option value="Black & grey (with shading)">Black & grey (with shading)</option>
@@ -121,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
 /* ---------- Supabase init ---------- */
-const supabase=window.supabase.createClient(
+const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
@@ -160,9 +160,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
 /* ---------- Helpers ---------- */
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
-const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,am='AM';if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;};
+const minsTo12=m=>{
+  let h=Math.floor(m/60),mm=m%60,am='AM';
+  if(h===0)h=12;
+  else if(h===12)am='PM';
+  else if(h>12){h-=12;am='PM';}
+  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
+};
 
-/* buildFree with 15-min buffer */
+/* buildFree now applies a 15-minute buffer around every existing appt */
 function buildFree(sDayStart,sDayEnd,apps){
   const BUFFER=15;
   const busy=apps.map(a=>{
@@ -189,19 +195,20 @@ function buildFree(sDayStart,sDayEnd,apps){
   });
 });
 
-/* base minutes by area */
+/* base minutes by area – calibrated */
 function baseMinutes(){
   const area=(+hIn.value||0)*(+wIn.value||0);
-  if(area<1)  return 10;
+  if(area<1)  return 10;   // micro
   if(area<=2) return 15;
-  if(area<=6) return 20;
+  if(area<=6) return 20;   // updated from 45
   if(area<=9) return 60;
-  if(area<=12)return 90;
+  if(area<=12)return 90;   // updated from 75
   if(area<=18)return 120;
-  if(area<=25)return 180;
-  if(area<=38)return 300;
-  return 9999;
+  if(area<=25)return 180;  // mid-range 3 hr
+  if(area<=38)return 300;  // updated from 285
+  return 9999;             // >39 sq-in full day
 }
+/* multiplier by style */
 const multiMap={
   'Single colour (e.g. black, red)':1,
   'Color (2 + solid colours)':1.1,
@@ -217,19 +224,42 @@ function needMin(){
   const b=baseMinutes();
   if(b>=9999)return 9999;
   const mult=multiMap[styleSel.value]??1;
-  return Math.ceil(b*mult/5)*5;
+  return Math.ceil(b*mult/5)*5;      // round to nearest 5
 }
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-/* ---------- Watchers ---------- */
-[
-  locSel,prioSel,dateInput,rangeStart,rangeEnd,hIn,wIn,styleSel
-].forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
+/* ---------- Watchers (clearSel only when we actually want to) ---------- */
+const watcher = (el, shouldClear=true)=>{
+  el.addEventListener('change',e=>{
+    if(shouldClear) clearSel();
+    updateUI();
+  });
+};
+watcher(locSel,true);
+watcher(prioSel,true);
+watcher(dateInput,true);
+[hIn,wIn,styleSel].forEach(el=>watcher(el,true));
+watcher(rangeStart,false);
+watcher(rangeEnd,false);
 
-artistPick.addEventListener('change',()=>{clearSel();listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');loadDays();});
+/* keep artist selected when dropdown refreshes */
+async function loadArtistDropdown(){
+  const current = artistPick.value;              // remember selection
+  artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
+  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
+  data?.forEach(a=>{
+    const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;
+    artistPick.appendChild(o);
+  });
+  if(current){ artistPick.value=current; }       // restore if still valid
+  loadDays();
+}
 
 /* ---------- Clear slot highlight/hidden values ---------- */
-function clearSel(){document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));hidA.value=hidD.value=hidS.value=hidE.value='';}
+function clearSel(){
+  document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));
+  hidA.value=hidD.value=hidS.value=hidE.value='';
+}
 
 /* ---------- Main UI refresh ---------- */
 function updateUI(){
@@ -237,16 +267,9 @@ function updateUI(){
   listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
 
   if(prioSel.value==='datePriority'){
-    dateSect.classList.remove('hidden');artistSect.classList.add('hidden');
-    loadArtistsForDate();
+    dateSect.classList.remove('hidden');artistSect.classList.add('hidden');loadArtistsForDate();
   }else if(prioSel.value==='artistPriority'){
-    artistSect.classList.remove('hidden');dateSect.classList.add('hidden');
-    /* only reload dropdown if not already filled (prevents losing selection) */
-    if(artistPick.options.length<=1){
-      loadArtistDropdown();
-    }else{
-      loadDays();
-    }
+    artistSect.classList.remove('hidden');dateSect.classList.add('hidden');loadArtistDropdown();
   }else{
     dateSect.classList.add('hidden');artistSect.classList.add('hidden');
   }
@@ -275,9 +298,14 @@ async function loadArtistsForDate(){
     const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
     return free.some(f=>f.e-f.s>=need);
   });
-  if(!avail.length){listArtistsDate.innerHTML='<p>No artists available for that date.</p>';return;}
+  if(!avail.length){
+    listArtistsDate.innerHTML='<p>No artists available for that date.</p>';
+    return;
+  }
   avail.forEach(a=>{
-    const div=document.createElement('div');div.className='list-item';div.textContent=a.artist_name;
+    const div=document.createElement('div');
+    div.className='list-item';
+    div.textContent=a.artist_name;
     div.onclick=()=>{clearSel();div.classList.add('selected');showSlotsDate(a);};
     listArtistsDate.appendChild(div);
   });
@@ -288,25 +316,24 @@ async function showSlotsDate(artist){
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).eq('date',dateInput.value);
   const idx=new Date(dateInput.value+'T00:00:00Z').getUTCDay();
   const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];
-  if(!st||!en){listSlotsDate.innerHTML='<p>Artist is off that day.</p>';return;}
+  if(!st||!en){
+    listSlotsDate.innerHTML='<p>Artist is off that day.</p>';return;
+  }
   if(need>=9999){
     if(apps.length){listSlotsDate.innerHTML='<p>No full-day slot available.</p>';return;}
     slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);return;
   }
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);made=true;}});
+  free.forEach(f=>{
+    for(let t=f.s;t<=f.e-need;t+=5){
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);
+      made=true;
+    }
+  });
   if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
 /* ---------- ARTIST-priority flow ---------- */
-async function loadArtistDropdown(){
-  const previous=artistPick.value||'';
-  artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
-  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
-  data?.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistPick.appendChild(o);});
-  if(previous&&[...artistPick.options].some(o=>o.value===previous))artistPick.value=previous;
-  loadDays();
-}
 async function loadDays(){
   listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
   if(!artistPick.value||!rangeStart.value||!rangeEnd.value)return;
@@ -320,67 +347,83 @@ async function loadDays(){
           inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
     if(inVac)continue;
     const idx=d.getUTCDay(),st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];if(!st||!en)continue;
-    if(need>=9999){if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});continue;}
+    if(need>=9999){
+      if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});
+      continue;
+    }
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
     if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
   }
-  if(!days.length){listDays.innerHTML='<p>No available days in that range.</p>';return;}
-  days.forEach(o=>{const div=document.createElement('div');div.className='list-item';div.textContent=o.l;div.onclick=()=>showSlotsArtistDay(o.d);listDays.appendChild(div);});
+  if(!days.length){
+    listDays.innerHTML='<p>No available days in that range.</p>';return;
+  }
+  days.forEach(o=>{
+    const div=document.createElement('div');
+    div.className='list-item';
+    div.textContent=o.l;
+    div.onclick=()=>showSlotsArtistDay(o.d);
+    listDays.appendChild(div);
+  });
 }
 async function showSlotsArtistDay(day){
   listSlotsArtist.innerHTML='';listSlotsArtist.classList.remove('hidden');
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:vac}=await supabase.from('artist_vacations').select('id').eq('artist_id',artist.id)
                             .lte('vacation_start',day).gte('vacation_end',day);
-  if(vac?.length){listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;}
+  if(vac?.length){
+    listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;
+  }
 
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artistPick.value).eq('date',day);
   const idx=new Date(day+'T00:00:00Z').getUTCDay();
   const st=artist[cols[idx]+'_start'],en=artist[cols[idx]+'_end'];
-  if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
+  if(!st||!en){
+    listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;
+  }
   const need=needMin();
   if(need>=9999){
     if(apps.length){listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';return;}
     slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);return;
   }
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);made=true;}});
+  free.forEach(f=>{
+    for(let t=f.s;t<=f.e-need;t+=5){
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);
+      made=true;
+    }
+  });
   if(!made)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
 /* ---------- slot button helper ---------- */
 function slotBtn(txt,start,end,artistId,date,container){
-  const div=document.createElement('div');div.className='list-item';div.textContent=txt;
-  div.onclick=()=>{clearSel();div.classList.add('selected');hidA.value=artistId;hidD.value=date;hidS.value=start;hidE.value=end;};
+  const div=document.createElement('div');
+  div.className='list-item';
+  div.textContent=txt;
+  div.onclick=()=>{
+    clearSel();
+    div.classList.add('selected');
+    hidA.value=artistId;
+    hidD.value=date;
+    hidS.value=start;
+    hidE.value=end;
+  };
   container.appendChild(div);
 }
 
-/* ---------- submit to Make ---------- */
+/* ---------- submit to Make (single-send guard + redirect screen) ---------- */
+let isSubmitting=false;
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
+  if(isSubmitting)return;                        // guard
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
+
+  isSubmitting=true;
+  const submitBtn=e.target.querySelector('button[type="submit"]');
+  if(submitBtn)submitBtn.disabled=true;
+
   const fd=new FormData(e.target);
-  const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
-  if(r.ok){
-    /* replace the whole document with a success screen */
-    document.open();
-    document.write(`
-      <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-      <title>Request Sent</title><meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <style>
-        body{background:#111;color:#fff;display:flex;justify-content:center;align-items:center;
-             min-height:100vh;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}
-        h1{font-size:1.6rem;margin-bottom:10px}
-        p{color:#ccc}
-      </style></head><body>
-      <div><h1>Thank you! Your request was sent successfully.</h1>
-      <p>We’ll reach out to you shortly via SMS.</p></div>
-      </body></html>`);
-    document.close();
-  }else{
-    alert('Submission error – please try again.');
-  }
-});
-</script>
-</body>
-</html>
+  try{
+    const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
+    if(r.ok){
+      /* replace page with confirmatio*
