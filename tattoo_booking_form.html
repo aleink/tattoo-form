@@ -54,6 +54,7 @@
 
     <label>Colour / Style *</label>
     <select id="styleSelect" name="colour_style" required>
+      <option value="" selected disabled hidden>-- Choose Style --</option>
       <option value="Single colour (e.g. black, red)">Single colour (e.g. black, red)</option>
       <option value="Color (2 + solid colours)">Color (2 + solid colours)</option>
       <option value="Black & grey (with shading)">Black & grey (with shading)</option>
@@ -161,7 +162,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
 const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,am='AM';if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;};
 
-/* buildFree now applies a 15-minute buffer around every existing appt */
+/* buildFree with 15-min buffer */
 function buildFree(sDayStart,sDayEnd,apps){
   const BUFFER=15;
   const busy=apps.map(a=>{
@@ -188,20 +189,19 @@ function buildFree(sDayStart,sDayEnd,apps){
   });
 });
 
-/* base minutes by area – calibrated */
+/* base minutes by area */
 function baseMinutes(){
   const area=(+hIn.value||0)*(+wIn.value||0);
-  if(area<1)  return 10;   // micro
+  if(area<1)  return 10;
   if(area<=2) return 15;
-  if(area<=6) return 20;   // updated from 45
+  if(area<=6) return 20;
   if(area<=9) return 60;
-  if(area<=12)return 90;   // updated from 75
+  if(area<=12)return 90;
   if(area<=18)return 120;
-  if(area<=25)return 180;  // mid-range 3 hr
-  if(area<=38)return 300;  // updated from 285
-  return 9999;             // >39 sq-in full day
+  if(area<=25)return 180;
+  if(area<=38)return 300;
+  return 9999;
 }
-/* multiplier by style */
 const multiMap={
   'Single colour (e.g. black, red)':1,
   'Color (2 + solid colours)':1.1,
@@ -217,7 +217,7 @@ function needMin(){
   const b=baseMinutes();
   if(b>=9999)return 9999;
   const mult=multiMap[styleSel.value]??1;
-  return Math.ceil(b*mult/5)*5;      // round to nearest 5
+  return Math.ceil(b*mult/5)*5;
 }
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
@@ -236,9 +236,20 @@ function updateUI(){
   listArtistsDate.innerHTML='';listSlotsDate.innerHTML='';listSlotsDate.classList.add('hidden');
   listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
 
-  if(prioSel.value==='datePriority'){dateSect.classList.remove('hidden');artistSect.classList.add('hidden');loadArtistsForDate();}
-  else if(prioSel.value==='artistPriority'){artistSect.classList.remove('hidden');dateSect.classList.add('hidden');loadArtistDropdown();}
-  else{dateSect.classList.add('hidden');artistSect.classList.add('hidden');}
+  if(prioSel.value==='datePriority'){
+    dateSect.classList.remove('hidden');artistSect.classList.add('hidden');
+    loadArtistsForDate();
+  }else if(prioSel.value==='artistPriority'){
+    artistSect.classList.remove('hidden');dateSect.classList.add('hidden');
+    /* only reload dropdown if not already filled (prevents losing selection) */
+    if(artistPick.options.length<=1){
+      loadArtistDropdown();
+    }else{
+      loadDays();
+    }
+  }else{
+    dateSect.classList.add('hidden');artistSect.classList.add('hidden');
+  }
 }
 
 /* ---------- DATE-priority flow ---------- */
@@ -289,9 +300,11 @@ async function showSlotsDate(artist){
 
 /* ---------- ARTIST-priority flow ---------- */
 async function loadArtistDropdown(){
+  const previous=artistPick.value||'';
   artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
   const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
   data?.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistPick.appendChild(o);});
+  if(previous&&[...artistPick.options].some(o=>o.value===previous))artistPick.value=previous;
   loadDays();
 }
 async function loadDays(){
@@ -348,8 +361,25 @@ document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
   const fd=new FormData(e.target);
   const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
-  if(r.ok){alert('Form submitted – we’ll contact you soon.');e.target.reset();clearSel();updateUI();}
-  else alert('Submission error – please try again.');
+  if(r.ok){
+    /* replace the whole document with a success screen */
+    document.open();
+    document.write(`
+      <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+      <title>Request Sent</title><meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <style>
+        body{background:#111;color:#fff;display:flex;justify-content:center;align-items:center;
+             min-height:100vh;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}
+        h1{font-size:1.6rem;margin-bottom:10px}
+        p{color:#ccc}
+      </style></head><body>
+      <div><h1>Thank you! Your request was sent successfully.</h1>
+      <p>We’ll reach out to you shortly via SMS.</p></div>
+      </body></html>`);
+    document.close();
+  }else{
+    alert('Submission error – please try again.');
+  }
 });
 </script>
 </body>
