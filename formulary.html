@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Artist Pricing Form</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:20px;background:#f9f9f9;color:#222}
+h1{margin-top:0}
+.card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px;margin-bottom:20px}
+label{display:block;font-weight:700;margin:12px 0 4px}
+input[type=number]{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{background:#2c7be5;color:#fff;border:none;border-radius:4px;padding:10px 20px;font-size:16px;cursor:pointer}
+button:disabled{background:#999}
+.small{font-size:.85em;color:#666}
+</style>
+</head>
+<body>
+<h1>Pricing & Time Estimates</h1>
+
+<div id="samples"></div>
+
+<button id="submitBtn">Send answers</button>
+<p id="msg" class="small"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+<script>
+/* ---- Supabase connection ---- */
+const SUPABASE_URL  = 'https://shlvjhipxnslrncczopn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ---- 1. Load the 25 samples ---- */
+async function loadSamples(){
+  const {data,error}=await sb.from('samples').select('*').order('id');
+  if(error){document.getElementById('msg').textContent='Cannot load samples.';return;}
+  const wrap=document.getElementById('samples');
+  data.forEach(s=>{
+    const div=document.createElement('div');div.className='card';
+    div.innerHTML=`
+      <h3>#${s.id} – ${s.description}</h3>
+      <p class="small">${s.friendly_style} • ${s.size_inches} inches</p>
+      <div class="grid">
+        <div>
+          <label>Price USD</label>
+          <input type="number" min="0" step="1" data-price data-sample="${s.id}">
+        </div>
+        <div>
+          <label>Time (minutes, multiple of 5)</label>
+          <input type="number" min="5" step="5" data-time data-sample="${s.id}">
+        </div>
+      </div>`;
+    wrap.appendChild(div);
+  });
+}
+loadSamples();
+
+/* ---- 2. Push answers to artists_answers ---- */
+document.getElementById('submitBtn').onclick = async ()=>{
+  const rows=[];
+  document.querySelectorAll('[data-price]').forEach(el=>{
+    const id   = +el.dataset.sample;
+    const price= +el.value||0;
+    const time = +document.querySelector(`[data-time][data-sample="${id}"]`).value||0;
+    if(price>0 && time>0) rows.push({sample_id:id,price_usd:price,time_minutes:time});
+  });
+  if(!rows.length){alert('Please enter at least one estimate');return;}
+
+  const {error}=await sb.from('artists_answers').insert(rows);
+  if(error){alert('Save error');return;}
+
+  document.getElementById('msg').textContent='Thanks! Your answers were saved.';
+  document.getElementById('submitBtn').disabled=true;
+};
+</script>
+</body>
+</html>
