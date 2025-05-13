@@ -3,500 +3,547 @@
 <head>
   <meta charset="UTF-8">
   <title>Tattoo Booking Form</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- 
-    Content Security Policy for production:
-      - 'unsafe-eval' so Supabase can function
-      - connect-src includes your domain
-  -->
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
           script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co https://hook.us2.make.com;
           style-src 'self' 'unsafe-inline';
           object-src 'none';
         ">
-
   <style>
-    /* Dark, mobile-friendly styling */
-    * {
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 10px;
-    }
-    h1, h2 {
-      margin-bottom: 10px;
-    }
-    label {
-      font-weight: bold;
-      margin-bottom: 4px;
-      display: block;
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button {
-      cursor: pointer;
-    }
-    button:hover {
-      background: #333;
-    }
-    .form-section {
-      background: #222;
-      border: 1px solid #444;
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 20px;
-    }
-    .size-container {
-      display: flex;
-      gap: 10px;
-    }
-    .size-container > div {
-      flex: 1;
-    }
-    .hidden {
-      display: none;
-    }
-    .radio-group {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 10px;
-    }
-    .slot-option {
-      background: #333;
-      border: 1px solid #555;
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .slot-option:hover {
-      background: #444;
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Helvetica Neue',Arial,sans-serif;background:#111;color:#fff;max-width:600px;margin:0 auto;padding:20px}
+    h1,h2{margin-bottom:10px}
+    label{display:block;font-weight:700;margin:8px 0 4px}
+    input,select,textarea,button{width:100%;background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:8px;margin-bottom:10px}
+    button{background:#333;cursor:pointer;border:none}
+    button:hover{background:#555}
+    .form-section{background:#222;border:1px solid #444;border-radius:6px;padding:15px;margin-bottom:20px}
+    .size-container{display:flex;gap:10px}.size-container>div{flex:1}
+    .conditional-section{margin-top:10px;background:#333;border:1px solid #444;border-radius:4px;padding:10px}
+    .list-container{margin-top:6px}
+    .list-item{background:#444;padding:8px;border-radius:4px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .list-item:hover{background:#555}
+    .list-item.selected{background:#28a745!important;border:1px solid #4fdf6f}
+    .hidden{display:none}
   </style>
 </head>
 <body>
-  <h1>Tattoo Booking Form</h1>
+<h1>Tattoo Booking Form</h1>
 
-  <form id="tattoo-form" enctype="multipart/form-data">
-    <!-- Personal Info -->
-    <div class="form-section">
-      <h2>Personal Info</h2>
-      <label for="name">Name *</label>
-      <input type="text" id="name" name="name" required>
+<form id="tattoo-form" enctype="multipart/form-data">
+  <!-- PERSONAL -->
+  <div class="form-section">
+    <h2>Personal Info</h2>
+    <label>Name *</label><input id="name" name="name" required>
+    <label>Phone (include prefix if non-US, e.g. +34) *</label><input id="phone" name="phone" type="tel" required>
+    <label>Email *</label><input id="email" name="email" type="email" required>
+  </div>
 
-      <label for="phone">Phone Number <small>(include prefix if not US, e.g. +34)</small> *</label>
-      <input type="tel" id="phone" name="phone" required>
+  <!-- TATTOO -->
+  <div class="form-section">
+    <h2>Tattoo Info</h2>
 
-      <label for="email">Email *</label>
-      <input type="email" id="email" name="email" required>
+    <label>Placement *</label><input id="placement" name="placement" required placeholder="forearm, shoulder…">
+
+    <div class="size-container">
+      <div><label>Height (in)</label><input id="heightInches" name="heightInches" type="number" step="0.5" required></div>
+      <div><label>Width (in)</label><input id="widthInches"  name="widthInches" type="number" step="0.5" required></div>
     </div>
 
-    <!-- Tattoo Info -->
-    <div class="form-section">
-      <h2>Tattoo Info</h2>
-      <label for="placement">Placement *</label>
-      <input type="text" id="placement" name="placement" placeholder="e.g., forearm, shoulder, etc." required>
+    <!-- NEW style & colour controls -->
+    <label>Style Category *</label>
+    <select id="styleCategory" name="style_category" required>
+      <option value="" disabled selected>-- Select Style Category --</option>
+      <option value="quickMinimal">Quick minimal lines / words</option>
+      <option value="boldBlackPattern">Bold black patterns & symbols</option>
+      <option value="flatColour">Solid-colour classics & cartoons</option>
+      <option value="bngRealism">Smooth black-&-grey realism</option>
+      <option value="fullColourFx">Full-colour painterly & FX</option>
+    </select>
 
-      <div class="size-container">
-        <div>
-          <label for="heightInches">Height (inches) *</label>
-          <input type="number" id="heightInches" name="heightInches" required>
-        </div>
-        <div>
-          <label for="widthInches">Width (inches) *</label>
-          <input type="number" id="widthInches" name="widthInches" required>
-        </div>
-      </div>
+    <label>Colour / Shading *</label>
+    <select id="colourMode" name="colour_mode" required>
+      <option value="" disabled selected>-- Select Colour / Shading --</option>
+      <option value="outlineSingle">Single-colour outline</option>
+      <option value="flatSingle">Flat single-colour fill</option>
+      <option value="flatMulti">Flat multi-colour fill</option>
+      <option value="bngGradient">Black-&-grey gradient</option>
+      <option value="colourGradient">Full-colour gradient</option>
+    </select>
 
-      <label>Color or Black & Grey? *</label>
-      <select id="colorOrBlack" name="colorOrBlack" required>
-        <option value="color">Color</option>
-        <option value="black-and-grey">Black and Grey</option>
-      </select>
+    <label>Detail Level *</label>
+    <select id="detailLevel" name="detail_level" required>
+      <option value="simple">Simple</option>
+      <option value="medium">Medium</option>
+      <option value="intricate">Intricate</option>
+    </select>
 
-      <label for="description">Brief Description *</label>
-      <textarea id="description" name="description" rows="4" required></textarea>
+    <label><input type="checkbox" id="premiumArea" name="premium_area">
+      This is a premium area (hands, fingers, neck, face, lips, private)
+    </label>
 
-      <label>Reference Images (up to 3):</label>
-      <input type="file" id="reference-image1" name="reference-image1" accept="image/*">
-      <input type="file" id="reference-image2" name="reference-image2" accept="image/*">
-      <input type="file" id="reference-image3" name="reference-image3" accept="image/*">
+    <label>Description *</label><textarea id="description" name="description" rows="4" required></textarea>
+
+    <label>Reference Image 1</label><input type="file" id="reference-image1" name="image1_urls" accept="image/*">
+    <label>Reference Image 2</label><input type="file" id="reference-image2" name="image2_urls" accept="image/*">
+    <label>Reference Image 3</label><input type="file" id="reference-image3" name="image3_urls" accept="image/*">
+  </div>
+
+  <!-- LOCATION & PRIORITY (unchanged) -->
+  <div class="form-section">
+    <label>Preferred Location *</label>
+    <select id="locationSelect" name="preferred_location" required><option value="">-- Select Location --</option></select>
+
+    <label style="margin-top:10px">Which is more important?</label>
+    <select id="prioritySelect" required>
+      <option value="">-- Choose --</option>
+      <option value="datePriority">I need a specific date</option>
+      <option value="artistPriority">I have a specific artist in mind</option>
+    </select>
+
+    <div id="datePrioritySection" class="conditional-section hidden">
+      <label>Which date do you need?</label><input type="date" id="priorityDate">
+      <div class="list-container" id="availableArtistsForDate"></div>
+      <div class="list-container hidden" id="dateTimesContainer"></div>
     </div>
 
-    <!-- Location First -->
-    <div class="form-section">
-      <h2>Choose Location</h2>
-      <label for="preferred-location">Preferred Location *</label>
-      <select id="preferred-location" name="preferred-location" required>
-        <option value="">-- Select Location --</option>
-      </select>
+    <div id="artistPrioritySection" class="conditional-section hidden">
+      <label>Choose Artist</label><select id="artistPick"><option value="">-- Pick Artist --</option></select>
+      <label>Start Date</label><input type="date" id="rangeStart">
+      <label>End Date</label><input type="date" id="rangeEnd">
+      <div class="list-container" id="availableDaysForArtist"></div>
+      <div class="list-container hidden" id="artistTimesContainer"></div>
     </div>
+  </div>
 
-    <!-- Step: what's more important? date or artist -->
-    <div class="form-section" id="importance-section" class="hidden">
-      <h2>Help us accommodate you faster:</h2>
-      <p>Which is more important for you?</p>
-      <div class="radio-group">
-        <label>
-          <input type="radio" name="priority" value="date" /> Date
-        </label>
-        <label>
-          <input type="radio" name="priority" value="artist" /> Artist
-        </label>
-      </div>
-    </div>
+  <!-- CONSENT -->
+  <div class="form-section">
+    <label><input type="checkbox" id="opt-in-marketing" name="opt_in_marketing" required>
+      I agree to receive emails/SMS about my appointment and marketing.</label>
+    <p style="font-size:.9em">By checking, you consent to be contacted in compliance with ADA & privacy regulations.</p>
+  </div>
 
-    <!-- If date is priority -->
-    <div class="form-section hidden" id="priority-date-section">
-      <h3>Select Date & Slot</h3>
-      <label for="priority-date">Date:</label>
-      <input type="date" id="priority-date" />
+  <!-- APPOINTMENT SLOT (unchanged) -->
+  <input type="hidden" id="finalArtistId" name="finalArtistId">
+  <input type="hidden" id="finalDate"     name="finalDate">
+  <input type="hidden" id="finalStartTime" name="finalStartTime">
+  <input type="hidden" id="finalEndTime"   name="finalEndTime">
 
-      <!-- Once date is picked, we show available artists (based on schedule),
-           and the user picks one from a list of available artists (or "Any").
-           Then we show time slots that can fit the size. -->
-      <div id="date-artist-choice" class="hidden">
-        <label for="date-artist-select">Artist (optional):</label>
-        <select id="date-artist-select">
-          <option value="">Any / First Available</option>
-        </select>
-      </div>
+  <!-- NEW hidden outputs -->
+  <input type="hidden" id="calc_area"     name="calc_area">
+  <input type="hidden" id="calc_minutes"  name="calc_minutes">
+  <input type="hidden" id="calc_hours"    name="calc_hours">
+  <input type="hidden" id="calc_sessions" name="calc_sessions">
+  <input type="hidden" id="quote_mid"     name="quote_mid">
+  <input type="hidden" id="quote_low"     name="quote_low">
+  <input type="hidden" id="quote_high"    name="quote_high">
 
-      <div id="date-slot-list" class="hidden">
-        <label>Available Slots:</label>
-        <div id="slot-container-date"></div>
-      </div>
-    </div>
+  <button type="submit">Submit</button>
+</form>
 
-    <!-- If artist is priority -->
-    <div class="form-section hidden" id="priority-artist-section">
-      <h3>Select Artist & Date Range</h3>
-      <label for="priority-artist-select">Artist *</label>
-      <select id="priority-artist-select">
-        <option value="">-- Select Artist --</option>
-      </select>
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+<script>
+/* ---------- Supabase init ---------- */
+const supabase = window.supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
 
-      <label>Choose Date Range:</label>
-      <div class="size-container">
-        <div>
-          <label>Start:</label>
-          <input type="date" id="artist-range-start" />
-        </div>
-        <div>
-          <label>End:</label>
-          <input type="date" id="artist-range-end" />
-        </div>
-      </div>
+/* ---------- CONSTANTS ---------- */
+const HOURLY_RATE          = 200;
+const SESSION_HOURS        = 6;               // 5-7 h window
+const SESSION_MINUTES      = SESSION_HOURS*60;
+const MIN_PRICE_REGULAR    = 100;
+const MIN_PRICE_PREMIUM    = 150;
+const CAP_COLOR_GRADIENT   = 2500;
+const CAP_BNG_GRADIENT     = 2200;
+const SETUP_OVERHEAD_MIN   = 10;
 
-      <!-- We'll show the days available for that artist in the range, 
-           then user picks a day => we show available time slots -->
-      <div id="artist-day-list" class="hidden">
-        <label>Pick a Day:</label>
-        <div id="artist-day-container"></div>
-      </div>
+const BASE_MINS = {
+  quickMinimal:      7,   // gives ~$270 for 3×3 simple outline
+  boldBlackPattern: 10,
+  flatColour:       12,
+  bngRealism:       16,
+  fullColourFx:     20
+};
+const COLOUR_FACTORS = {
+  outlineSingle:  1.00,
+  flatSingle:     1.10,
+  flatMulti:      1.30,
+  bngGradient:    1.40,
+  colourGradient: 1.60
+};
+const DETAIL_FACTORS = { simple:1.0, medium:1.2, intricate:1.4 };
 
-      <div id="artist-slot-list" class="hidden">
-        <label>Available Slots:</label>
-        <div id="slot-container-artist"></div>
-      </div>
-    </div>
+/* ---------- DOM refs ---------- */
+const locSel=document.getElementById('locationSelect');
+const prioSel=document.getElementById('prioritySelect');
+const dateSect=document.getElementById('datePrioritySection');
+const artistSect=document.getElementById('artistPrioritySection');
+const dateInput=document.getElementById('priorityDate');
+const listArtistsDate=document.getElementById('availableArtistsForDate');
+const listSlotsDate=document.getElementById('dateTimesContainer');
+const artistPick=document.getElementById('artistPick');
+const rangeStart=document.getElementById('rangeStart');
+const rangeEnd=document.getElementById('rangeEnd');
+const listDays=document.getElementById('availableDaysForArtist');
+const listSlotsArtist=document.getElementById('artistTimesContainer');
 
-    <!-- Marketing and Consent -->
-    <div class="form-section">
-      <label>
-        <input type="checkbox" id="opt-in-marketing" name="opt-in-marketing" required>
-        I agree to receive emails and SMS regarding my appointment and marketing.
-      </label>
-      <p style="font-size: 0.9em;">
-        By checking this box, you consent to be contacted in compliance with applicable ADA and privacy regulations.
-      </p>
-    </div>
+const hIn=document.getElementById('heightInches');
+const wIn=document.getElementById('widthInches');
+const styleCat=document.getElementById('styleCategory');
+const colourMode=document.getElementById('colourMode');
+const detailLevel=document.getElementById('detailLevel');
+const premiumArea=document.getElementById('premiumArea');
 
-    <!-- Hidden field to store the final chosen date/time & artist -->
-    <input type="hidden" id="final-chosen-date" name="final-chosen-date" />
-    <input type="hidden" id="final-chosen-time" name="final-chosen-time" />
-    <input type="hidden" id="final-chosen-artist" name="final-chosen-artist" />
+const hidA=document.getElementById('finalArtistId');
+const hidD=document.getElementById('finalDate');
+const hidS=document.getElementById('finalStartTime');
+const hidE=document.getElementById('finalEndTime');
 
-    <!-- Submit -->
-    <button type="submit">Submit</button>
-  </form>
+/* ---------- Load locations ---------- */
+document.addEventListener('DOMContentLoaded',async()=>{
+  const {data}=await supabase.from('locations').select('id,location_name');
+  data?.forEach(l=>{
+    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;
+    locSel.appendChild(o);
+  });
+});
 
-  <!-- Supabase JS library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
-  <script>
-    const supabaseUrl='https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
+/* ---------- Helpers ---------- */
+const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
+const minsTo12=m=>{
+  let h=Math.floor(m/60),mm=m%60,am='AM';
+  if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}
+  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
+};
 
-    // references
-    const locationSelect=document.getElementById('preferred-location');
-    const importanceSection=document.getElementById('importance-section');
-    const dateSection=document.getElementById('priority-date-section');
-    const priorityDateInput=document.getElementById('priority-date');
-    const dateArtistChoice=document.getElementById('date-artist-choice');
-    const dateArtistSelect=document.getElementById('date-artist-select');
-    const dateSlotList=document.getElementById('date-slot-list');
-    const slotContainerDate=document.getElementById('slot-container-date');
+/* ---------- Core calculation ---------- */
+function computeEstimate(){
+  const height=+hIn.value||0, width=+wIn.value||0;
+  const area=Math.max(1, height*width);
+  const base=BASE_MINS[styleCat.value] ?? BASE_MINS.quickMinimal;
+  const colFac=COLOUR_FACTORS[colourMode.value] ?? 1;
+  const detFac=DETAIL_FACTORS[detailLevel.value] ?? 1;
 
-    const artistSection=document.getElementById('priority-artist-section');
-    const priorityArtistSelect=document.getElementById('priority-artist-select');
-    const artistRangeStart=document.getElementById('artist-range-start');
-    const artistRangeEnd=document.getElementById('artist-range-end');
-    const artistDayList=document.getElementById('artist-day-list');
-    const artistDayContainer=document.getElementById('artist-day-container');
-    const artistSlotList=document.getElementById('artist-slot-list');
-    const slotContainerArtist=document.getElementById('slot-container-artist');
+  let minutes = area * base * colFac * detFac + SETUP_OVERHEAD_MIN;
+  let hours   = minutes / 60;
+  let sessions= Math.ceil((hours/SESSION_HOURS)*2)/2;      // round up to 0.5
 
-    const heightInches=document.getElementById('heightInches');
-    const widthInches=document.getElementById('widthInches');
-    const finalChosenDate=document.getElementById('final-chosen-date');
-    const finalChosenTime=document.getElementById('final-chosen-time');
-    const finalChosenArtist=document.getElementById('final-chosen-artist');
+  let price = hours * HOURLY_RATE;
+  const minPrice = premiumArea.checked ? MIN_PRICE_PREMIUM : MIN_PRICE_REGULAR;
+  if(price < minPrice) price = minPrice;
 
-    // On page load => fetch locations
-    window.addEventListener('DOMContentLoaded', loadLocations);
+  if(colourMode.value==='colourGradient') price=Math.min(price,CAP_COLOR_GRADIENT);
+  if(colourMode.value==='bngGradient')    price=Math.min(price,CAP_BNG_GRADIENT);
 
-    async function loadLocations(){
-      const {data, error}=await supabase
-        .from('locations')
-        .select('id, location_name');
-      if(error){console.error(error);return;}
-      while(locationSelect.options.length>1){
-        locationSelect.remove(1);
-      }
-      data.forEach(loc=>{
-        const opt=document.createElement('option');
-        opt.value=loc.id;
-        opt.textContent=loc.location_name;
-        locationSelect.appendChild(opt);
-      });
+  price = Math.ceil(price/10)*10;
+  const low = Math.floor(price*0.9/10)*10;
+  const high= Math.ceil(price*1.2/10)*10;
+
+  return {
+    area,
+    minutes,
+    hours:+hours.toFixed(1),
+    sessions,
+    price,
+    low,
+    high
+  };
+}
+
+function fillHidden(){
+  const est=computeEstimate();
+  document.getElementById('calc_area').value     = est.area;
+  document.getElementById('calc_minutes').value  = Math.round(est.minutes);
+  document.getElementById('calc_hours').value    = est.hours;
+  document.getElementById('calc_sessions').value = est.sessions;
+  document.getElementById('quote_mid').value     = est.price;
+  document.getElementById('quote_low').value     = est.low;
+  document.getElementById('quote_high').value    = est.high;
+}
+
+/* ---------- Need-minutes helper for scheduler ---------- */
+function needMin(){
+  const est=computeEstimate();
+  if(est.minutes >= SESSION_MINUTES) return 9999;   // treat as full-day
+  return Math.ceil(est.minutes/5)*5;
+}
+
+/* ---------- buildFree (unchanged) ---------- */
+function buildFree(sDayStart,sDayEnd,apps){
+  const BUFFER=15;
+  const busy=apps.map(a=>{
+    const st=Math.max(sDayStart,toMin(a.start_time)-BUFFER);
+    const en=Math.min(sDayEnd,toMin(a.end_time)+BUFFER);
+    return {s:st,e:en};
+  }).sort((a,b)=>a.s-b.s);
+
+  const free=[];let cur=sDayStart;
+  busy.forEach(b=>{
+    if(b.s>cur)free.push({s:cur,e:b.s});
+    if(b.e>cur)cur=b.e;
+  });
+  if(cur<sDayEnd)free.push({s:cur,e:sDayEnd});
+  return free;
+}
+
+/* ---------- Auto-round fractions ---------- */
+[hIn,wIn].forEach(inp=>{
+  inp.addEventListener('change',()=>{
+    const v=parseFloat(inp.value||'0');
+    inp.value=(Math.ceil(v*2)/2).toFixed(1).replace(/\.0$/,'');
+    clearSel();updateUI();fillHidden();
+  });
+});
+
+/* ---------- Watchers ---------- */
+[
+  locSel,prioSel,dateInput,rangeStart,rangeEnd,
+  hIn,wIn,styleCat,colourMode,detailLevel,premiumArea
+].forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();fillHidden();}));
+
+artistPick.addEventListener('change',()=>{
+  clearSel();
+  listDays.innerHTML='';
+  listSlotsArtist.innerHTML='';
+  listSlotsArtist.classList.add('hidden');
+  loadDays();fillHidden();
+});
+
+/* ---------- Clear slot highlight ---------- */
+function clearSel(){
+  document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));
+  hidA.value=hidD.value=hidS.value=hidE.value='';
+}
+
+/* ---------- Main UI refresh (unchanged except first call to fillHidden) ---------- */
+function updateUI(){
+  listArtistsDate.innerHTML='';
+  listSlotsDate.innerHTML='';
+  listSlotsDate.classList.add('hidden');
+  listDays.innerHTML='';
+  listSlotsArtist.innerHTML='';
+  listSlotsArtist.classList.add('hidden');
+
+  if(prioSel.value==='datePriority'){
+    dateSect.classList.remove('hidden');
+    artistSect.classList.add('hidden');
+    loadArtistsForDate();
+  }else if(prioSel.value==='artistPriority'){
+    artistSect.classList.remove('hidden');
+    dateSect.classList.add('hidden');
+    loadArtistDropdown();
+  }else{
+    dateSect.classList.add('hidden');
+    artistSect.classList.add('hidden');
+  }
+}
+
+/* ---------- DATE-priority flow (unchanged logic, uses needMin) ---------- */
+async function loadArtistsForDate(){
+  if(!locSel.value||!dateInput.value)return;
+
+  const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
+  const artIds=arts.map(a=>a.id);
+  const {data:vac}=await supabase.from('artist_vacations')
+        .select('artist_id')
+        .in('artist_id',artIds)
+        .lte('vacation_start',dateInput.value)
+        .gte('vacation_end',dateInput.value);
+
+  const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
+  const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
+  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
+  const need=needMin(), cStart=`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_start`,
+        cEnd=`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_end`;
+  const avail=arts.filter(a=>{
+    if(vacationSet.has(a.id))return false;
+    const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
+    if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
+    const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
+    return free.some(f=>f.e-f.s>=need);
+  });
+  if(!avail.length){
+    listArtistsDate.innerHTML='<p>No artists available for that date.</p>';
+    return;
+  }
+  avail.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='list-item';
+    div.textContent=a.artist_name;
+    div.onclick=()=>{clearSel();div.classList.add('selected');showSlotsDate(a);};
+    listArtistsDate.appendChild(div);
+  });
+}
+async function showSlotsDate(artist){
+  listSlotsDate.innerHTML='';
+  listSlotsDate.classList.remove('hidden');
+  const need=needMin();
+  const {data:apps}=await supabase.from('artist_appointments').select('*')
+                                  .eq('artist_id',artist.id).eq('date',dateInput.value);
+  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
+  const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
+  if(!st||!en){
+    listSlotsDate.innerHTML='<p>Artist is off that day.</p>';
+    return;
+  }
+  if(need>=9999){
+    if(apps.length){
+      listSlotsDate.innerHTML='<p>No full-day slot available.</p>';
+      return;
     }
-    // When location is chosen => show the "What is more important" step
-    locationSelect.addEventListener('change', ()=>{
-      if(locationSelect.value){
-        importanceSection.classList.remove('hidden');
-      } else {
-        importanceSection.classList.add('hidden');
-        dateSection.classList.add('hidden');
-        artistSection.classList.add('hidden');
-      }
-    });
-
-    // Listen to priority radio
-    const radios=importanceSection.querySelectorAll('input[name="priority"]');
-    radios.forEach(radio=>{
-      radio.addEventListener('change',(evt)=>{
-        if(evt.target.value==='date'){
-          dateSection.classList.remove('hidden');
-          artistSection.classList.add('hidden');
-          loadDateStep(); 
-        } else {
-          dateSection.classList.add('hidden');
-          artistSection.classList.remove('hidden');
-          loadArtistStep();
-        }
-      });
-    });
-
-    // 1) If date is priority => user picks date => we find available artists => user picks artist => we show slots
-    async function loadDateStep(){
-      // clear any existing
-      dateArtistSelect.innerHTML='<option value="">Any / First Available</option>';
-      dateSlotList.classList.add('hidden');
-      slotContainerDate.innerHTML='';
+    slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);
+    return;
+  }
+  const free=buildFree(toMin(st),toMin(en),apps);let made=false;
+  free.forEach(f=>{
+    for(let t=f.s;t<=f.e-need;t+=5){
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);
+      made=true;
     }
-    // once date is picked
-    priorityDateInput.addEventListener('change',async()=>{
-      if(!priorityDateInput.value)return;
-      // TODO: fetch from supabase => which artists are working that day
-      // We'll mock
-      dateArtistChoice.classList.remove('hidden');
-      const {data:artists,error}=await supabase
-        .from('artists')
-        .select('id,artist_name')
-        .eq('location_id', locationSelect.value);
-      if(error){console.error(error);return;}
-      // fill select
-      while(dateArtistSelect.options.length>1){
-        dateArtistSelect.remove(1);
-      }
-      artists.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        dateArtistSelect.appendChild(opt);
-      });
-    });
-    dateArtistSelect.addEventListener('change', loadDateSlots);
+  });
+  if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
+}
 
-    async function loadDateSlots(){
-      // approximate time needed from size
-      const neededMins=calcNeededMinutes();
-      // TODO: fetch schedule from supabase => find all available slots 
-      // for chosen date, either any artist or the chosen one
-      // We'll just mock some example slots
-      let mockSlots=['08:00','09:00','09:30','10:15','13:00','14:00','15:00','16:30'];
-      // Filter out times that can't fit neededMins => e.g. if 09:30 + neededMins => goes beyond close
-      // We'll skip that logic for brevity
-      slotContainerDate.innerHTML='';
-      mockSlots.forEach(slot=>{
-        const div=document.createElement('div');
-        div.classList.add('slot-option');
-        div.textContent=slot;
-        div.addEventListener('click',()=>{
-          pickFinal(dateArtistSelect.value, priorityDateInput.value, slot);
-        });
-        slotContainerDate.appendChild(div);
-      });
-      dateSlotList.classList.remove('hidden');
+/* ---------- ARTIST-priority flow (unchanged) ---------- */
+async function loadArtistDropdown(){
+  const prev=artistPick.value;
+  artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
+  if(!locSel.value)return;
+  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
+  data?.forEach(a=>{
+    const o=document.createElement('option');
+    o.value=a.id;o.textContent=a.artist_name;
+    artistPick.appendChild(o);
+  });
+  if(prev && artistPick.querySelector(`option[value="${prev}"]`)){
+    artistPick.value=prev;
+  }
+  loadDays();
+}
+async function loadDays(){
+  listDays.innerHTML='';
+  listSlotsArtist.innerHTML='';
+  listSlotsArtist.classList.add('hidden');
+  if(!artistPick.value||!rangeStart.value||!rangeEnd.value)return;
+  const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
+  const {data:apps}=await supabase.from('artist_appointments').select('*')
+                                  .eq('artist_id',artist.id)
+                                  .gte('date',rangeStart.value).lte('date',rangeEnd.value);
+  const {data:vac}=await supabase.from('artist_vacations').select('*')
+                                 .eq('artist_id',artist.id)
+                                 .lte('vacation_start',rangeEnd.value)
+                                 .gte('vacation_end',rangeStart.value);
+  const need=needMin();const days=[];
+  for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1)){
+    const iso=d.toISOString().slice(0,10),
+          inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
+    if(inVac)continue;
+    const idx=d.getUTCDay(), dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'],
+          st=artist[`${dayCols[idx]}_start`],
+          en=artist[`${dayCols[idx]}_end`];
+    if(!st||!en)continue;
+    if(need>=9999){
+      if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});
+      continue;
     }
+    const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
+    if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
+  }
+  if(!days.length){
+    listDays.innerHTML='<p>No available days in that range.</p>';
+    return;
+  }
+  days.forEach(o=>{
+    const div=document.createElement('div');
+    div.className='list-item';div.textContent=o.l;
+    div.onclick=()=>showSlotsArtistDay(o.d);
+    listDays.appendChild(div);
+  });
+}
+async function showSlotsArtistDay(day){
+  listSlotsArtist.innerHTML='';
+  listSlotsArtist.classList.remove('hidden');
+  const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
+  const {data:vac}=await supabase.from('artist_vacations').select('id')
+                                 .eq('artist_id',artist.id)
+                                 .lte('vacation_start',day).gte('vacation_end',day);
+  if(vac?.length){
+    listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';
+    return;
+  }
 
-    // 2) If artist is priority => user picks an artist => chooses date range => we show days => we show slots
-    async function loadArtistStep(){
-      // clear
-      priorityArtistSelect.innerHTML='<option value="">-- Select Artist --</option>';
-      artistDayList.classList.add('hidden');
-      artistDayContainer.innerHTML='';
-      artistSlotList.classList.add('hidden');
-      slotContainerArtist.innerHTML='';
-      // load artists for location
-      const locId=locationSelect.value;
-      if(!locId)return;
-      const {data:artists,error}=await supabase
-        .from('artists')
-        .select('id,artist_name')
-        .eq('location_id', locId);
-      if(error){console.error(error);return;}
-      artists.forEach(a=>{
-        const opt=document.createElement('option');
-        opt.value=a.id;
-        opt.textContent=a.artist_name;
-        priorityArtistSelect.appendChild(opt);
-      });
+  const {data:apps}=await supabase.from('artist_appointments').select('*')
+                                  .eq('artist_id',artistPick.value).eq('date',day);
+  const idx=new Date(`${day}T00:00:00Z`).getUTCDay();
+  const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
+  if(!st||!en){
+    listSlotsArtist.innerHTML='<p>Artist off that day.</p>';
+    return;
+  }
+  const need=needMin();
+  if(need>=9999){
+    if(apps.length){
+      listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';
+      return;
     }
-    priorityArtistSelect.addEventListener('change',()=>{
-      // once an artist is chosen, user picks date range => we show days in that range where the artist is free
-      artistDayList.classList.remove('hidden');
-      artistDayContainer.innerHTML='Pick your Start/End date above.';
-    });
-    artistRangeStart.addEventListener('change', loadArtistDays);
-    artistRangeEnd.addEventListener('change', loadArtistDays);
-
-    async function loadArtistDays(){
-      artistDayContainer.innerHTML='';
-      artistSlotList.classList.add('hidden');
-      slotContainerArtist.innerHTML='';
-
-      const sVal=artistRangeStart.value;
-      const eVal=artistRangeEnd.value;
-      const aVal=priorityArtistSelect.value;
-      if(!sVal||!eVal||!aVal){
-        artistDayContainer.innerHTML='<p>Please pick artist and a valid date range.</p>';
-        return;
-      }
-      // TODO: fetch from supabase => which days are available in [sVal, eVal] for that artist
-      // We'll mock some days
-      let mockDays=['2025-05-20','2025-05-21','2025-05-23','2025-05-27'];
-      artistDayContainer.innerHTML='';
-      mockDays.forEach(day=>{
-        const div=document.createElement('div');
-        div.classList.add('slot-option');
-        div.textContent=day;
-        div.addEventListener('click',()=> loadArtistSlots(day));
-        artistDayContainer.appendChild(div);
-      });
+    slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);
+    return;
+  }
+  const free=buildFree(toMin(st),toMin(en),apps);let made=false;
+  free.forEach(f=>{
+    for(let t=f.s;t<=f.e-need;t+=5){
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);
+      made=true;
     }
-    function loadArtistSlots(dayStr){
-      // approximate time from size
-      const neededMins=calcNeededMinutes();
-      // TODO: fetch schedule from supabase => find dayStr slots for chosen artist
-      // We'll mock
-      let mockSlots=['10:00','11:00','13:00','14:00','16:00'];
-      slotContainerArtist.innerHTML='';
-      mockSlots.forEach(slot=>{
-        const div=document.createElement('div');
-        div.classList.add('slot-option');
-        div.textContent=slot;
-        div.addEventListener('click',()=>{
-          pickFinal(priorityArtistSelect.value, dayStr, slot);
-        });
-        slotContainerArtist.appendChild(div);
-      });
-      artistSlotList.classList.remove('hidden');
-    }
+  });
+  if(!made)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
+}
 
-    // helper => calc needed minutes from size
-    function calcNeededMinutes(){
-      const hIn=parseFloat(heightInches.value)||0;
-      const wIn=parseFloat(widthInches.value)||0;
-      const sqIn=hIn*wIn;
-      if(sqIn<3) return 30;
-      if(sqIn<=6) return 45;
-      if(sqIn<=9) return 60;
-      if(sqIn<=12) return 75;
-      if(sqIn<=18) return 120;
-      if(sqIn<=25) return 190;
-      if(sqIn<=38) return 285;
-      // >39 => full day
-      return 9999; // effectively block the entire day
-    }
+/* ---------- slot button helper ---------- */
+function slotBtn(txt,start,end,artistId,date,container){
+  const div=document.createElement('div');
+  div.className='list-item';div.textContent=txt;
+  div.onclick=()=>{
+    clearSel();
+    div.classList.add('selected');
+    hidA.value=artistId;hidD.value=date;hidS.value=start;hidE.value=end;
+  };
+  container.appendChild(div);
+}
 
-    // when user picks a final date/time/artist => store them in hidden fields, can do additional UI
-    function pickFinal(artistId, dateStr, timeStr){
-      finalChosenArtist.value=artistId;
-      finalChosenDate.value=dateStr;
-      finalChosenTime.value=timeStr;
-      alert(`Chosen: date=${dateStr}, time=${timeStr}, artist=${artistId||'Any'}`);
-    }
+/* ---------- submit to Make ---------- */
+document.getElementById('tattoo-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!hidA.value){alert('Please pick an appointment slot.');return;}
+  const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled=true;
 
-    // form submit => sends to Make webhook
-    const form=document.getElementById('tattoo-form');
-    form.addEventListener('submit', async(e)=>{
-      e.preventDefault();
-      // if final chosen date/time not set => user didn't pick
-      if(!finalChosenDate.value||!finalChosenTime.value){
-        alert('Please pick a date/time slot before submitting.');
-        return;
-      }
-      const fd=new FormData(form);
-      try{
-        const resp=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{
-          method:'POST',
-          body:fd
-        });
-        if(resp.ok){
-          alert('Form submitted! We will contact you soon.');
-          form.reset();
-          finalChosenDate.value='';
-          finalChosenTime.value='';
-          finalChosenArtist.value='';
-        } else {
-          alert('Error submitting form, please try again later.');
-        }
-      } catch(err){
-        console.error(err);
-        alert('Error submitting form, see console.');
-      }
-    });
-  </script>
+  fillHidden(); // ensure latest calc hits Supabase
+
+  const fd=new FormData(e.target);
+  const r=await fetch(
+    'https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',
+    {method:'POST',body:fd}
+  );
+
+  if(r.ok){
+    document.body.innerHTML='<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>';
+  }else{
+    alert('Submission error – please try again.');
+    submitBtn.disabled=false;
+  }
+});
+
+/* first calc on load */
+fillHidden();
+</script>
 </body>
 </html>
