@@ -219,7 +219,7 @@ const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+
 const minsTo12=m=>{
   let h=Math.floor(m/60),mm=m%60,am='AM';
   if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}
-  return ${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am};
+  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
 };
 
 /* ---------- Core calculation ---------- */
@@ -358,9 +358,9 @@ async function loadArtistsForDate(){
 
   const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
-  const idx=new Date(${dateInput.value}T00:00:00Z).getUTCDay();
-  const need=needMin(), cStart=${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_start,
-        cEnd=${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_end;
+  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
+  const need=needMin(), cStart=`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_start`,
+        cEnd=`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][idx]}_end`;
   const avail=arts.filter(a=>{
     if(vacationSet.has(a.id))return false;
     const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
@@ -386,9 +386,9 @@ async function showSlotsDate(artist){
   const need=needMin();
   const {data:apps}=await supabase.from('artist_appointments').select('*')
                                   .eq('artist_id',artist.id).eq('date',dateInput.value);
-  const idx=new Date(${dateInput.value}T00:00:00Z).getUTCDay();
+  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
   const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const st=artist[${dayCols[idx]}_start],en=artist[${dayCols[idx]}_end];
+  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
   if(!st||!en){
     listSlotsDate.innerHTML='<p>Artist is off that day.</p>';
     return;
@@ -398,13 +398,13 @@ async function showSlotsDate(artist){
       listSlotsDate.innerHTML='<p>No full-day slot available.</p>';
       return;
     }
-    slotBtn(All Day – ${artist.artist_name},st,en,artist.id,dateInput.value,listSlotsDate);
+    slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);
     return;
   }
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
   free.forEach(f=>{
     for(let t=f.s;t<=f.e-need;t+=5){
-      slotBtn(${minsTo12(t)} – ${minsTo12(t+need)},minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);
       made=true;
     }
   });
@@ -422,7 +422,7 @@ async function loadArtistDropdown(){
     o.value=a.id;o.textContent=a.artist_name;
     artistPick.appendChild(o);
   });
-  if(prev && artistPick.querySelector(option[value="${prev}"])){
+  if(prev && artistPick.querySelector(`option[value="${prev}"]`)){
     artistPick.value=prev;
   }
   loadDays();
@@ -446,11 +446,11 @@ async function loadDays(){
           inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
     if(inVac)continue;
     const idx=d.getUTCDay(), dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'],
-          st=artist[${dayCols[idx]}_start],
-          en=artist[${dayCols[idx]}_end];
+          st=artist[`${dayCols[idx]}_start`],
+          en=artist[`${dayCols[idx]}_end`];
     if(!st||!en)continue;
     if(need>=9999){
-      if(!apps.some(a=>a.date===iso))days.push({d:iso,l:All Day – ${iso}});
+      if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});
       continue;
     }
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
@@ -482,9 +482,9 @@ async function showSlotsArtistDay(day){
 
   const {data:apps}=await supabase.from('artist_appointments').select('*')
                                   .eq('artist_id',artistPick.value).eq('date',day);
-  const idx=new Date(${day}T00:00:00Z).getUTCDay();
+  const idx=new Date(`${day}T00:00:00Z`).getUTCDay();
   const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const st=artist[${dayCols[idx]}_start],en=artist[${dayCols[idx]}_end];
+  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
   if(!st||!en){
     listSlotsArtist.innerHTML='<p>Artist off that day.</p>';
     return;
@@ -501,7 +501,7 @@ async function showSlotsArtistDay(day){
   const free=buildFree(toMin(st),toMin(en),apps);let made=false;
   free.forEach(f=>{
     for(let t=f.s;t<=f.e-need;t+=5){
-      slotBtn(${minsTo12(t)} – ${minsTo12(t+need)},minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);
+      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);
       made=true;
     }
   });
