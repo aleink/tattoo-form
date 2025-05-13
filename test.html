@@ -454,6 +454,7 @@ async function loadDays(){
       continue;
     }
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
+
     if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
   }
   if(!days.length){
@@ -529,6 +530,18 @@ document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   fillHidden(); // ensure latest calc hits Supabase
 
   const fd=new FormData(e.target);
+
+  /* ------------- NEW: insert into form_submissions ------------- */
+  const payload={} ; fd.forEach((v,k)=>{ if(!(v instanceof File)) payload[k]=v; });
+  const { error } = await supabase.from('form_submissions').insert(payload);
+  if(error){ 
+    console.error(error);
+    alert('Database error – please try again.');
+    submitBtn.disabled=false;
+    return;
+  }
+  /* ------------------------------------------------------------- */
+
   const r=await fetch(
     'https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',
     {method:'POST',body:fd}
