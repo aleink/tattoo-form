@@ -53,7 +53,7 @@
       <div><label>Width (in)</label><input id="widthInches"  name="widthInches" type="number" step="0.5" required></div>
     </div>
 
-    <!-- Style & colour controls -->
+    <!-- NEW style & colour controls -->
     <label>Style Category *</label>
     <select id="styleCategory" name="style_category" required>
       <option value="" disabled selected>-- Select Style Category --</option>
@@ -154,42 +154,56 @@ const supabase = window.supabase.createClient(
 );
 
 /* ---------- CONSTANTS ---------- */
-const HOURLY_RATE = 200;
-const SESSION_HOURS = 6;
-const SESSION_MINUTES = SESSION_HOURS * 60;
-const MIN_PRICE_REGULAR = 100;
-const MIN_PRICE_PREMIUM = 150;
-const CAP_COLOR_GRADIENT = 2500;
-const CAP_BNG_GRADIENT = 2200;
-const SETUP_OVERHEAD_MIN = 10;
+const HOURLY_RATE          = 200;
+const SESSION_HOURS        = 6;
+const SESSION_MINUTES      = SESSION_HOURS*60;
+const MIN_PRICE_REGULAR    = 100;
+const MIN_PRICE_PREMIUM    = 150;
+const CAP_COLOR_GRADIENT   = 2500;
+const CAP_BNG_GRADIENT     = 2200;
+const SETUP_OVERHEAD_MIN   = 10;
 
-const BASE_MINS = { quickMinimal:7, boldBlackPattern:10, flatColour:12, bngRealism:16, fullColourFx:20 };
-const COLOUR_FACTORS = { outlineSingle:1, flatSingle:1.10, flatMulti:1.30, bngGradient:1.40, colourGradient:1.60 };
+const BASE_MINS = {
+  quickMinimal:7, boldBlackPattern:10, flatColour:12, bngRealism:16, fullColourFx:20
+};
+const COLOUR_FACTORS = {
+  outlineSingle:1, flatSingle:1.1, flatMulti:1.3, bngGradient:1.4, colourGradient:1.6
+};
 const DETAIL_FACTORS = { simple:1, medium:1.2, intricate:1.4 };
 
-/* ---------- Helper functions ---------- */
-const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
-const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,ap='AM';if(h===0)h=12;else if(h===12)ap='PM';else if(h>12){h-=12;ap='PM';}return`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ap}`;};
-const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-
 /* ---------- DOM refs ---------- */
+const locSel=document.getElementById('locationSelect');
+const prioSel=document.getElementById('prioritySelect');
+const dateSect=document.getElementById('datePrioritySection');
+const artistSect=document.getElementById('artistPrioritySection');
+const dateInput=document.getElementById('priorityDate');
+const listArtistsDate=document.getElementById('availableArtistsForDate');
+const listSlotsDate=document.getElementById('dateTimesContainer');
+const artistPick=document.getElementById('artistPick');
+const rangeStart=document.getElementById('rangeStart');
+const rangeEnd=document.getElementById('rangeEnd');
+const listDays=document.getElementById('availableDaysForArtist');
+const listSlotsArtist=document.getElementById('artistTimesContainer');
+
 const hIn=document.getElementById('heightInches');
 const wIn=document.getElementById('widthInches');
 const styleCat=document.getElementById('styleCategory');
 const colourMode=document.getElementById('colourMode');
 const detailLevel=document.getElementById('detailLevel');
 const premiumArea=document.getElementById('premiumArea');
-const locSel=document.getElementById('locationSelect');
-const prioSel=document.getElementById('prioritySelect');
-const dateInput=document.getElementById('priorityDate');
-const artistPick=document.getElementById('artistPick');
-const rangeStart=document.getElementById('rangeStart');
-const rangeEnd=document.getElementById('rangeEnd');
 
-/* ---------- Calculation ---------- */
+const hidA=document.getElementById('finalArtistId');
+const hidD=document.getElementById('finalDate');
+const hidS=document.getElementById('finalStartTime');
+const hidE=document.getElementById('finalEndTime');
+
+/* ---------- Helpers ---------- */
+const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
+const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,ap='AM';if(h===0)h=12;else if(h===12)ap='PM';else if(h>12){h-=12;ap='PM';}return`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ap}`;};
+
+/* ---------- Core calculation ---------- */
 function computeEstimate(){
-  const height=+hIn.value||0, width=+wIn.value||0;
-  const area=Math.max(1,height*width);
+  const area=Math.max(1,(+hIn.value||0)*(+wIn.value||0));
   const base=BASE_MINS[styleCat.value]||BASE_MINS.quickMinimal;
   const col=COLOUR_FACTORS[colourMode.value]||1;
   const det=DETAIL_FACTORS[detailLevel.value]||1;
@@ -203,6 +217,7 @@ function computeEstimate(){
   if(colourMode.value==='colourGradient')price=Math.min(price,CAP_COLOR_GRADIENT);
   if(colourMode.value==='bngGradient')   price=Math.min(price,CAP_BNG_GRADIENT);
   price=Math.ceil(price/10)*10;
+
   return{
     area,
     minutes,
@@ -215,104 +230,82 @@ function computeEstimate(){
 }
 function fillHidden(){
   const e=computeEstimate();
-  Object.entries({
-    calc_area:e.area,
-    calc_minutes:Math.round(e.minutes),
-    calc_hours:e.hours,
-    calc_sessions:e.sessions,
-    quote_mid:e.price,
-    quote_low:e.low,
-    quote_high:e.high
-  }).forEach(([k,v])=>document.getElementById(k).value=v);
+  document.getElementById('calc_area').value=e.area;
+  document.getElementById('calc_minutes').value=Math.round(e.minutes);
+  document.getElementById('calc_hours').value=e.hours;
+  document.getElementById('calc_sessions').value=e.sessions;
+  document.getElementById('quote_mid').value=e.price;
+  document.getElementById('quote_low').value=e.low;
+  document.getElementById('quote_high').value=e.high;
 }
 function needMin(){const m=computeEstimate().minutes;return m>=SESSION_MINUTES?9999:Math.ceil(m/5)*5;}
 
-/* ---------- Scheduling helpers ---------- */
-function buildFree(dayStart,dayEnd,apps){
-  const BUFFER=15;
-  const busy=apps.map(a=>({s:Math.max(dayStart,toMin(a.start_time)-BUFFER),e:Math.min(dayEnd,toMin(a.end_time)+BUFFER)})).sort((a,b)=>a.s-b.s);
-  const free=[],curObj={v:dayStart};
-  busy.forEach(b=>{if(b.s>curObj.v)free.push({s:curObj.v,e:b.s});if(b.e>curObj.v)curObj.v=b.e;});
-  if(curObj.v<dayEnd)free.push({s:curObj.v,e:dayEnd});
+/* ---------- buildFree ---------- */
+function buildFree(start,end,apps){
+  const BUF=15;
+  const busy=apps.map(a=>({s:Math.max(start,toMin(a.start_time)-BUF),e:Math.min(end,toMin(a.end_time)+BUF)})).sort((a,b)=>a.s-b.s);
+  const free=[],cur={v:start};
+  busy.forEach(b=>{if(b.s>cur.v)free.push({s:cur.v,e:b.s});if(b.e>cur.v)cur.v=b.e;});
+  if(cur.v<end)free.push({s:cur.v,e:end});
   return free;
 }
 
-/* ---------- Load locations ---------- */
+/* ---------- Rounding size inputs ---------- */
+[hIn,wIn].forEach(inp=>inp.addEventListener('change',()=>{const v=parseFloat(inp.value||'0');inp.value=(Math.ceil(v*2)/2).toFixed(1).replace(/\.0$/,'');fillHidden();}));
+
+/* ---------- LOCATION list ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   const {data}=await supabase.from('locations').select('id,location_name');
   data?.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locSel.appendChild(o);});
 });
 
-/* ---------- Fractions rounding for size ---------- */
-[hIn,wIn].forEach(inp=>inp.addEventListener('change',()=>{const v=parseFloat(inp.value||'0');inp.value=(Math.ceil(v*2)/2).toFixed(1).replace(/\.0$/,'');fillHidden();}));
-
-/* ---------- WATCHERS (update hidden + schedule UI) ---------- */
-[
-  hIn,wIn,styleCat,colourMode,detailLevel,premiumArea,
-  locSel,prioSel,dateInput,artistPick,rangeStart,rangeEnd
-].forEach(el=>el.addEventListener('change',()=>{fillHidden();}));
-
-/* ---------- Scheduler UI (unchanged logic from your original) ---------- */
-const listArtistsDate=document.getElementById('availableArtistsForDate');
-const listSlotsDate=document.getElementById('dateTimesContainer');
-const listDays=document.getElementById('availableDaysForArtist');
-const listSlotsArtist=document.getElementById('artistTimesContainer');
-const dateSect=document.getElementById('datePrioritySection');
-const artistSect=document.getElementById('artistPrioritySection');
-const hidA=document.getElementById('finalArtistId');
-const hidD=document.getElementById('finalDate');
-const hidS=document.getElementById('finalStartTime');
-const hidE=document.getElementById('finalEndTime');
-
+/* ---------- UI toggles and scheduler (identical logic) ---------- */
+const dayCols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clearSel(){document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));hidA.value=hidD.value=hidS.value=hidE.value='';}
-
-/* main UI toggle */
-function updateUI(){
+function slotBtn(txt,start,end,aid,date,container){
+  const d=document.createElement('div');d.className='list-item';d.textContent=txt;
+  d.onclick=()=>{clearSel();d.classList.add('selected');hidA.value=aid;hidD.value=date;hidS.value=start;hidE.value=end;};
+  container.appendChild(d);
+}
+function refreshUI(){
   listArtistsDate.innerHTML='';listSlotsDate.classList.add('hidden');
   listDays.innerHTML='';listSlotsArtist.classList.add('hidden');
   if(prioSel.value==='datePriority'){dateSect.classList.remove('hidden');artistSect.classList.add('hidden');loadArtistsForDate();}
   else if(prioSel.value==='artistPriority'){artistSect.classList.remove('hidden');dateSect.classList.add('hidden');loadArtistDropdown();}
-  else {dateSect.classList.add('hidden');artistSect.classList.add('hidden');}
+  else{dateSect.classList.add('hidden');artistSect.classList.add('hidden');}
 }
-prioSel.addEventListener('change',()=>{updateUI();});
+prioSel.addEventListener('change',refreshUI);
 
-/* ---- DATE-priority flow ---- */
+/* ----- DATE-priority flow ----- */
 async function loadArtistsForDate(){
   if(!locSel.value||!dateInput.value)return;
   const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
   const artIds=arts.map(a=>a.id);
   const {data:vac}=await supabase.from('artist_vacations').select('artist_id').in('artist_id',artIds).lte('vacation_start',dateInput.value).gte('vacation_end',dateInput.value);
-  const vacation=new Set(vac?.map(v=>v.artist_id)||[]);
+  const vset=new Set(vac?.map(v=>v.artist_id)||[]);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
-  const idx=new Date(`${dateInput.value}T00:00:00`).getDay();
-  const need=needMin(),cs=`${dayCols[idx]}_start`,ce=`${dayCols[idx]}_end`;
+  const idx=new Date(`${dateInput.value}T00:00:00`).getDay(),need=needMin(),cs=`${dayCols[idx]}_start`,ce=`${dayCols[idx]}_end`;
   const avail=arts.filter(a=>{
-    if(vacation.has(a.id))return false;
+    if(vset.has(a.id))return false;
     const st=a[cs],en=a[ce];if(!st||!en)return false;
     if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
-    const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
-    return free.some(f=>f.e-f.s>=need);
+    return buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id)).some(f=>f.e-f.s>=need);
   });
   listArtistsDate.innerHTML=avail.length?'':'<p>No artists available for that date.</p>';
-  avail.forEach(a=>{
-    const d=document.createElement('div');d.className='list-item';d.textContent=a.artist_name;
-    d.onclick=()=>{clearSel();d.classList.add('selected');showSlotsDate(a);};listArtistsDate.appendChild(d);
-  });
+  avail.forEach(a=>{const d=document.createElement('div');d.className='list-item';d.textContent=a.artist_name;d.onclick=()=>{clearSel();d.classList.add('selected');showSlotsDate(a);};listArtistsDate.appendChild(d);});
 }
 async function showSlotsDate(artist){
   listSlotsDate.innerHTML='';listSlotsDate.classList.remove('hidden');
-  const need=needMin();
-  const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).eq('date',dateInput.value);
-  const idx=new Date(`${dateInput.value}T00:00:00`).getDay();
-  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
+  const need=needMin(),{data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).eq('date',dateInput.value);
+  const idx=new Date(`${dateInput.value}T00:00:00`).getDay(),st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
   if(!st||!en){listSlotsDate.innerHTML='<p>Artist is off that day.</p>';return;}
   if(need>=9999){if(apps.length)listSlotsDate.innerHTML='<p>No full-day slot available.</p>';else slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);return;}
-  const free=buildFree(toMin(st),toMin(en),apps),made={v:false};
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);made.v=true;}});
-  if(!made.v)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
+  const free=buildFree(toMin(st),toMin(en),apps);let any=false;
+  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);any=true;}});
+  if(!any)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
-/* ---- ARTIST-priority flow ---- */
+/* ----- ARTIST-priority flow ----- */
 async function loadArtistDropdown(){
   const prev=artistPick.value;
   artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
@@ -328,14 +321,13 @@ async function loadDays(){
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).gte('date',rangeStart.value).lte('date',rangeEnd.value);
   const {data:vac}=await supabase.from('artist_vacations').select('*').eq('artist_id',artist.id).lte('vacation_start',rangeEnd.value).gte('vacation_end',rangeStart.value);
-  const need=needMin();const days=[];
+  const need=needMin(),days=[];
   for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setDate(d.getDate()+1)){
     const iso=d.toISOString().slice(0,10),idx=d.getDay();
     if(vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso))continue;
     const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];if(!st||!en)continue;
     if(need>=9999){if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});continue;}
-    const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
-    if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
+    if(buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso)).some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
   }
   listDays.innerHTML=days.length?'':'<p>No available days in that range.</p>';
   days.forEach(o=>{const div=document.createElement('div');div.className='list-item';div.textContent=o.l;div.onclick=()=>showSlotsArtistDay(o.d);listDays.appendChild(div);});
@@ -346,48 +338,49 @@ async function showSlotsArtistDay(day){
   const {data:vac}=await supabase.from('artist_vacations').select('*').eq('artist_id',artist.id).lte('vacation_start',day).gte('vacation_end',day);
   if(vac?.length){listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';return;}
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist.id).eq('date',day);
-  const idx=new Date(`${day}T00:00:00`).getDay();
-  const st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
+  const idx=new Date(`${day}T00:00:00`).getDay(),st=artist[`${dayCols[idx]}_start`],en=artist[`${dayCols[idx]}_end`];
   if(!st||!en){listSlotsArtist.innerHTML='<p>Artist off that day.</p>';return;}
   const need=needMin();
   if(need>=9999){if(apps.length)listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';else slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);return;}
-  const free=buildFree(toMin(st),toMin(en),apps),made={v:false};
-  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);made.v=true;}});
-  if(!made.v)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
+  const free=buildFree(toMin(st),toMin(en),apps);let any=false;
+  free.forEach(f=>{for(let t=f.s;t<=f.e-need;t+=5){slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);any=true;}});
+  if(!any)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
-/* slot button */
-function slotBtn(txt,start,end,artistId,date,container){
-  const div=document.createElement('div');div.className='list-item';div.textContent=txt;
-  div.onclick=()=>{clearSel();div.classList.add('selected');hidA.value=artistId;hidD.value=date;hidS.value=start;hidE.value=end;};
-  container.appendChild(div);
-}
+/* ---------- first calc & UI ---------- */
+fillHidden();refreshUI();
 
-/* ---------- SIZE rounding ---------- */
-[hIn,wIn].forEach(inp=>inp.addEventListener('change',()=>{const v=parseFloat(inp.value||'0');inp.value=(Math.ceil(v*2)/2).toFixed(1).replace(/\.0$/,'');fillHidden();}));
-
-/* ---------- Submit ---------- */
+/* ---------- SUBMIT ---------- */
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
-  const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');
-  submitBtn.disabled=true;
-  fillHidden();
+  const btn=e.submitter||e.target.querySelector('button[type="submit"]');
+  btn.disabled=true;
+  fillHidden();                                   // make sure numbers are current
 
-  /* 1. insert into Supabase */
   const fd=new FormData(e.target);
-  const payload={};fd.forEach((v,k)=>{if(!(v instanceof File))payload[k]=v;});
-  const {error}=await supabase.from('form_submissions').insert(payload);
-  if(error){console.error(error);alert('Database error – please try again.');submitBtn.disabled=false;return;}
 
-  /* 2. forward to Make */
+  /* --- 1. write to Supabase form_submissions --- */
+  const payload={};
+  fd.forEach((v,k)=>{ if(!(v instanceof File)) payload[k]=v; });  // skip files
+  const { error } = await supabase.from('form_submissions').insert(payload);
+  if(error){
+    console.error(error);
+    alert('Database error – please try again.');
+    btn.disabled=false;
+    return;
+  }
+
+  /* --- 2. forward original FormData (incl. images) to Make --- */
   const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
-  if(r.ok){document.body.innerHTML='<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>'; }
-  else{alert('Submission error – please try again.');submitBtn.disabled=false;}
-});
 
-/* ---------- Init ---------- */
-fillHidden();updateUI();
+  if(r.ok){
+    document.body.innerHTML='<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>';
+  }else{
+    alert('Submission error – please try again.');
+    btn.disabled=false;
+  }
+});
 </script>
 </body>
 </html>
