@@ -127,10 +127,10 @@
   </div>
 
   <!-- APPOINTMENT SLOT (unchanged) -->
-  <input type="hidden" id="preferred_artist" name="preferred_artist">
-  <input type="hidden" id="requested_date"  name="requested_date">
-  <input type="hidden" id="start_time" name="start_time">
-  <input type="hidden" id="end_time"   name="end_time">
+  <input type="hidden" id="finalArtistId" name="finalArtistId">
+  <input type="hidden" id="finalDate"     name="finalDate">
+  <input type="hidden" id="finalStartTime" name="finalStartTime">
+  <input type="hidden" id="finalEndTime"   name="finalEndTime">
 
   <!-- NEW hidden outputs -->
   <input type="hidden" id="calc_area"     name="calc_area">
@@ -164,7 +164,7 @@ const CAP_BNG_GRADIENT     = 2200;
 const SETUP_OVERHEAD_MIN   = 10;
 
 const BASE_MINS = {
-  quickMinimal:      7,   // gives ~$270 for 3×3 simple outline
+  quickMinimal:      7,
   boldBlackPattern: 10,
   flatColour:       12,
   bngRealism:       16,
@@ -232,7 +232,7 @@ function computeEstimate(){
 
   let minutes = area * base * colFac * detFac + SETUP_OVERHEAD_MIN;
   let hours   = minutes / 60;
-  let sessions= Math.ceil((hours/SESSION_HOURS)*2)/2;      // round up to 0.5
+  let sessions= Math.ceil((hours/SESSION_HOURS)*2)/2;
 
   let price = hours * HOURLY_RATE;
   const minPrice = premiumArea.checked ? MIN_PRICE_PREMIUM : MIN_PRICE_REGULAR;
@@ -245,15 +245,7 @@ function computeEstimate(){
   const low = Math.floor(price*0.9/10)*10;
   const high= Math.ceil(price*1.2/10)*10;
 
-  return {
-    area,
-    minutes,
-    hours:+hours.toFixed(1),
-    sessions,
-    price,
-    low,
-    high
-  };
+  return {area,minutes,hours:+hours.toFixed(1),sessions,price,low,high};
 }
 
 function fillHidden(){
@@ -270,7 +262,7 @@ function fillHidden(){
 /* ---------- Need-minutes helper for scheduler ---------- */
 function needMin(){
   const est=computeEstimate();
-  if(est.minutes >= SESSION_MINUTES) return 9999;   // treat as full-day
+  if(est.minutes >= SESSION_MINUTES) return 9999;
   return Math.ceil(est.minutes/5)*5;
 }
 
@@ -344,10 +336,9 @@ function updateUI(){
   }
 }
 
-/* ---------- DATE-priority flow (unchanged logic, uses needMin) ---------- */
+/* ---------- DATE-priority flow ---------- */
 async function loadArtistsForDate(){
   if(!locSel.value||!dateInput.value)return;
-
   const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
   const artIds=arts.map(a=>a.id);
   const {data:vac}=await supabase.from('artist_vacations')
@@ -411,7 +402,7 @@ async function showSlotsDate(artist){
   if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
-/* ---------- ARTIST-priority flow (unchanged) ---------- */
+/* ---------- ARTIST-priority flow ---------- */
 async function loadArtistDropdown(){
   const prev=artistPick.value;
   artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
@@ -441,7 +432,7 @@ async function loadDays(){
                                  .lte('vacation_start',rangeEnd.value)
                                  .gte('vacation_end',rangeStart.value);
   const need=needMin();const days=[];
-  for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1)){
+  for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1){
     const iso=d.toISOString().slice(0,10),
           inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
     if(inVac)continue;
@@ -454,7 +445,6 @@ async function loadDays(){
       continue;
     }
     const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
-
     if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
   }
   if(!days.length){
@@ -531,16 +521,33 @@ document.getElementById('tattoo-form').addEventListener('submit',async e=>{
 
   const fd=new FormData(e.target);
 
-  /* ------------- NEW: insert into form_submissions ------------- */
-  const payload={} ; fd.forEach((v,k)=>{ if(!(v instanceof File)) payload[k]=v; });
+  /* ------------- NEW mapping block ------------- */
+  const payload={};
+  fd.forEach((v,k)=>{
+    if(v instanceof File) return;                // skip files here
+    switch(k){
+      case 'finalArtistId':  payload.preferred_artist = v; break;
+      case 'finalDate':      payload.requested_date   = v; break;
+      case 'finalStartTime': payload.start_time       = v; break;
+      case 'finalEndTime':   payload.end_time         = v; break;
+      case 'premium_area':   payload.premium_area     = true; break;
+      default:               payload[k]               = v;
+    }
+  });
+  /* build price_range text e.g. "200-300" */
+  if(fd.get('quote_low') && fd.get('quote_high')){
+    payload.price_range = `${fd.get('quote_low')}-${fd.get('quote_high')}`;
+  }
+  payload.submitted_at = new Date().toISOString();
+  /* --------------------------------------------- */
+
   const { error } = await supabase.from('form_submissions').insert(payload);
-  if(error){ 
+  if(error){
     console.error(error);
     alert('Database error – please try again.');
     submitBtn.disabled=false;
     return;
   }
-  /* ------------------------------------------------------------- */
 
   const r=await fetch(
     'https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',
