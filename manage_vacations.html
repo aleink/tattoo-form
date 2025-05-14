@@ -6,123 +6,100 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
   <!-- ─── CSP (unchanged) ─── -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-    connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
-    style-src 'self' 'unsafe-inline';
-    object-src 'none';
-  ">
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+          style-src 'self' 'unsafe-inline';
+          object-src 'none';
+        ">
 
-  <!-- ─── VISUAL THEME (matches dark UI used elsewhere) ─── -->
+  <!-- ─── VISUAL THEMES ─── -->
   <style>
     :root{
-      --bg-0:#111;            /* body background            */
-      --bg-1:#222;            /* card/section background     */
-      --bg-2:#333;            /* button & hover backgrounds  */
-      --border:#444;          /* borders / outlines          */
-      --text:#fff;            /* main text                   */
-      --text-dim:#ccc;        /* helper text                 */
-      --accent:#28a745;       /* accent / success            */
-      --danger:#ff6b6b;       /* error text                  */
+      /* dark (default) */
+      --bg-0:#111;--bg-1:#222;--bg-2:#333;
+      --border:#444;--text:#fff;--text-dim:#ccc;
+      --accent:#28a745;--danger:#ff6b6b;--info:#1976d2;
     }
-
+    body.light{
+      --bg-0:#f7f7f7;--bg-1:#ffffff;--bg-2:#e6e6e6;
+      --border:#bbb;--text:#000;--text-dim:#444;
+      --accent:#0d6efd;--danger:#d32f2f;--info:#0d6efd;
+    }
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-
-    body{
-      background:var(--bg-0);color:var(--text);
-      max-width:750px;margin:20px auto;padding:20px;
-    }
+    body{background:var(--bg-0);color:var(--text);max-width:750px;margin:20px auto;padding:20px;transition:background .25s}
 
     h1{text-align:center;margin-bottom:18px}
     h2,h3{margin:10px 0 14px}
     p{font-size:.9em;color:var(--text-dim)}
 
-    /* Card-style sections */
-    .login-section,.vacations-section{
-      background:var(--bg-1);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:18px;margin-bottom:24px;
-    }
+    button{border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:filter .2s}
+    button:hover{filter:brightness(1.1)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-toggle{background:var(--bg-2);color:var(--text)}
+    .btn-info  {background:var(--info);color:#fff}
 
     label{font-weight:700;display:block;margin:10px 0 4px}
     input,select{
-      width:100%;padding:8px;
-      background:var(--bg-0);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;
-      margin-bottom:12px;
+      width:100%;padding:8px;background:var(--bg-2);color:var(--text);
+      border:1px solid var(--border);border-radius:4px;margin-bottom:12px
     }
     input:focus,select:focus{outline:2px solid var(--accent)}
 
-    /* Buttons */
-    button{
-      background:var(--bg-2);color:var(--text);
-      border:none;border-radius:4px;
-      padding:8px 16px;cursor:pointer;
-      transition:background .2s;
-    }
-    button:hover{background:#555}
-
-    .message{color:var(--danger);margin-top:8px;font-size:.9em}
+    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:24px}
     .hidden{display:none}
+    .message{color:var(--danger);margin-top:8px;font-size:.9em}
 
-    /* Table styling */
-    .table-container{
-      max-height:320px;overflow-y:auto;
-      border:1px solid var(--border);border-radius:4px;
-    }
+    /* top bar inside main card */
+    .top-controls{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+
+    /* table */
+    .table-container{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
     table{width:100%;border-collapse:collapse}
-    th,td{
-      border:1px solid var(--border);
-      padding:8px;text-align:left;font-size:.9em;
-    }
+    th,td{border:1px solid var(--border);padding:8px;font-size:.9em;text-align:left}
     th{background:var(--bg-2)}
   </style>
 </head>
 <body>
+
   <h1>Manage Vacations</h1>
 
-  <!-- ───── GM Login ───── -->
-  <div class="login-section" id="login-section">
-    <label for="gm-email">GM Email</label>
-    <input type="email" id="gm-email">
-
-    <label for="gm-password">GM Password</label>
-    <input type="password" id="gm-password">
-
-    <button id="gm-login-btn">Login</button>
+  <!-- ───── LOGIN ───── -->
+  <div id="login-section" class="card">
+    <label>Email</label><input type="email" id="login-email">
+    <label>Password</label><input type="password" id="login-password">
+    <button class="btn-info" id="login-btn">Login</button>
     <div class="message" id="login-message"></div>
   </div>
 
-  <!-- ───── Vacations Section ───── -->
-  <div class="vacations-section hidden" id="vacations-section">
+  <!-- ───── MAIN UI ───── -->
+  <div id="vacations-section" class="card hidden">
+
+    <!-- top bar -->
+    <div class="top-controls">
+      <button id="logout-btn" class="btn-danger">Logout</button>
+      <button id="theme-btn"  class="btn-toggle">Light&nbsp;mode</button>
+    </div>
+
     <h2>Manage Artist Vacations</h2>
 
-    <label for="location-filter">Filter by Location</label>
-    <select id="location-filter">
-      <option value="">-- Select Location --</option>
-    </select>
+    <label>Filter by Location</label>
+    <select id="location-filter"><option value="">-- Select Location --</option></select>
 
-    <label for="artist-filter">Filter by Artist</label>
-    <select id="artist-filter">
-      <option value="">-- Select Artist --</option>
-    </select>
+    <label>Filter by Artist</label>
+    <select id="artist-filter"><option value="">-- Select Artist --</option></select>
 
     <hr style="border-color:var(--border);margin:18px 0">
 
     <h3>Add / Edit Vacation</h3>
-    <label for="vacation-start">Vacation Start</label>
-    <input type="date" id="vacation-start">
+    <label>Vacation Start</label><input type="date" id="vacation-start">
+    <label>Vacation End</label><input type="date" id="vacation-end">
+    <label>Notes</label><input type="text" id="vacation-notes" placeholder="Reason, or any extra notes">
 
-    <label for="vacation-end">Vacation End</label>
-    <input type="date" id="vacation-end">
-
-    <label for="vacation-notes">Notes</label>
-    <input type="text" id="vacation-notes" placeholder="Reason, or any extra notes">
-
-    <button id="save-vacation-btn">Save / Update Vacation</button>
-    <button id="clear-form-btn">Clear Form</button>
+    <button id="save-vacation-btn" class="btn-info">Save / Update Vacation</button>
+    <button id="clear-form-btn"  class="btn-toggle">Clear Form</button>
     <div class="message" id="vacation-message"></div>
 
     <hr style="border-color:var(--border);margin:18px 0">
@@ -130,123 +107,154 @@
     <h3>Existing Vacations</h3>
     <div class="table-container">
       <table id="vacations-table">
-        <thead>
-          <tr>
-            <th>Start</th><th>End</th><th>Notes</th><th>Action</th>
-          </tr>
-        </thead>
-        <tbody><!-- JS populates --></tbody>
+        <thead><tr><th>Start</th><th>End</th><th>Notes</th><th>Action</th></tr></thead>
+        <tbody></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Supabase JS (logic unchanged) -->
+  <!-- ─── SUPABASE ─── -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    /* ────────── All previous JS logic kept exactly the same ────────── */
-    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  /* ---------- Supabase init ---------- */
+  const supabase = window.supabase.createClient(
+      'https://shlvjhipxnslrncczopn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+  );
 
-    const loginSection = document.getElementById('login-section');
-    const vacationsSection = document.getElementById('vacations-section');
-    const gmEmailInput = document.getElementById('gm-email');
-    const gmPasswordInput = document.getElementById('gm-password');
-    const gmLoginBtn = document.getElementById('gm-login-btn');
-    const loginMessage = document.getElementById('login-message');
+  /* ---------- DOM refs ---------- */
+  const loginSec=document.getElementById('login-section');
+  const loginEmail=document.getElementById('login-email');
+  const loginPass=document.getElementById('login-password');
+  const loginBtn=document.getElementById('login-btn');
+  const loginMsg=document.getElementById('login-message');
 
-    const locationFilter = document.getElementById('location-filter');
-    const artistFilter   = document.getElementById('artist-filter');
+  const mainSec=document.getElementById('vacations-section');
+  const themeBtn=document.getElementById('theme-btn');
+  const logoutBtn=document.getElementById('logout-btn');
 
-    const vacationStartInput = document.getElementById('vacation-start');
-    const vacationEndInput   = document.getElementById('vacation-end');
-    const vacationNotesInput = document.getElementById('vacation-notes');
-    const saveVacationBtn    = document.getElementById('save-vacation-btn');
-    const clearFormBtn       = document.getElementById('clear-form-btn');
-    const vacationMessage    = document.getElementById('vacation-message');
+  const locationFilter=document.getElementById('location-filter');
+  const artistFilter  =document.getElementById('artist-filter');
+  const vacStart=document.getElementById('vacation-start');
+  const vacEnd  =document.getElementById('vacation-end');
+  const vacNotes=document.getElementById('vacation-notes');
+  const saveBtn=document.getElementById('save-vacation-btn');
+  const clearBtn=document.getElementById('clear-form-btn');
+  const vacMsg=document.getElementById('vacation-message');
+  const tbody=document.querySelector('#vacations-table tbody');
 
-    const vacationsTableBody = document.querySelector('#vacations-table tbody');
+  /* ---------- session vars ---------- */
+  let role='', allowedLocation='';
+  let currentVacationId=null;
 
-    let currentGM=null,currentVacationId=null;
+  /* ---------- theme toggle ---------- */
+  themeBtn.onclick=()=>{
+    const light=document.body.classList.toggle('light');
+    themeBtn.textContent=light?'Dark mode':'Light&nbsp;mode';
+  };
 
-    gmLoginBtn.addEventListener('click',async()=>{
-      loginMessage.textContent='';
-      const e=gmEmailInput.value.trim(),p=gmPasswordInput.value.trim();
-      if(!e||!p){loginMessage.textContent='Email and Password required.';return;}
-      const {data,error}=await supabase.from('users').select('*').eq('email',e).eq('role','gm');
-      if(error||!data?.length){loginMessage.textContent='Invalid GM credentials or not a GM.';return;}
-      if(data[0].password_hash!==p){loginMessage.textContent='Invalid credentials.';return;}
-      currentGM=data[0];
-      loginSection.classList.add('hidden');vacationsSection.classList.remove('hidden');loadLocations();
+  /* ---------- LOGIN ---------- */
+  loginBtn.onclick=async()=>{
+    loginMsg.textContent='';
+    const e=loginEmail.value.trim(), p=loginPass.value.trim();
+    if(!e||!p){loginMsg.textContent='Email & password required.';return;}
+
+    const {data,error}=await supabase.from('users').select('*').eq('email',e);
+    if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
+    const u=data[0];
+    if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
+
+    role=u.role;allowedLocation=u.location_id||'';
+    if(!['gm','hr','sm'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
+
+    loginSec.classList.add('hidden');
+    mainSec.classList.remove('hidden');
+    await loadLocations();
+  };
+
+  logoutBtn.onclick=()=>{
+    role='';allowedLocation='';currentVacationId=null;
+    [loginEmail,loginPass].forEach(i=>i.value='');loginMsg.textContent='';
+    mainSec.classList.add('hidden');loginSec.classList.remove('hidden');
+  };
+
+  /* ---------- LOAD LOCATIONS ---------- */
+  async function loadLocations(){
+    locationFilter.innerHTML='<option value="">-- Select Location --</option>';
+    let q=supabase.from('locations').select('*');
+    if(role==='sm')q=q.eq('id',allowedLocation);
+    const {data}=await q;
+    data.forEach(l=>{
+      const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);
     });
-
-    async function loadLocations(){
-      locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-      const {data}=await supabase.from('locations').select('*');
-      data?.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);});
+    if(role==='sm'){
+      locationFilter.value=allowedLocation;
+      locationFilter.disabled=true;
     }
+  }
 
-    locationFilter.addEventListener('change',async()=>{
-      artistFilter.innerHTML='<option value="">-- Select Artist --</option>';vacationsTableBody.innerHTML='';currentVacationId=null;
-      if(!locationFilter.value)return;
-      const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locationFilter.value);
-      data?.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistFilter.appendChild(o);});
+  /* ---------- LOAD ARTISTS ---------- */
+  locationFilter.onchange=async()=>{
+    artistFilter.innerHTML='<option value="">-- Select Artist --</option>';
+    tbody.innerHTML='';currentVacationId=null;
+    const locId=locationFilter.value;if(!locId)return;
+    const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
+    data.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistFilter.appendChild(o);});
+  };
+  artistFilter.onchange=loadVacations;
+
+  /* ---------- VACATIONS CRUD ---------- */
+  async function loadVacations(){
+    tbody.innerHTML='';currentVacationId=null;
+    if(!artistFilter.value)return;
+    const {data}=await supabase.from('artist_vacations').select('*').eq('artist_id',artistFilter.value).order('vacation_start',{ascending:true});
+    data.forEach(v=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${v.vacation_start}</td><td>${v.vacation_end||v.vacation_start}</td><td>${v.notes||''}</td>
+        <td><button class="btn-toggle" data-id="${v.id}" onclick="editVac('${v.id}')">Edit</button>
+            <button class="btn-danger" data-id="${v.id}" onclick="delVac('${v.id}')">Del</button></td>`;
+      tr.dataset.vac=JSON.stringify(v);
+      tbody.appendChild(tr);
     });
+  }
 
-    artistFilter.addEventListener('change',loadVacations);
+  window.editVac=id=>{
+    const row=[...tbody.children].find(r=>JSON.parse(r.dataset.vac).id===id);
+    if(!row)return;
+    const v=JSON.parse(row.dataset.vac);
+    currentVacationId=v.id;
+    vacStart.value=v.vacation_start||'';vacEnd.value=v.vacation_end||v.vacation_start||'';vacNotes.value=v.notes||'';
+    vacMsg.textContent='Editing – remember to Save.';
+  };
 
-    async function loadVacations(){
-      vacationsTableBody.innerHTML='';currentVacationId=null;if(!artistFilter.value)return;
-      const {data}=await supabase.from('artist_vacations').select('*').eq('artist_id',artistFilter.value).order('vacation_start',{ascending:true});
-      data?.forEach(v=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`
-          <td>${v.vacation_start}</td>
-          <td>${v.vacation_end||v.vacation_start}</td>
-          <td>${v.notes||''}</td>
-          <td>
-            <button data-id="${v.id}" class="edit-btn">Edit</button>
-            <button data-id="${v.id}" class="del-btn">Delete</button>
-          </td>`;
-        vacationsTableBody.appendChild(tr);
-      });
-      vacationsTableBody.querySelectorAll('.edit-btn').forEach(b=>b.onclick=()=>editVacation(data.find(v=>v.id==b.dataset.id)));
-      vacationsTableBody.querySelectorAll('.del-btn').forEach(b=>b.onclick=()=>deleteVacation(b.dataset.id));
-    }
+  window.delVac=async id=>{
+    if(!confirm('Delete vacation?'))return;
+    const {error}=await supabase.from('artist_vacations').delete().eq('id',id);
+    vacMsg.textContent=error?'Error deleting.':'Deleted.';loadVacations();clearForm();
+  };
 
-    function editVacation(v){
-      currentVacationId=v.id;
-      vacationStartInput.value=v.vacation_start||'';
-      vacationEndInput.value=v.vacation_end||v.vacation_start||'';
-      vacationNotesInput.value=v.notes||'';
-      vacationMessage.textContent='Editing existing vacation range. Save to update.';
-    }
+  saveBtn.onclick=async()=>{
+    vacMsg.textContent='';
+    if(!artistFilter.value){vacMsg.textContent='Select an artist.';return;}
+    if(!vacStart.value){vacMsg.textContent='Start date required.';return;}
+    const payload={
+      artist_id:artistFilter.value,
+      vacation_start:vacStart.value,
+      vacation_end:vacEnd.value||vacStart.value,
+      notes:vacNotes.value.trim()||null
+    };
+    let err;
+    if(currentVacationId)({error:err}=await supabase.from('artist_vacations').update(payload).eq('id',currentVacationId));
+    else                 ({error:err}=await supabase.from('artist_vacations').insert([payload]));
+    vacMsg.textContent=err?'Error saving.':'Saved!';
+    loadVacations();clearForm();
+  };
 
-    async function deleteVacation(id){
-      if(!confirm('Delete this vacation?'))return;
-      const {error}=await supabase.from('artist_vacations').delete().eq('id',id);
-      vacationMessage.textContent=error?'Error deleting vacation.':'Vacation deleted.';loadVacations();clearForm();
-    }
+  clearBtn.onclick=clearForm;
+  function clearForm(){currentVacationId=null;[vacStart,vacEnd,vacNotes].forEach(i=>i.value='');vacMsg.textContent='';}
 
-    saveVacationBtn.addEventListener('click',async()=>{
-      vacationMessage.textContent='';
-      if(!artistFilter.value){vacationMessage.textContent='Select an artist.';return;}
-      const start=vacationStartInput.value;if(!start){vacationMessage.textContent='Vacation start date required.';return;}
-      const end=vacationEndInput.value||start;const notes=vacationNotesInput.value.trim()||null;
-      if(!currentVacationId){
-        const {error}=await supabase.from('artist_vacations').insert([{artist_id:artistFilter.value,vacation_start:start,vacation_end:end,notes}]);
-        vacationMessage.textContent=error?'Error inserting vacation.':'New vacation added!';
-      }else{
-        const {error}=await supabase.from('artist_vacations').update({vacation_start:start,vacation_end:end,notes}).eq('id',currentVacationId);
-        vacationMessage.textContent=error?'Error updating vacation.':'Vacation updated!';
-      }
-      loadVacations();clearForm();
-    });
-
-    clearFormBtn.addEventListener('click',clearForm);
-    function clearForm(){currentVacationId=null;vacationStartInput.value='';vacationEndInput.value='';vacationNotesInput.value='';vacationMessage.textContent='';}
-
-    window.addEventListener('DOMContentLoaded',()=>vacationsSection.classList.add('hidden'));
+  /* ---------- expose delete/edit for inline buttons ---------- */
+  window.editVac=window.editVac;window.delVac=window.delVac;
   </script>
 </body>
 </html>
