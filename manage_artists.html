@@ -1,280 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Manage Artists</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Manage Artists</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-  <!-- ─────  VISUAL THEMES  ───── -->
-  <style>
-    :root{                         /*  dark (default)  */
-      --bg-0:#111;--bg-1:#222;--bg-2:#333;
-      --border:#444;--text:#fff;--text-dim:#ccc;--accent:#28a745;
-    }
-    body.light{                    /*  light mode  */
-      --bg-0:#f7f7f7;--bg-1:#fff;--bg-2:#e5e5e5;
-      --border:#b5b5b5;--text:#000;--text-dim:#555;--accent:#0d6efd;
-    }
+<style>
+:root{                          /* DARK (default) */
+  --bg0:#111;--bg1:#222;--bg2:#333;
+  --border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745;
+}
+body.light{                     /* LIGHT override  */
+  --bg0:#f7f7f7;--bg1:#fff;--bg2:#e5e5e5;
+  --border:#bbb;--txt:#000;--txt-dim:#555;--accent:#0d6efd;
+}
 
-    /* -------  base  ------- */
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-    body{background:var(--bg-0);color:var(--text);max-width:820px;margin:28px auto;padding:24px;transition:background .25s,color .25s}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+body{
+  background:var(--bg0);color:var(--txt);
+  max-width:820px;margin:32px auto;padding:26px;
+  transition:background .25s,color .25s
+}
+h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
+h2{margin:8px 0 14px;font-size:1.25rem}
 
-    h1{font-size:1.8rem;text-align:center;margin-bottom:22px}
-    h2{margin:8px 0 14px;font-size:1.25rem}
-    label{display:block;font-weight:700;margin:10px 0 4px}
-    input,select,textarea{
-      width:100%;padding:8px;background:var(--bg-0);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;margin-bottom:12px;resize:vertical
-    }
-    input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:28px}
 
-    button{
-      background:var(--bg-2);color:var(--text);
-      border:none;border-radius:4px;padding:8px 16px;
-      cursor:pointer;transition:background .2s
-    }
-    button:hover{background:#555}
-    .btn-mini{padding:4px 10px;font-size:.85em}
+label{display:block;font-weight:700;margin:10px 0 4px}
+input,select,textarea{
+  width:100%;padding:8px;background:var(--bg0);color:var(--txt);
+  border:1px solid var(--border);border-radius:4px;margin-bottom:12px;resize:vertical
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
 
-    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:26px}
-    .message{color:#ff6b6b;margin-top:8px;font-size:.9em}
-    .hidden{display:none}
+button{
+  background:var(--bg2);color:var(--txt);border:none;border-radius:4px;
+  padding:8px 16px;cursor:pointer;transition:background .2s
+}
+button:hover{background:#555}
+.btn-mini{padding:4px 10px;font-size:.85em}
 
-    /* -------  top bar  ------- */
-    #top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
-    #top-bar .right{display:flex;align-items:center;gap:16px}
-    #theme-toggle{transform:translateY(1px)}
+#top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+#top-bar .right{display:flex;align-items:center;gap:18px}
+#theme-toggle{transform:translateY(2px)}
 
-    /* -------  table  ------- */
-    .table-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--border);margin-top:10px}
-    table{width:100%;border-collapse:collapse;font-size:.9em}
-    th{position:sticky;top:0;background:var(--bg-1);color:var(--text);border-bottom:2px solid var(--border);padding:10px}
-    td{padding:8px;border-bottom:1px solid var(--border);color:var(--text-dim)}
-    tr:nth-child(even){background:var(--bg-0)}
-  </style>
+.message{color:#ff6b6b;font-size:.9em;margin-top:8px}
+.hidden{display:none}
+
+/* table */
+.table-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--border);margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.9em}
+th{position:sticky;top:0;background:var(--bg1);color:var(--txt);border-bottom:2px solid var(--border);padding:10px}
+td{padding:8px;border-bottom:1px solid var(--border);color:var(--txt-dim)}
+tr:nth-child(even){background:var(--bg0)}
+</style>
 </head>
 <body>
-  <h1>Manage Artists</h1>
+<h1>Manage Artists</h1>
 
-  <!-- ░░░ TOP BAR (theme + logout) ░░░ -->
-  <div id="top-bar" class="hidden">
-    <strong>Artist Manager</strong>
-    <div class="right">
-      <label><input type="checkbox" id="theme-toggle"> Light&nbsp;mode</label>
-      <button id="logout-btn" class="btn-mini">Logout</button>
-    </div>
+<!-- TOP BAR -->
+<div id="top-bar" class="hidden">
+  <strong>Artist Manager</strong>
+  <div class="right">
+    <label><input type="checkbox" id="theme-toggle"> Light&nbsp;mode</label>
+    <button id="logout-btn" class="btn-mini">Logout</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-section" class="card">
+  <label>Email</label><input id="login-email" type="email" autocomplete="username">
+  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
+  <button id="login-btn">Login</button>
+  <div id="login-msg" class="message"></div>
+</div>
+
+<!-- MANAGEMENT -->
+<div id="manage-section" class="card hidden">
+  <h2>Add / Edit Artist</h2>
+
+  <label>Artist Name</label><input id="artist-name">
+  <label>Phone</label><input id="artist-phone">
+  <label>Email</label><input id="artist-email" type="email">
+  <label>Calendar ID (optional)</label><input id="artist-cal">
+  <label>Percentage Split</label><input id="artist-split" type="number" step="0.01">
+  <label>Portfolio link</label><input id="artist-portfolio" type="url">
+  <label>About the artist</label><textarea id="artist-bio" rows="3"></textarea>
+
+  <label>Color</label>
+  <select id="artist-color">
+    <option value="">-- Random on Insert --</option>
+    <option value="#FF0000">Red</option><option value="#00FF00">Green</option>
+    <option value="#0000FF">Blue</option><option value="#FFA500">Orange</option>
+    <option value="#1abc9c">Teal</option><option value="#ddd">Gray</option>
+  </select>
+
+  <label>Location</label><select id="artist-location"></select>
+
+  <div style="margin-top:8px">
+    <button id="save-btn">Save Artist</button>
+    <button id="clear-btn">Clear</button>
+    <div id="artist-msg" class="message"></div>
   </div>
 
-  <!-- ░░░ LOGIN ░░░ -->
-  <div id="login-section" class="card">
-    <label>Email</label><input id="email" type="email">
-    <label>Password</label><input id="password" type="password">
-    <button id="login-btn">Login</button>
-    <div id="login-message" class="message"></div>
+  <hr style="border-color:var(--border);margin:26px 0">
+
+  <label>Filter by Location</label>
+  <select id="filter-location"><option value="">-- All Locations --</option></select>
+
+  <div class="table-wrap">
+    <table id="art-table">
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Split</th><th>Location</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
+</div>
 
-  <!-- ░░░ MANAGE ARTISTS ░░░ -->
-  <div id="manage-section" class="card hidden">
-    <h2>Add / Edit Artist</h2>
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+<script>
+/* ------------  INIT  ------------ */
+const supabase = supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
 
-    <label>Artist Name</label><input id="artist-name" type="text">
-    <label>Phone</label><input id="artist-phone" type="text">
-    <label>Email</label><input id="artist-email" type="email">
-    <label>Calendar ID (optional)</label><input id="artist-calendar" type="text">
-    <label>Percentage Split</label><input id="artist-split" type="number">
-    <label>Portfolio link</label><input id="artist-portfolio" type="url">
-    <label>About the artist</label><textarea id="artist-bio" rows="3"></textarea>
+/* ------------  REFS  ------------ */
+const themeTgl   = document.getElementById('theme-toggle');
+const logoutBtn  = document.getElementById('logout-btn');
+const topBar     = document.getElementById('top-bar');
 
-    <label>Color</label>
-    <select id="artist-color">
-      <option value="">-- Random on Insert --</option>
-      <option value="#FF0000">Red</option><option value="#00FF00">Green</option>
-      <option value="#0000FF">Blue</option><option value="#FFA500">Orange</option>
-      <option value="#1abc9c">Teal</option><option value="#ddd">Gray</option>
-    </select>
+const loginSec   = document.getElementById('login-section');
+const loginEmail = document.getElementById('login-email');
+const loginPass  = document.getElementById('login-pass');
+const loginBtn   = document.getElementById('login-btn');
+const loginMsg   = document.getElementById('login-msg');
 
-    <label>Location</label><select id="artist-location"></select>
+const manageSec  = document.getElementById('manage-section');
+const inputs = {
+  id     : null,                       /* used when editing */
+  name   : document.getElementById('artist-name'),
+  phone  : document.getElementById('artist-phone'),
+  email  : document.getElementById('artist-email'),
+  cal    : document.getElementById('artist-cal'),
+  split  : document.getElementById('artist-split'),
+  color  : document.getElementById('artist-color'),
+  loc    : document.getElementById('artist-location'),
+  port   : document.getElementById('artist-portfolio'),
+  bio    : document.getElementById('artist-bio')
+};
+const saveBtn    = document.getElementById('save-btn');
+const clearBtn   = document.getElementById('clear-btn');
+const artistMsg  = document.getElementById('artist-msg');
 
-    <div style="margin-top:8px">
-      <button id="save-artist-btn">Save Artist</button>
-      <button id="clear-artist-btn">Clear Fields</button>
-      <div id="artist-message" class="message"></div>
-    </div>
+const filterLoc  = document.getElementById('filter-location');
+const tbody      = document.querySelector('#art-table tbody');
 
-    <hr style="border-color:var(--border);margin:24px 0">
+/* ------------  THEME  ------------ */
+(function restoreTheme(){
+  if(localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeTgl.checked=true;
+  }
+})();
+themeTgl.onchange=()=>{
+  document.body.classList.toggle('light',themeTgl.checked);
+  localStorage.setItem('ui-theme',themeTgl.checked?'light':'dark');
+};
 
-    <label>Filter by Location</label>
-    <select id="filter-location"><option value="">-- All Locations --</option></select>
+/* ------------  STATE  ------------ */
+let role='', locationScope='';         // sr / sm get a single-location scope
 
-    <div class="table-wrap">
-      <table id="artists-table">
-        <thead>
-          <tr><th>Name</th><th>Phone</th><th>Email</th><th>Split</th><th>Location</th><th>Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
+/* ------------  LOGIN  ------------ */
+loginBtn.onclick= async ()=>{
+  loginMsg.textContent='';
+  if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Email & password required.';return;}
 
-  <!-- ░░░ SUPABASE ░░░ -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
-  <script>
-    /* ---------- Supabase init ---------- */
-    const supabase=window.supabase.createClient(
-      'https://shlvjhipxnslrncczopn.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
-    );
+  const {data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
+  if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
+  const user=data[0];
+  if(user.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
 
-    /* ---------- refs ---------- */
-    const topBar=document.getElementById('top-bar');
-    const themeToggle=document.getElementById('theme-toggle');
-    const logoutBtn=document.getElementById('logout-btn');
+  role=user.role; locationScope=user.location_id||'';
+  if(!['gm','hr','sr','sm'].includes(role)){loginMsg.textContent='Access denied.';return;}
 
-    const loginSec=document.getElementById('login-section');
-    const manageSec=document.getElementById('manage-section');
-    const emailInp=document.getElementById('email');
-    const passInp=document.getElementById('password');
-    const loginBtn=document.getElementById('login-btn');
-    const loginMsg=document.getElementById('login-message');
+  loginSec.classList.add('hidden');
+  manageSec.classList.remove('hidden');
+  topBar.classList.remove('hidden');
+  await loadLocations(); loadArtists();
+};
 
-    const nameInp=document.getElementById('artist-name');
-    const phoneInp=document.getElementById('artist-phone');
-    const mailInp=document.getElementById('artist-email');
-    const calInp=document.getElementById('artist-calendar');
-    const splitInp=document.getElementById('artist-split');
-    const colorSel=document.getElementById('artist-color');
-    const locSel=document.getElementById('artist-location');
-    const portInp=document.getElementById('artist-portfolio');
-    const bioInp=document.getElementById('artist-bio');
-    const saveBtn=document.getElementById('save-artist-btn');
-    const clearBtn=document.getElementById('clear-artist-btn');
-    const artMsg=document.getElementById('artist-message');
+/* ------------  LOGOUT  ------------ */
+logoutBtn.onclick=()=>{
+  role='';locationScope='';inputs.id=null;
+  manageSec.classList.add('hidden');
+  loginSec.classList.remove('hidden');
+  topBar.classList.add('hidden');
+  loginEmail.value=loginPass.value='';
+  artistMsg.textContent=loginMsg.textContent='';
+};
 
-    const filterLoc=document.getElementById('filter-location');
-    const tbody=document.querySelector('#artists-table tbody');
+/* ------------  LOCATIONS  ------------ */
+async function loadLocations(){
+  inputs.loc.innerHTML='';
+  filterLoc.innerHTML='<option value="">-- All Locations --</option>';
 
-    /* ---------- session vars ---------- */
-    let role='', allowedLocation='', currentArtistId=null;
+  let q = supabase.from('locations').select('*');
+  if(['sr','sm'].includes(role)) q=q.eq('id',locationScope);
 
-    /* ---------- theme toggle ---------- */
-    themeToggle.onchange=()=>document.body.classList.toggle('light',themeToggle.checked);
+  const {data,error}=await q;
+  if(error)return;
 
-    /* ---------- login ---------- */
-    loginBtn.onclick=async()=>{
-      loginMsg.textContent='';
-      if(!emailInp.value||!passInp.value){loginMsg.textContent='Email & password required.';return;}
-      const {data,error}=await supabase.from('users').select('*').eq('email',emailInp.value.trim());
-      if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-      const u=data[0];
-      if(u.password_hash!==passInp.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-      role=u.role;allowedLocation=u.location_id||'';
-      if(!['gm','hr','sr','sm'].includes(role)){loginMsg.textContent='Access denied.';return;}
+  data.forEach(l=>{
+    inputs.loc.add(new Option(l.location_name,l.id));
+    filterLoc.add(new Option(l.location_name,l.id));
+  });
 
-      loginSec.classList.add('hidden');
-      manageSec.classList.remove('hidden');
-      topBar.classList.remove('hidden');
-      await loadLocations();
-      loadArtists();
-    };
+  if(['sr','sm'].includes(role)){
+    filterLoc.value=locationScope;
+    filterLoc.disabled=true;
+  }
+}
+filterLoc.onchange=loadArtists;
 
-    /* ---------- logout ---------- */
-    logoutBtn.onclick=()=>{
-      role='';allowedLocation='';currentArtistId=null;
-      document.body.classList.remove('light');
-      themeToggle.checked=false;
-      topBar.classList.add('hidden');
-      manageSec.classList.add('hidden');
-      loginSec.classList.remove('hidden');
-      emailInp.value=passInp.value='';
-      loginMsg.textContent='';
-    };
+/* ------------  ARTISTS  ------------ */
+async function loadArtists(){
+  tbody.innerHTML='';
+  let q=supabase.from('artists')
+      .select('*, locations(location_name)')
+      .order('artist_name',{ascending:true});
 
-    /* ---------- locations ---------- */
-    async function loadLocations(){
-      locSel.innerHTML='';
-      filterLoc.innerHTML='<option value="">-- All Locations --</option>';
-      let q=supabase.from('locations').select('*');
-      if(['sr','sm'].includes(role))q=q.eq('id',allowedLocation);
-      const {data}=await q;
-      data.forEach(l=>{
-        const o1=new Option(l.location_name,l.id);locSel.add(o1);
-        const o2=new Option(l.location_name,l.id);filterLoc.add(o2);
-      });
-      if(['sr','sm'].includes(role)){
-        filterLoc.value=allowedLocation;filterLoc.disabled=true;
-      }
-    }
+  if(filterLoc.value) q=q.eq('location_id',filterLoc.value);
 
-    /* ---------- load & filter artists ---------- */
-    async function loadArtists(){
-      tbody.innerHTML='';
-      let q=supabase.from('artists').select('*, locations(location_name)').order('artist_name',{ascending:true});
-      if(filterLoc.value)q=q.eq('location_id',filterLoc.value);
-      const {data}=await q;
-      data.forEach(a=>{
-        const tr=document.createElement('tr');
-        tr.dataset.artist=JSON.stringify(a);
-        tr.innerHTML=`
-          <td>${a.artist_name}</td>
-          <td>${a.phone||''}</td>
-          <td>${a.email||''}</td>
-          <td>${a.percentage_split||''}</td>
-          <td>${a.locations? a.locations.location_name:''}</td>
-          <td>
-            <button class="btn-mini" onclick="editArtist('${a.id}')">Edit</button>
-            <button class="btn-mini" onclick="deleteArtist('${a.id}')">Del</button>
-          </td>`;
-        tbody.appendChild(tr);
-      });
-    }
-    filterLoc.onchange=loadArtists;
+  const {data,error}=await q;
+  if(error)return;
 
-    /* ---------- CRUD helpers ---------- */
-    window.editArtist=id=>{
-      const row=[...tbody.children].find(r=>JSON.parse(r.dataset.artist).id===id);
-      if(!row)return;
-      const a=JSON.parse(row.dataset.artist);currentArtistId=a.id;
-      nameInp.value=a.artist_name||'';phoneInp.value=a.phone||'';mailInp.value=a.email||'';
-      calInp.value=a.calendar_id||'';splitInp.value=a.percentage_split||'';
-      colorSel.value=a.color||'';locSel.value=a.location_id||'';portInp.value=a.portfolio||'';bioInp.value=a.bio||'';
-      artMsg.textContent='Editing – remember to save.';
-    };
+  data.forEach(a=>{
+    const tr=document.createElement('tr');
+    tr.dataset.artist=JSON.stringify(a);
+    tr.innerHTML=`
+      <td>${a.artist_name}</td>
+      <td>${a.phone||''}</td>
+      <td>${a.email||''}</td>
+      <td>${a.percentage_split||''}</td>
+      <td>${a.locations? a.locations.location_name : ''}</td>
+      <td>
+        <button class="btn-mini" onclick="editArtist('${a.id}')">Edit</button>
+        <button class="btn-mini" onclick="deleteArtist('${a.id}')">Del</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
 
-    window.deleteArtist=async id=>{
-      if(!confirm('Delete artist?'))return;
-      const {error}=await supabase.from('artists').delete().eq('id',id);
-      artMsg.textContent=error?'Error deleting.':'Deleted.';loadArtists();clearForm();
-    };
+/* ------------  CRUD  ------------ */
+window.editArtist=id=>{
+  const row=[...tbody.children].find(r=>JSON.parse(r.dataset.artist).id===id);
+  if(!row)return;
+  const a=JSON.parse(row.dataset.artist);
+  inputs.id   = a.id;
+  inputs.name.value  = a.artist_name||'';
+  inputs.phone.value = a.phone||'';
+  inputs.email.value = a.email||'';
+  inputs.cal.value   = a.calendar_id||'';
+  inputs.split.value = a.percentage_split||'';
+  inputs.color.value = a.color||'';
+  inputs.loc.value   = a.location_id||'';
+  inputs.port.value  = a.portfolio||'';
+  inputs.bio.value   = a.bio||'';
+  artistMsg.textContent='Editing — remember to save.';
+};
 
-    saveBtn.onclick=async()=>{
-      artMsg.textContent='';
-      if(!nameInp.value.trim()){artMsg.textContent='Name required.';return;}
-      const payload={
-        artist_name:nameInp.value.trim(),
-        phone:phoneInp.value.trim()||null,
-        email:mailInp.value.trim()||null,
-        calendar_id:calInp.value.trim()||null,
-        percentage_split:splitInp.value?parseFloat(splitInp.value):null,
-        color:colorSel.value||null,
-        location_id:locSel.value||null,
-        portfolio:portInp.value.trim()||null,
-        bio:bioInp.value.trim()||null
-      };
-      let res=currentArtistId
-        ? await supabase.from('artists').update(payload).eq('id',currentArtistId)
-        : await supabase.from('artists').insert([payload]);
-      artMsg.textContent=res.error?'Error saving.':'Saved!';
-      if(!res.error){loadArtists();clearForm();}
-    };
-    clearBtn.onclick=clearForm;
-    function clearForm(){
-      currentArtistId=null;
-      [nameInp,phoneInp,mailInp,calInp,splitInp,portInp,bioInp].forEach(i=>i.value='');
-      colorSel.value='';locSel.value='';artMsg.textContent='';
-    }
+window.deleteArtist = async id =>{
+  if(!confirm('Delete artist?'))return;
+  const {error}=await supabase.from('artists').delete().eq('id',id);
+  artistMsg.textContent=error?'Error deleting.':'Deleted.';
+  if(!error){ loadArtists(); clearForm(); }
+};
 
-    /* ---------- expose for inline btns ---------- */
-    window.deleteArtist=window.deleteArtist;
-    window.editArtist  =window.editArtist;
-  </script
+saveBtn.onclick= async ()=>{
+  artistMsg.textContent='';
+  if(!inputs.name.value.trim()){artistMsg.textContent='Name required.';return;}
+
+  const payload={
+    artist_name:inputs.name.value.trim(),
+    phone:inputs.phone.value.trim()||null,
+    email:inputs.email.value.trim()||null,
+    calendar_id:inputs.cal.value.trim()||null,
+    percentage_split:inputs.split.value?parseFloat(inputs.split.value):null,
+    color:inputs.color.value||null,
+    location_id:inputs.loc.value||null,
+    portfolio:inputs.port.value.trim()||null,
+    bio:inputs.bio.value.trim()||null
+  };
+
+  let res= inputs.id
+      ? await supabase.from('artists').update(payload).eq('id',inputs.id)
+      : await supabase.from('artists').insert([payload]);
+
+  artistMsg.textContent=res.error?'Error saving.':'Saved!';
+  if(!res.error){ loadArtists(); clearForm(); }
+};
+
+clearBtn.onclick=clearForm;
+function clearForm(){
+  inputs.id=null;
+  inputs.name.value=inputs.phone.value=inputs.email.value='';
+  inputs.cal.value=inputs.split.value=inputs.port.value=inputs.bio.value='';
+  inputs.color.value=''; if(!['sr','sm'].includes(role))inputs.loc.value='';
+  artistMsg.textContent='';
+}
+
+/* expose helpers for inline buttons */
+window.deleteArtist=window.deleteArtist;
+window.editArtist  =window.editArtist;
+</script>
+</body>
+</html>
