@@ -3,85 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <title>Manage Artists</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-  <!-- ─────  VISUAL THEME (dark, consistent with all other pages)  ───── -->
+  <!-- ─────  VISUAL THEMES  ───── -->
   <style>
-    :root{
-      --bg-0:#111;   /* body background   */
-      --bg-1:#222;   /* card / section    */
-      --bg-2:#333;   /* button / hover bg */
-      --border:#444; /* borders           */
-      --text:#fff;   /* main text         */
-      --text-dim:#ccc;
-      --accent:#28a745;
+    :root{          /* dark – default */
+      --bg-0:#111; --bg-1:#222; --bg-2:#333;
+      --border:#444; --text:#fff;--text-dim:#ccc;--accent:#28a745;
+    }
+    body.light{     /* light override */
+      --bg-0:#f5f5f5;--bg-1:#fff;--bg-2:#e4e4e4;
+      --border:#bbb;--text:#000;--text-dim:#444;--accent:#0d6efd;
     }
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-    body{
-      background:var(--bg-0);color:var(--text);
-      max-width:700px;margin:20px auto;padding:20px;
-    }
+    body{background:var(--bg-0);color:var(--text);max-width:780px;margin:20px auto;padding:20px;transition:.25s background}
     h1{text-align:center;margin-bottom:18px}
     h2{margin:8px 0 14px}
-
-    /* card-style sections */
-    .login-section,.manage-section{
-      background:var(--bg-1);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:18px;margin-bottom:24px;
-    }
-
+    .login-section,.manage-section{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:24px}
     label{font-weight:700;display:block;margin:10px 0 4px}
-    input,select{
-      width:100%;padding:8px;
-      background:var(--bg-0);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;
-      margin-bottom:12px;
+    input,select,textarea{
+      width:100%;padding:8px;background:var(--bg-0);color:var(--text);
+      border:1px solid var(--border);border-radius:4px;margin-bottom:12px;resize:vertical
     }
-    input:focus,select:focus{outline:2px solid var(--accent)}
-
-    /* primary buttons */
-    button{
-      background:var(--bg-2);color:var(--text);
-      border:none;border-radius:4px;
-      padding:8px 16px;cursor:pointer;
-      transition:background .2s;
-    }
+    input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
+    button{background:var(--bg-2);color:var(--text);border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:background .2s}
     button:hover{background:#555}
     .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
-
+    .switch-wrap{display:flex;align-items:center;gap:8px;margin-bottom:12px}
     .message{color:#ff6b6b;margin-top:8px;font-size:.9em}
     .hidden{display:none}
-
-    /* table */
-    .table-container{
-      max-height:320px;overflow-y:auto;margin-top:10px;
-      border:1px solid var(--border);
-    }
+    .table-container{max-height:320px;overflow-y:auto;margin-top:10px;border:1px solid var(--border)}
     table{width:100%;border-collapse:collapse;font-size:.9em}
-    th{
-      position:sticky;top:0;
-      background:var(--bg-1);color:var(--text);
-      border-bottom:2px solid var(--border);
-      padding:10px;
-    }
+    th{position:sticky;top:0;background:var(--bg-1);color:var(--text);border-bottom:2px solid var(--border);padding:10px}
     td{padding:8px;border-bottom:1px solid var(--border);color:var(--text-dim)}
-    tr:nth-child(even){background:#1a1a1a}
+    tr:nth-child(even){background:var(--bg-0)}
   </style>
 </head>
 <body>
   <h1>Manage Artists</h1>
 
+  <!-- theme switch -->
+  <div class="switch-wrap">
+    <label><input type="checkbox" id="theme-toggle"> Light&nbsp;mode</label>
+  </div>
+
   <!-- Login Section -->
   <div class="login-section" id="login-section">
-    <label for="gm-email">GM Email</label>
-    <input type="email" id="gm-email">
-
-    <label for="gm-password">GM Password</label>
-    <input type="password" id="gm-password">
-
-    <button id="gm-login-btn">Login</button>
+    <label>Email</label><input type="email" id="email">
+    <label>Password</label><input type="password" id="password">
+    <button id="login-btn">Login</button>
     <div class="message" id="login-message"></div>
   </div>
 
@@ -89,34 +59,23 @@
   <div class="manage-section hidden" id="manage-section">
     <h2>Add / Edit Artist</h2>
 
-    <label for="artist-name">Artist Name</label>
-    <input type="text" id="artist-name" />
+    <label>Artist Name</label><input id="artist-name" type="text">
+    <label>Phone</label><input id="artist-phone" type="text">
+    <label>Email</label><input id="artist-email" type="email">
+    <label>Calendar ID (optional)</label><input id="artist-calendar" type="text">
+    <label>Percentage Split</label><input id="artist-split" type="number">
+    <label>Portfolio link</label><input id="artist-portfolio" type="url">
+    <label>About the artist</label><textarea id="artist-bio" rows="3"></textarea>
 
-    <label for="artist-phone">Phone</label>
-    <input type="text" id="artist-phone" />
-
-    <label for="artist-email">Email</label>
-    <input type="email" id="artist-email" />
-
-    <label for="artist-calendar">Calendar ID (optional)</label>
-    <input type="text" id="artist-calendar" />
-
-    <label for="artist-split">Percentage Split</label>
-    <input type="number" id="artist-split" />
-
-    <label for="artist-color">Color</label>
+    <label>Color</label>
     <select id="artist-color">
       <option value="">-- Random on Insert --</option>
-      <option value="#FF0000">Red</option>
-      <option value="#00FF00">Green</option>
-      <option value="#0000FF">Blue</option>
-      <option value="#FFA500">Orange</option>
-      <option value="#1abc9c">Teal</option>
-      <option value="#ddd">Gray</option>
+      <option value="#FF0000">Red</option><option value="#00FF00">Green</option>
+      <option value="#0000FF">Blue</option><option value="#FFA500">Orange</option>
+      <option value="#1abc9c">Teal</option><option value="#ddd">Gray</option>
     </select>
 
-    <label for="artist-location">Location</label>
-    <select id="artist-location"></select>
+    <label>Location</label><select id="artist-location"></select>
 
     <div>
       <button id="save-artist-btn">Save Artist</button>
@@ -126,25 +85,15 @@
 
     <hr style="border-color:var(--border);margin:20px 0">
 
-    <label for="filter-location">Filter by Location</label>
-    <select id="filter-location">
-      <option value="">-- All Locations --</option>
-    </select>
+    <label>Filter by Location</label>
+    <select id="filter-location"><option value="">-- All Locations --</option></select>
 
     <div class="table-container">
       <table id="artists-table">
         <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Split</th>
-            <th>Color</th>
-            <th>Location</th>
-            <th>Actions</th>
-          </tr>
+          <tr><th>Name</th><th>Phone</th><th>Email</th><th>Split</th><th>Location</th><th>Actions</th></tr>
         </thead>
-        <tbody><!-- JS populates --></tbody>
+        <tbody></tbody>
       </table>
     </div>
   </div>
@@ -152,147 +101,145 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    /*  ───────────── JS logic unchanged ───────────── */
-    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    /* ---------- Supabase init ---------- */
+    const supabase=window.supabase.createClient(
+      'https://shlvjhipxnslrncczopn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+    );
 
-    const loginSection = document.getElementById('login-section');
-    const manageSection = document.getElementById('manage-section');
-    const gmEmailInput = document.getElementById('gm-email');
-    const gmPasswordInput = document.getElementById('gm-password');
-    const gmLoginBtn = document.getElementById('gm-login-btn');
-    const loginMessage = document.getElementById('login-message');
+    /* ---------- DOM refs ---------- */
+    const loginSec=document.getElementById('login-section');
+    const manageSec=document.getElementById('manage-section');
+    const emailInp=document.getElementById('email');
+    const passInp=document.getElementById('password');
+    const loginBtn=document.getElementById('login-btn');
+    const loginMsg=document.getElementById('login-message');
 
-    const artistNameInput = document.getElementById('artist-name');
-    const artistPhoneInput = document.getElementById('artist-phone');
-    const artistEmailInput = document.getElementById('artist-email');
-    const artistCalendarInput = document.getElementById('artist-calendar');
-    const artistSplitInput = document.getElementById('artist-split');
-    const artistColorSelect = document.getElementById('artist-color');
-    const artistLocationSelect = document.getElementById('artist-location');
-    const saveArtistBtn = document.getElementById('save-artist-btn');
-    const clearArtistBtn = document.getElementById('clear-artist-btn');
-    const artistMessage = document.getElementById('artist-message');
-    const artistsTableBody = document.querySelector('#artists-table tbody');
+    const nameInp=document.getElementById('artist-name');
+    const phoneInp=document.getElementById('artist-phone');
+    const mailInp=document.getElementById('artist-email');
+    const calInp=document.getElementById('artist-calendar');
+    const splitInp=document.getElementById('artist-split');
+    const colorSel=document.getElementById('artist-color');
+    const locSel=document.getElementById('artist-location');
+    const portInp=document.getElementById('artist-portfolio');
+    const bioInp=document.getElementById('artist-bio');
+    const saveBtn=document.getElementById('save-artist-btn');
+    const clearBtn=document.getElementById('clear-artist-btn');
+    const artMsg=document.getElementById('artist-message');
 
-    const filterLocationSelect = document.getElementById('filter-location');
+    const filterLoc=document.getElementById('filter-location');
+    const tbody=document.querySelector('#artists-table tbody');
 
-    let currentGM = null;
-    let currentArtistId = null;
+    /* ---------- SESSION ---------- */
+    let role='', allowedLocation='';
+    let currentArtistId=null;
 
-    gmLoginBtn.addEventListener('click', async () => {
-      loginMessage.textContent='';
-      const emailVal = gmEmailInput.value.trim();
-      const passVal = gmPasswordInput.value.trim();
-      if (!emailVal || !passVal) { loginMessage.textContent='Email and Password required.'; return; }
+    /* ---------- THEME SWITCH ---------- */
+    const themeToggle=document.getElementById('theme-toggle');
+    themeToggle.onchange=()=>document.body.classList.toggle('light',themeToggle.checked);
 
-      let { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', emailVal)
-        .eq('role', 'gm');
-      if (error) { loginMessage.textContent='Error checking GM credentials.'; return; }
-      if (!users?.length) { loginMessage.textContent='Invalid GM credentials or not a GM.'; return; }
+    /* ---------- LOGIN ---------- */
+    loginBtn.onclick=async()=>{
+      loginMsg.textContent='';
+      if(!emailInp.value||!passInp.value){loginMsg.textContent='Email & password required.';return;}
+      const {data,error}=await supabase.from('users').select('*').eq('email',emailInp.value.trim());
+      if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
+      const u=data[0];
+      if(u.password_hash!==passInp.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
 
-      const user = users[0];
-      if (user.password_hash !== passVal) { loginMessage.textContent='Invalid credentials.'; return; }
+      role=u.role;allowedLocation=u.location_id||'';
+      const allowed=['gm','hr','sr','sm'];
+      if(!allowed.includes(role)){loginMsg.textContent='Access denied for this role.';return;}
 
-      currentGM = user;
-      loginSection.classList.add('hidden');
-      manageSection.classList.remove('hidden');
-      loadLocations();
-      loadAllArtists();
-    });
+      loginSec.classList.add('hidden');
+      manageSec.classList.remove('hidden');
+      await loadLocations();
+      loadArtists();
+    };
 
-    async function loadLocations() {
-      artistLocationSelect.innerHTML = '';
-      filterLocationSelect.innerHTML  = '<option value="">-- All Locations --</option>';
-      const { data, error } = await supabase.from('locations').select('*');
-      if (error) return;
-      data.forEach(loc => {
-        const o1=document.createElement('option');o1.value=loc.id;o1.textContent=loc.location_name;artistLocationSelect.appendChild(o1);
-        const o2=document.createElement('option');o2.value=loc.id;o2.textContent=loc.location_name;filterLocationSelect.appendChild(o2);
+    /* ---------- LOAD LOCATIONS ---------- */
+    async function loadLocations(){
+      locSel.innerHTML='';
+      filterLoc.innerHTML='<option value="">-- All Locations --</option>';
+      let q=supabase.from('locations').select('*');
+      if(['sr','sm'].includes(role))q=q.eq('id',allowedLocation);
+      const {data}=await q;
+      data.forEach(l=>{
+        const o1=document.createElement('option');o1.value=l.id;o1.textContent=l.location_name;locSel.appendChild(o1);
+        const o2=document.createElement('option');o2.value=l.id;o2.textContent=l.location_name;filterLoc.appendChild(o2);
       });
+      if(['sr','sm'].includes(role)){
+        filterLoc.value=allowedLocation;
+        filterLoc.disabled=true;
+      }
     }
 
-    async function loadAllArtists() {
-      artistsTableBody.innerHTML='';
-      let query=supabase.from('artists').select('*, locations(location_name)').order('artist_name',{ascending:true});
-      if(filterLocationSelect.value)query=query.eq('location_id',filterLocationSelect.value);
-      const {data,error}=await query;
-      if(error)return;
+    /* ---------- LOAD ARTISTS ---------- */
+    async function loadArtists(){
+      tbody.innerHTML='';
+      let q=supabase.from('artists').select('*, locations(location_name)').order('artist_name',{ascending:true});
+      if(filterLoc.value)q=q.eq('location_id',filterLoc.value);
+      const {data}=await q;
       data.forEach(a=>{
         const tr=document.createElement('tr');
-        tr.innerHTML=`
-          <td>${a.artist_name}</td>
-          <td>${a.phone||''}</td>
-          <td>${a.email||''}</td>
-          <td>${a.percentage_split||''}</td>
-          <td><span style="color:${a.color||'#aaa'}">${a.color||''}</span></td>
-          <td>${a.locations? a.locations.location_name : ''}</td>
-          <td>
-            <button class="btn-mini" onclick="editArtist(${a.id})">Edit</button>
-            <button class="btn-mini" onclick="deleteArtist(${a.id})">Delete</button>
-          </td>`;
-        tr.dataset.full=JSON.stringify(a); // stash full object for edit
-        artistsTableBody.appendChild(tr);
+        tr.dataset.artist=JSON.stringify(a);
+        tr.innerHTML=`<td>${a.artist_name}</td><td>${a.phone||''}</td><td>${a.email||''}</td>
+          <td>${a.percentage_split||''}</td><td>${a.locations? a.locations.location_name:''}</td>
+          <td><button class="btn-mini" onclick="editArtist('${a.id}')">Edit</button>
+              <button class="btn-mini" onclick="deleteArtist('${a.id}')">Del</button></td>`;
+        tbody.appendChild(tr);
       });
     }
+    filterLoc.onchange=loadArtists;
 
-    filterLocationSelect.addEventListener('change',loadAllArtists);
-
-    window.editArtist=function(id){
-      const row=[...artistsTableBody.children].find(r=>JSON.parse(r.dataset.full).id===id);
+    /* ---------- CRUD ---------- */
+    window.editArtist=async(id)=>{
+      const row=[...tbody.children].find(r=>JSON.parse(r.dataset.artist).id===id);
       if(!row)return;
-      const a=JSON.parse(row.dataset.full);
-      currentArtistId=a.id;
-      artistNameInput.value=a.artist_name||'';
-      artistPhoneInput.value=a.phone||'';
-      artistEmailInput.value=a.email||'';
-      artistCalendarInput.value=a.calendar_id||'';
-      artistSplitInput.value=a.percentage_split||'';
-      artistColorSelect.value=a.color||'';
-      artistLocationSelect.value=a.location_id||'';
-      artistMessage.textContent='Editing existing artist. Save to update.';
+      const a=JSON.parse(row.dataset.artist);currentArtistId=a.id;
+      nameInp.value=a.artist_name||'';phoneInp.value=a.phone||'';mailInp.value=a.email||'';
+      calInp.value=a.calendar_id||'';splitInp.value=a.percentage_split||'';
+      colorSel.value=a.color||'';locSel.value=a.location_id||'';portInp.value=a.portfolio||'';bioInp.value=a.bio||'';
+      artMsg.textContent='Editing – remember to Save.';
     };
 
     window.deleteArtist=async(id)=>{
-      if(!confirm('Are you sure you want to delete this artist?'))return;
+      if(!confirm('Delete artist?'))return;
       const {error}=await supabase.from('artists').delete().eq('id',id);
-      artistMessage.textContent= error ? 'Error deleting artist.' : 'Artist deleted.';
-      if(!error){loadAllArtists();clearArtistForm();}
+      artMsg.textContent=error?'Error deleting.':'Deleted.';loadArtists();clearForm();
     };
 
-    saveArtistBtn.addEventListener('click',async()=>{
-      artistMessage.textContent='';
-      if(!artistNameInput.value.trim()){artistMessage.textContent='Artist name is required.';return;}
+    saveBtn.onclick=async()=>{
+      artMsg.textContent='';
+      if(!nameInp.value.trim()){artMsg.textContent='Name required.';return;}
       const payload={
-        artist_name:artistNameInput.value.trim(),
-        phone:artistPhoneInput.value.trim()||null,
-        email:artistEmailInput.value.trim()||null,
-        calendar_id:artistCalendarInput.value.trim()||null,
-        percentage_split:artistSplitInput.value.trim()?parseFloat(artistSplitInput.value):null,
-        color:artistColorSelect.value||null,
-        location_id:artistLocationSelect.value||null
+        artist_name:nameInp.value.trim(),
+        phone:phoneInp.value.trim()||null,
+        email:mailInp.value.trim()||null,
+        calendar_id:calInp.value.trim()||null,
+        percentage_split:splitInp.value?parseFloat(splitInp.value):null,
+        color:colorSel.value||null,
+        location_id:locSel.value||null,
+        portfolio:portInp.value.trim()||null,
+        bio:bioInp.value.trim()||null
       };
       let res;
-      if(currentArtistId){
-        res=await supabase.from('artists').update(payload).eq('id',currentArtistId);
-      }else{
-        res=await supabase.from('artists').insert([payload]);
-      }
-      artistMessage.textContent=res.error?'Error saving artist.':'Artist saved!';
-      if(!res.error){loadAllArtists();clearArtistForm();}
-    });
-
-    clearArtistBtn.addEventListener('click',clearArtistForm);
-    function clearArtistForm(){
-      currentArtistId=null;artistNameInput.value=artistPhoneInput.value=artistEmailInput.value=artistCalendarInput.value=artistSplitInput.value='';
-      artistColorSelect.value='';artistLocationSelect.value='';artistMessage.textContent='';
+      if(currentArtistId)res=await supabase.from('artists').update(payload).eq('id',currentArtistId);
+      else               res=await supabase.from('artists').insert([payload]);
+      artMsg.textContent=res.error?'Error saving.':'Saved!';
+      if(!res.error){loadArtists();clearForm();}
+    };
+    clearBtn.onclick=clearForm;
+    function clearForm(){
+      currentArtistId=null;
+      [nameInp,phoneInp,mailInp,calInp,splitInp,portInp,bioInp].forEach(i=>i.value='');
+      colorSel.value='';locSel.value='';artMsg.textContent='';
     }
 
-    window.addEventListener('DOMContentLoaded',()=>manageSection.classList.add('hidden'));
+    /* ---------- expose for inline buttons ---------- */
+    window.deleteArtist=window.deleteArtist;
+    window.editArtist  =window.editArtist;
   </script>
 </body>
 </html>
