@@ -2,106 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in – Club Tattoo Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 40px auto;
-      padding: 10px;
+    :root{
+      --bg:#111;--card:#222;--border:#444;--txt:#fff;--accent:#28a745;
     }
-    h1 {
-      text-align: center;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin: 8px 0 4px;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-    }
-    .message {
-      text-align: center;
-      margin-top: 10px;
-      color: red;
-    }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+    body{background:var(--bg);color:var(--txt);display:flex;align-items:center;justify-content:center;height:100vh;padding:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:26px;max-width:360px;width:100%}
+    h1{margin-bottom:18px;text-align:center}
+    label{display:block;font-weight:700;margin:10px 0 4px}
+    input{width:100%;padding:8px;background:#000;color:#fff;border:1px solid var(--border);border-radius:4px}
+    button{width:100%;margin-top:18px;padding:10px;background:var(--accent);border:none;border-radius:4px;cursor:pointer;color:#fff;font-weight:700}
+    .msg{margin-top:12px;color:#ff6b6b;text-align:center;font-size:.9em}
   </style>
 </head>
 <body>
-  <h1>Login</h1>
-  <div>
-    <label for="email">Email</label>
-    <input type="email" id="email" />
-    
-    <label for="password">Password</label>
-    <input type="password" id="password" />
-
-    <button id="login-btn">Login</button>
-    <div class="message" id="message"></div>
+  <div class="card">
+    <h1>Admin Login</h1>
+    <label>Email</label><input id="email" type="email">
+    <label>Password</label><input id="pass" type="password">
+    <button id="login-btn">Log in</button>
+    <div id="msg" class="msg"></div>
   </div>
 
-  <!-- Supabase JS v1.35.7 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const loginBtn = document.getElementById('login-btn');
-    const messageDiv = document.getElementById('message');
-
-    loginBtn.addEventListener('click', async () => {
-      const emailVal = emailInput.value.trim();
-      const passwordVal = passwordInput.value.trim();
-
-      if (!emailVal || !passwordVal) {
-        messageDiv.textContent = 'Email and Password are required.';
-        return;
-      }
-
-      // Fetch user by email
-      let { data: users, error } = await supabase
+    const supabase=window.supabase.createClient(
+      'https://shlvjhipxnslrncczopn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+    );
+    const email=document.getElementById('email');
+    const pass=document.getElementById('pass');
+    const msg=document.getElementById('msg');
+    document.getElementById('login-btn').onclick=async()=>{
+      msg.textContent='';
+      if(!email.value||!pass.value){msg.textContent='Email & password required.';return;}
+      const {data,error}=await supabase
         .from('users')
         .select('*')
-        .eq('email', emailVal);
-
-      if (error) {
-        console.error(error);
-        messageDiv.textContent = 'Error fetching user.';
-        return;
-      }
-
-      if (!users || users.length === 0) {
-        messageDiv.textContent = 'Invalid credentials.';
-        return;
-      }
-
-      const user = users[0];
-      // For now, compare plain text (NOT SECURE in production)
-      if (user.password_hash !== passwordVal) {
-        messageDiv.textContent = 'Invalid credentials.';
-        return;
-      }
-
-      // If valid, store user data in localStorage (or sessionStorage)
-      localStorage.setItem('currentUserId', user.id);
-      localStorage.setItem('currentLocationId', user.location_id);
-      localStorage.setItem('currentUserRole', user.role);
-
-      // Redirect to main calendar page
-      window.location.href = 'calendar.html';
-    });
+        .eq('email',email.value.trim());
+      if(error||!data.length){msg.textContent='Invalid credentials.';return;}
+      const user=data[0];
+      if(user.password_hash!==pass.value.trim()){msg.textContent='Invalid credentials.';return;}
+      /* store lightweight session  */
+      localStorage.setItem('userRole',user.role);
+      localStorage.setItem('userLocation',user.location_id||'');
+      localStorage.setItem('userId',user.id);
+      location.href='manage_artists.html';
+    };
   </script>
 </body>
 </html>
