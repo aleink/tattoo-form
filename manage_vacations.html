@@ -5,7 +5,7 @@
   <title>Manage Vacations</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-  <!-- ─── CSP (unchanged) ─── -->
+  <!-- CSP -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -15,50 +15,52 @@
           object-src 'none';
         ">
 
-  <!-- ─── VISUAL THEMES ─── -->
+  <!-- ─── THEMES (matches Manage-Artists / Schedules) ─── -->
   <style>
     :root{
-      /* dark (default) */
       --bg-0:#111;--bg-1:#222;--bg-2:#333;
       --border:#444;--text:#fff;--text-dim:#ccc;
-      --accent:#28a745;--danger:#ff6b6b;--info:#1976d2;
+      --accent:#28a745;--danger:#ff5252;--info:#1976d2;
     }
     body.light{
-      --bg-0:#f7f7f7;--bg-1:#ffffff;--bg-2:#e6e6e6;
-      --border:#bbb;--text:#000;--text-dim:#444;
-      --accent:#0d6efd;--danger:#d32f2f;--info:#0d6efd;
+      --bg-0:#f7f7f7;--bg-1:#fff;--bg-2:#e5e5e5;
+      --border:#bbb;--text:#000;--text-dim:#555;
+      --accent:#0d6efd;--danger:#c62828;--info:#0d6efd;
     }
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-    body{background:var(--bg-0);color:var(--text);max-width:750px;margin:20px auto;padding:20px;transition:background .25s}
+
+    body{background:var(--bg-0);color:var(--text);max-width:780px;margin:20px auto;padding:20px;transition:.25s background}
 
     h1{text-align:center;margin-bottom:18px}
-    h2,h3{margin:10px 0 14px}
-    p{font-size:.9em;color:var(--text-dim)}
+    h2,h3{margin:12px 0 14px}
+    p{font-size:.88em;color:var(--text-dim)}
 
-    button{border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:filter .2s}
-    button:hover{filter:brightness(1.1)}
-    .btn-danger{background:var(--danger);color:#fff}
-    .btn-toggle{background:var(--bg-2);color:var(--text)}
-    .btn-info  {background:var(--info);color:#fff}
+    /* generic card */
+    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:26px}
+    .hidden{display:none}
 
+    /* inputs */
     label{font-weight:700;display:block;margin:10px 0 4px}
-    input,select{
-      width:100%;padding:8px;background:var(--bg-2);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;margin-bottom:12px
-    }
+    input,select{width:100%;padding:8px;background:var(--bg-2);color:var(--text);
+                 border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
     input:focus,select:focus{outline:2px solid var(--accent)}
 
-    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:24px}
-    .hidden{display:none}
-    .message{color:var(--danger);margin-top:8px;font-size:.9em}
+    /* buttons */
+    button{border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:filter .2s}
+    button:hover{filter:brightness(1.08)}
+    .btn-accent{background:var(--accent);color:#fff}
+    .btn-info  {background:var(--info);color:#fff}
+    .btn-light {background:var(--bg-2);color:var(--text)}
+    .btn-danger{background:var(--danger);color:#fff}
 
-    /* top bar inside main card */
-    .top-controls{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+    .top-bar{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+
+    .message{color:var(--danger);margin-top:8px;font-size:.88em}
 
     /* table */
-    .table-container{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid var(--border);padding:8px;font-size:.9em;text-align:left}
+    .table-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
+    table{width:100%;border-collapse:collapse;font-size:.9em}
+    th,td{border:1px solid var(--border);padding:8px;text-align:left}
     th{background:var(--bg-2)}
   </style>
 </head>
@@ -66,154 +68,169 @@
 
   <h1>Manage Vacations</h1>
 
-  <!-- ───── LOGIN ───── -->
-  <div id="login-section" class="card">
+  <!-- LOGIN -->
+  <div id="login-card" class="card">
     <label>Email</label><input type="email" id="login-email">
-    <label>Password</label><input type="password" id="login-password">
-    <button class="btn-info" id="login-btn">Login</button>
-    <div class="message" id="login-message"></div>
+    <label>Password</label><input type="password" id="login-pass">
+    <button id="login-btn" class="btn-info">Login</button>
+    <div id="login-msg" class="message"></div>
   </div>
 
-  <!-- ───── MAIN UI ───── -->
-  <div id="vacations-section" class="card hidden">
+  <!-- MAIN -->
+  <div id="main-card" class="card hidden">
 
-    <!-- top bar -->
-    <div class="top-controls">
+    <div class="top-bar">
       <button id="logout-btn" class="btn-danger">Logout</button>
-      <button id="theme-btn"  class="btn-toggle">Light mode</button>
+      <button id="theme-btn"  class="btn-light">Light&nbsp;mode</button>
     </div>
 
-    <h2>Manage Artist Vacations</h2>
+    <h2>Vacations</h2>
 
-    <label>Filter by Location</label>
-    <select id="location-filter"><option value="">-- Select Location --</option></select>
+    <label>Location</label>
+    <select id="loc-filter"><option value="">-- Select Location --</option></select>
 
-    <label>Filter by Artist</label>
+    <label>Artist</label>
     <select id="artist-filter"><option value="">-- Select Artist --</option></select>
 
     <hr style="border-color:var(--border);margin:18px 0">
 
     <h3>Add / Edit Vacation</h3>
-    <label>Vacation Start</label><input type="date" id="vacation-start">
-    <label>Vacation End</label><input type="date" id="vacation-end">
-    <label>Notes</label><input type="text" id="vacation-notes" placeholder="Reason, or any extra notes">
+    <label>Start</label><input type="date" id="vac-start">
+    <label>End</label><input type="date" id="vac-end">
+    <label>Notes</label><input type="text" id="vac-notes" placeholder="Reason / extra notes">
 
-    <button id="save-vacation-btn" class="btn-info">Save / Update Vacation</button>
-    <button id="clear-form-btn"  class="btn-toggle">Clear Form</button>
-    <div class="message" id="vacation-message"></div>
+    <button id="save-btn"  class="btn-accent">Save / Update</button>
+    <button id="clear-btn" class="btn-light">Clear</button>
+    <div id="vac-msg" class="message"></div>
 
     <hr style="border-color:var(--border);margin:18px 0">
 
     <h3>Existing Vacations</h3>
-    <div class="table-container">
-      <table id="vacations-table">
+    <div class="table-wrap">
+      <table id="vac-table">
         <thead><tr><th>Start</th><th>End</th><th>Notes</th><th>Action</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
   </div>
 
-  <!-- ─── SUPABASE ─── -->
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-  /* ---------- Supabase init ---------- */
+  /* --- Supabase client --- */
   const supabase = window.supabase.createClient(
-      'https://shlvjhipxnslrncczopn.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+    'https://shlvjhipxnslrncczopn.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
   );
 
-  /* ---------- DOM refs ---------- */
-  const loginSec=document.getElementById('login-section');
-  const loginEmail=document.getElementById('login-email');
-  const loginPass=document.getElementById('login-password');
+  /* --- refs --- */
+  const loginCard=document.getElementById('login-card');
+  const emailIn=document.getElementById('login-email');
+  const passIn=document.getElementById('login-pass');
   const loginBtn=document.getElementById('login-btn');
-  const loginMsg=document.getElementById('login-message');
+  const loginMsg=document.getElementById('login-msg');
 
-  const mainSec=document.getElementById('vacations-section');
-  const themeBtn=document.getElementById('theme-btn');
+  const mainCard=document.getElementById('main-card');
   const logoutBtn=document.getElementById('logout-btn');
+  const themeBtn=document.getElementById('theme-btn');
 
-  const locationFilter=document.getElementById('location-filter');
-  const artistFilter  =document.getElementById('artist-filter');
-  const vacStart=document.getElementById('vacation-start');
-  const vacEnd  =document.getElementById('vacation-end');
-  const vacNotes=document.getElementById('vacation-notes');
-  const saveBtn=document.getElementById('save-vacation-btn');
-  const clearBtn=document.getElementById('clear-form-btn');
-  const vacMsg=document.getElementById('vacation-message');
-  const tbody=document.querySelector('#vacations-table tbody');
+  const locSel=document.getElementById('loc-filter');
+  const artSel=document.getElementById('artist-filter');
 
-  /* ---------- session vars ---------- */
-  let role='', allowedLocation='';
-  let currentVacationId=null;
+  const vStart=document.getElementById('vac-start');
+  const vEnd  =document.getElementById('vac-end');
+  const vNotes=document.getElementById('vac-notes');
+  const saveBtn=document.getElementById('save-btn');
+  const clearBtn=document.getElementById('clear-btn');
+  const vacMsg=document.getElementById('vac-msg');
+  const tbody=document.querySelector('#vac-table tbody');
 
-  /* ---------- theme toggle ---------- */
+  /* --- session --- */
+  let role='', allowedLocation='', currentVacId=null;
+
+  /* ========== THEME ========== */
   themeBtn.onclick=()=>{
     const light=document.body.classList.toggle('light');
-    themeBtn.textContent=light?'Dark mode':'Light&nbsp;mode';
+    themeBtn.textContent=light?'Dark mode':'Light mode';
   };
 
-  /* ---------- LOGIN ---------- */
+  /* ========== LOGIN ========== */
   loginBtn.onclick=async()=>{
     loginMsg.textContent='';
-    const e=loginEmail.value.trim(), p=loginPass.value.trim();
+    const e=emailIn.value.trim(), p=passIn.value.trim();
     if(!e||!p){loginMsg.textContent='Email & password required.';return;}
-
     const {data,error}=await supabase.from('users').select('*').eq('email',e);
-    if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
+    if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
     const u=data[0];
     if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
 
     role=u.role;allowedLocation=u.location_id||'';
     if(!['gm','hr','sm'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
 
-    loginSec.classList.add('hidden');
-    mainSec.classList.remove('hidden');
-    await loadLocations();
+    loginCard.classList.add('hidden');
+    mainCard.classList.remove('hidden');
+    await loadLocations();           // also loads artists for SM
   };
 
   logoutBtn.onclick=()=>{
-    role='';allowedLocation='';currentVacationId=null;
-    [loginEmail,loginPass].forEach(i=>i.value='');loginMsg.textContent='';
-    mainSec.classList.add('hidden');loginSec.classList.remove('hidden');
+    [role,allowedLocation,currentVacId]=['','',null];
+    loginCard.classList.remove('hidden');mainCard.classList.add('hidden');
+    [emailIn,passIn].forEach(i=>i.value='');loginMsg.textContent='';
+    tbody.innerHTML='';vacMsg.textContent='';
   };
 
-  /* ---------- LOAD LOCATIONS ---------- */
+  /* ========== LOCATIONS & ARTISTS ========== */
   async function loadLocations(){
-    locationFilter.innerHTML='<option value="">-- Select Location --</option>';
+    locSel.innerHTML='<option value="">-- Select Location --</option>';
     let q=supabase.from('locations').select('*');
     if(role==='sm')q=q.eq('id',allowedLocation);
     const {data}=await q;
     data.forEach(l=>{
-      const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);
+      const opt=document.createElement('option');opt.value=l.id;opt.textContent=l.location_name;locSel.appendChild(opt);
     });
+
+    // For SM pre-select & lock; for GM/HR user chooses
     if(role==='sm'){
-      locationFilter.value=allowedLocation;
-      locationFilter.disabled=true;
+      locSel.value=allowedLocation;
+      locSel.disabled=true;
+      await loadArtistsForLocation(allowedLocation);   // auto-populate artist list
     }
   }
 
-  /* ---------- LOAD ARTISTS ---------- */
-  locationFilter.onchange=async()=>{
-    artistFilter.innerHTML='<option value="">-- Select Artist --</option>';
-    tbody.innerHTML='';currentVacationId=null;
-    const locId=locationFilter.value;if(!locId)return;
-    const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
-    data.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistFilter.appendChild(o);});
-  };
-  artistFilter.onchange=loadVacations;
+  locSel.onchange=()=>loadArtistsForLocation(locSel.value);
 
-  /* ---------- VACATIONS CRUD ---------- */
+  async function loadArtistsForLocation(locId){
+    artSel.innerHTML='<option value="">-- Select Artist --</option>';
+    tbody.innerHTML='';currentVacId=null;
+    if(!locId)return;
+    const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
+    data.forEach(a=>{
+      const opt=document.createElement('option');opt.value=a.id;opt.textContent=a.artist_name;artSel.appendChild(opt);
+    });
+    // for SM auto-select first artist (optional) – here we leave blank so user picks
+  }
+
+  artSel.onchange=loadVacations;
+
+  /* ========== VACATION CRUD ========== */
   async function loadVacations(){
-    tbody.innerHTML='';currentVacationId=null;
-    if(!artistFilter.value)return;
-    const {data}=await supabase.from('artist_vacations').select('*').eq('artist_id',artistFilter.value).order('vacation_start',{ascending:true});
+    tbody.innerHTML='';currentVacId=null;
+    if(!artSel.value)return;
+    const {data}=await supabase.from('artist_vacations')
+                    .select('*')
+                    .eq('artist_id',artSel.value)
+                    .order('vacation_start',{ascending:true});
     data.forEach(v=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${v.vacation_start}</td><td>${v.vacation_end||v.vacation_start}</td><td>${v.notes||''}</td>
-        <td><button class="btn-toggle" data-id="${v.id}" onclick="editVac('${v.id}')">Edit</button>
-            <button class="btn-danger" data-id="${v.id}" onclick="delVac('${v.id}')">Del</button></td>`;
       tr.dataset.vac=JSON.stringify(v);
+      tr.innerHTML=`
+        <td>${v.vacation_start}</td>
+        <td>${v.vacation_end||v.vacation_start}</td>
+        <td>${v.notes||''}</td>
+        <td>
+          <button class="btn-light"  onclick="editVac('${v.id}')">Edit</button>
+          <button class="btn-danger" onclick="delVac('${v.id}')">Del</button>
+        </td>`;
       tbody.appendChild(tr);
     });
   }
@@ -222,39 +239,39 @@
     const row=[...tbody.children].find(r=>JSON.parse(r.dataset.vac).id===id);
     if(!row)return;
     const v=JSON.parse(row.dataset.vac);
-    currentVacationId=v.id;
-    vacStart.value=v.vacation_start||'';vacEnd.value=v.vacation_end||v.vacation_start||'';vacNotes.value=v.notes||'';
-    vacMsg.textContent='Editing – remember to Save.';
+    currentVacId=v.id;
+    vStart.value=v.vacation_start||'';vEnd.value=v.vacation_end||v.vacation_start||'';vNotes.value=v.notes||'';
+    vacMsg.textContent='Editing – Save to update.';
   };
 
   window.delVac=async id=>{
-    if(!confirm('Delete vacation?'))return;
+    if(!confirm('Delete this vacation?'))return;
     const {error}=await supabase.from('artist_vacations').delete().eq('id',id);
-    vacMsg.textContent=error?'Error deleting.':'Deleted.';loadVacations();clearForm();
+    vacMsg.textContent=error?'Error deleting.' : 'Deleted.';
+    loadVacations();clearForm();
   };
 
   saveBtn.onclick=async()=>{
     vacMsg.textContent='';
-    if(!artistFilter.value){vacMsg.textContent='Select an artist.';return;}
-    if(!vacStart.value){vacMsg.textContent='Start date required.';return;}
+    if(!artSel.value){vacMsg.textContent='Select an artist.';return;}
+    if(!vStart.value){vacMsg.textContent='Start date required.';return;}
     const payload={
-      artist_id:artistFilter.value,
-      vacation_start:vacStart.value,
-      vacation_end:vacEnd.value||vacStart.value,
-      notes:vacNotes.value.trim()||null
+      artist_id:artSel.value,
+      vacation_start:vStart.value,
+      vacation_end:vEnd.value||vStart.value,
+      notes:vNotes.value.trim()||null
     };
     let err;
-    if(currentVacationId)({error:err}=await supabase.from('artist_vacations').update(payload).eq('id',currentVacationId));
-    else                 ({error:err}=await supabase.from('artist_vacations').insert([payload]));
-    vacMsg.textContent=err?'Error saving.':'Saved!';
+    if(currentVacId)
+      ({error:err}=await supabase.from('artist_vacations').update(payload).eq('id',currentVacId));
+    else
+      ({error:err}=await supabase.from('artist_vacations').insert([payload]));
+    vacMsg.textContent=err?'Error saving.' : 'Saved!';
     loadVacations();clearForm();
   };
 
   clearBtn.onclick=clearForm;
-  function clearForm(){currentVacationId=null;[vacStart,vacEnd,vacNotes].forEach(i=>i.value='');vacMsg.textContent='';}
-
-  /* ---------- expose delete/edit for inline buttons ---------- */
-  window.editVac=window.editVac;window.delVac=window.delVac;
+  function clearForm(){currentVacId=null;[vStart,vEnd,vNotes].forEach(i=>i.value='');vacMsg.textContent='';}
   </script>
 </body>
 </html>
