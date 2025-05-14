@@ -15,98 +15,109 @@
           object-src 'none';
         ">
 
-  <!-- ─── VISUAL THEMES ─── -->
+  <!-- ─── VISUAL THEMES (matches Manage Artists) ─── -->
   <style>
-    :root{
-      /* dark (default) */
-      --bg-0:#111;--bg-1:#000;--bg-2:#222;
-      --border:#444;--text:#fff;--text-dim:#bbb;
-      --accent:#28a745;--danger:#f44336;--info:#1976d2;
+    :root{                             /* DARK default */
+      --bg0:#111;--bg1:#222;--bg2:#333;
+      --border:#444;--txt:#fff;--txt-dim:#ccc;
+      --accent:#28a745;--info:#1976d2;--danger:#f44336;
     }
-    body.light{
-      --bg-0:#f7f7f7;--bg-1:#ffffff;--bg-2:#e6e6e6;
-      --border:#bbb;--text:#000;--text-dim:#444;
-      --accent:#0d6efd;--danger:#d32f2f;--info:#0d6efd;
+    body.light{                        /* LIGHT override */
+      --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
+      --border:#b7b7b7;--txt:#000;--txt-dim:#444;
+      --accent:#0d6efd;--info:#0d6efd;--danger:#d32f2f;
     }
+
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+    body{
+      background:var(--bg0);color:var(--txt);
+      max-width:1200px;margin:32px auto;padding:20px;
+      transition:background .25s,color .25s;
+    }
+    header{background:var(--bg1);border-bottom:2px solid var(--border);padding:20px;text-align:center}
+    header h1{margin:0;font-size:1.8rem;color:var(--txt)}
 
-    body{background:var(--bg-0);color:var(--text);max-width:1200px;margin:20px auto;padding:10px;transition:background .25s}
+    button{
+      background:var(--bg2);color:var(--txt);
+      border:none;border-radius:4px;padding:8px 16px;
+      cursor:pointer;transition:background .2s
+    }
+    button:hover{background:#555}
+    .btn-info  {background:var(--info)!important;color:#fff}
+    .btn-danger{background:var(--danger)!important;color:#fff}
+    .btn-toggle{min-width:110px}
 
-    /* ---------- generic UI ---------- */
-    header{background:var(--bg-1);border-bottom:2px solid var(--border);padding:20px;text-align:center}
-    header h1{margin:0;font-size:1.8rem;color:var(--text)}
-    button{border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:background .2s}
-    button:hover{filter:brightness(1.1)}
-    .btn-danger{background:var(--danger);color:#fff}
-    .btn-info  {background:var(--info);  color:#fff}
-    .btn-toggle{background:var(--bg-2); color:var(--text)}
-    select,input[type="date"],input[type="time"],input[type="text"],input[type="number"],input[type="email"],textarea{
-      background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px
+    select,
+    input[type="date"],input[type="time"],
+    input[type="text"],input[type="number"],
+    input[type="email"],textarea{
+      background:var(--bg2);color:var(--txt);
+      border:1px solid var(--border);border-radius:4px;padding:6px
     }
     select option{color:#000}
 
     .hidden{display:none}
 
     /* ---------- login card ---------- */
-    .login-section{
-      background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;max-width:420px;margin:40px auto
+    .card{
+      background:var(--bg1);border:1px solid var(--border);
+      border-radius:6px;padding:22px;max-width:420px;margin:40px auto
     }
-    .login-section label{font-weight:700;display:block;margin:10px 0 4px}
-    .login-message{color:var(--danger);margin-top:6px;font-size:.9em}
+    .card label{display:block;font-weight:700;margin:10px 0 4px}
+    .login-message{color:var(--danger);margin-top:8px;font-size:.9em}
 
     /* ---------- top controls ---------- */
-    .top-controls{display:flex;align-items:center;gap:14px;margin:15px 0;flex-wrap:wrap}
+    .top-controls{display:flex;align-items:center;gap:14px;margin:18px 0;flex-wrap:wrap}
 
-    /* ---------- scheduler area ---------- */
-    #daily-scheduler{position:relative;height:960px;border:1px solid var(--border);overflow-y:auto;margin-top:10px;background:var(--bg-2)}
-    .hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--text-dim);font-size:12px;padding-left:5px}
-    .schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--text-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
-    .schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--text)}
+    /* ---------- scheduler ---------- */
+    #daily-scheduler{position:relative;height:960px;border:1px solid var(--border);overflow-y:auto;margin-top:10px;background:var(--bg2)}
+    .hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--txt-dim);font-size:12px;padding-left:5px}
+    .schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--txt-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
     .schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
+    .schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
 
     .appointment-block{position:absolute;background:var(--accent);color:#fff;border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box}
 
     /* ---------- modal ---------- */
-    #appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg-1);border:1px solid var(--border);padding:20px;width:320px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
-    #appt-modal h3{margin-top:0;margin-bottom:10px}
-    #appt-modal .modal-field{margin-bottom:10px}
-    #appt-modal .modal-buttons{text-align:right;margin-top:10px}
-    #appt-modal .modal-buttons button{margin-left:8px;background:var(--bg-2);color:var(--text)}
+    #appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
+    #appt-modal h3{margin:0 0 10px}
+    .modal-field{margin-bottom:10px}
+    .modal-buttons{text-align:right;margin-top:10px}
+    .modal-buttons button{margin-left:8px}
 
-    /* ---------- artist filter check-boxes ---------- */
+    /* ---------- artist filter ---------- */
     #artist-filter-container{margin-top:10px}
     .artist-filter-item{display:inline-block;margin-right:10px}
     .artist-filter-item label{margin-left:4px}
 
-    /* ---------- appointments list ---------- */
-    #appointments-list-section{margin-top:20px;background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:15px}
+    /* ---------- list section ---------- */
+    #appointments-list-section{margin-top:24px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:15px}
     #appointments-list-section h2{margin-bottom:10px}
     .filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}
     .appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
-    .appt-item{background:var(--bg-2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
-    .appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--text)}
-    .appt-item p{margin-bottom:2px;font-size:.85rem;color:var(--text-dim)}
+    .appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
+    .appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
+    .appt-item p{margin-bottom:2px;font-size:.85rem;color:var(--txt-dim)}
   </style>
 </head>
 <body>
 
   <header><h1>Calendar</h1></header>
 
-  <!-- ───── LOGIN SECTION ───── -->
-  <div class="login-section" id="login-section">
-    <label>Email</label><input type="email" id="login-email">
-    <label>Password</label><input type="password" id="login-password">
+  <!-- ───── LOGIN ───── -->
+  <div id="login-section" class="card">
+    <label>Email</label><input type="email" id="login-email" autocomplete="username">
+    <label>Password</label><input type="password" id="login-password" autocomplete="current-password">
     <button class="btn-info" id="login-btn">Login</button>
-    <div class="login-message" id="login-message"></div>
+    <div id="login-message" class="login-message"></div>
   </div>
 
-  <!-- ───── MAIN CALENDAR UI (hidden until login) ───── -->
+  <!-- ───── MAIN UI ───── -->
   <div id="main-section" class="hidden">
 
-    <!-- top bar -->
     <div class="top-controls">
       <button class="btn-danger" id="logout-btn">Logout</button>
-      <button class="btn-toggle"  id="theme-btn">Light&nbsp;mode</button>
+      <button class="btn-toggle"  id="theme-btn">Light mode</button>
       <button class="btn-info"    id="today-btn">Today</button>
 
       <label>Location:
@@ -118,10 +129,7 @@
       </label>
     </div>
 
-    <!-- artist check-box filter -->
     <div id="artist-filter-container"></div>
-
-    <!-- scheduler grid -->
     <div id="daily-scheduler"></div>
 
     <!-- ---------- APPOINTMENT MODAL ---------- -->
@@ -154,7 +162,7 @@
       </div>
     </div>
 
-    <!-- ---------- APPT LIST ---------- -->
+    <!-- ---------- LIST SECTION ---------- -->
     <div id="appointments-list-section">
       <h2>Appointments &amp; Walk-ins</h2>
 
@@ -162,330 +170,343 @@
         <label>From: <input type="date" id="range-start"></label>
         <label>To:&nbsp;&nbsp;<input type="date" id="range-end"></label>
         <label>Client search: <input type="text" id="client-search" placeholder="name / phone / email"></label>
-
         <div>
           <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
-          <label><input type="checkbox" id="cb-walkins" checked> Walk-ins</label>
+          <label><input type="checkbox" id="cb-walkins"      checked> Walk-ins</label>
         </div>
       </div>
 
       <div class="appointments-container" id="appointments-list"></div>
     </div>
-
   </div><!-- /main-section -->
 
-  <!-- ─── SUPABASE ─── -->
+  <!-- ─── SUPABASE + FULL JS ─── -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-  /* ---------- Supabase init ---------- */
-  const supabase = window.supabase.createClient(
-      'https://shlvjhipxnslrncczopn.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
-  );
+/* ---------- Supabase init ---------- */
+const supabase = window.supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
 
-  /* ---------- helpers ---------- */
-  const toMinutes=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
-  const overlaps =(a,b)=>a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
-  const weekdayIndex=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
-  const todayISO =()=>new Date().toISOString().split('T')[0];
+/* ---------- helpers ---------- */
+const toMinutes = t => { if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; };
+const overlaps  = (a,b)=> a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
+const weekdayIndex = d => { const [y,m,dd]=d.split('-').map(Number); return new Date(Date.UTC(y,m-1,dd)).getUTCDay(); };
+const todayISO = () => new Date().toISOString().split('T')[0];
 
-  /* ---------- login refs ---------- */
-  const loginSec   =document.getElementById('login-section');
-  const loginEmail =document.getElementById('login-email');
-  const loginPass  =document.getElementById('login-password');
-  const loginBtn   =document.getElementById('login-btn');
-  const loginMsg   =document.getElementById('login-message');
+/* ---------- login refs ---------- */
+const loginSec  = document.getElementById('login-section');
+const loginEmail= document.getElementById('login-email');
+const loginPass = document.getElementById('login-password');
+const loginBtn  = document.getElementById('login-btn');
+const loginMsg  = document.getElementById('login-message');
 
-  /* ---------- main refs ---------- */
-  const mainSec       =document.getElementById('main-section');
-  const themeBtn      =document.getElementById('theme-btn');
-  const logoutBtn     =document.getElementById('logout-btn');
-  const todayBtn      =document.getElementById('today-btn');
-  const locationFilter=document.getElementById('location-filter');
-  const dayInput      =document.getElementById('day-input');
-  const artistFilterContainer=document.getElementById('artist-filter-container');
-  const dailyScheduler=document.getElementById('daily-scheduler');
-  /* modal refs */
-  const apptModal=document.getElementById('appt-modal');
-  const modalTitle=document.getElementById('modal-title');
-  const modalStart=document.getElementById('modal-start-time');
-  const modalEnd=document.getElementById('modal-end-time');
-  const modalArtist=document.getElementById('modal-artist');
-  const modalClientName=document.getElementById('modal-client-name');
-  const modalClientPhone=document.getElementById('modal-client-phone');
-  const modalEmail=document.getElementById('modal-email');
-  const modalDesc=document.getElementById('modal-description');
-  const modalDeposit=document.getElementById('modal-deposit');
-  const modalPrice=document.getElementById('modal-price');
-  const modalTip=document.getElementById('modal-tip');
-  const modalType=document.getElementById('modal-appt-type');
-  const saveBtn=document.getElementById('save-appt-btn');
-  const cancelBtn=document.getElementById('cancel-appt-btn');
-  const deleteBtn=document.getElementById('delete-appt-btn');
-  const completeBtn=document.getElementById('complete-appt-btn');
-  /* list refs */
-  const rangeStart=document.getElementById('range-start');
-  const rangeEnd  =document.getElementById('range-end');
-  const cbAppt=document.getElementById('cb-appointments');
-  const cbWalk=document.getElementById('cb-walkins');
-  const appointmentsList=document.getElementById('appointments-list');
-  const clientSearch=document.getElementById('client-search');
+/* ---------- main refs ---------- */
+const mainSec       = document.getElementById('main-section');
+const themeBtn      = document.getElementById('theme-btn');
+const logoutBtn     = document.getElementById('logout-btn');
+const todayBtn      = document.getElementById('today-btn');
+const locationFilter= document.getElementById('location-filter');
+const dayInput      = document.getElementById('day-input');
+const artistFilterContainer = document.getElementById('artist-filter-container');
+const dailyScheduler       = document.getElementById('daily-scheduler');
 
-  /* ---------- in-page session ---------- */
-  let role='', allowedLocation='';
-  let artistMap={}, currentApptId=null;
+/* modal refs */
+const apptModal      = document.getElementById('appt-modal');
+const modalTitle     = document.getElementById('modal-title');
+const modalStart     = document.getElementById('modal-start-time');
+const modalEnd       = document.getElementById('modal-end-time');
+const modalArtist    = document.getElementById('modal-artist');
+const modalClientName= document.getElementById('modal-client-name');
+const modalClientPhone=document.getElementById('modal-client-phone');
+const modalEmail     = document.getElementById('modal-email');
+const modalDesc      = document.getElementById('modal-description');
+const modalDeposit   = document.getElementById('modal-deposit');
+const modalPrice     = document.getElementById('modal-price');
+const modalTip       = document.getElementById('modal-tip');
+const modalType      = document.getElementById('modal-appt-type');
+const saveBtn        = document.getElementById('save-appt-btn');
+const cancelBtn      = document.getElementById('cancel-appt-btn');
+const deleteBtn      = document.getElementById('delete-appt-btn');
+const completeBtn    = document.getElementById('complete-appt-btn');
 
-  /* ---------- THEME toggle ---------- */
-  themeBtn.onclick=()=>{
-    const light=document.body.classList.toggle('light');
-    themeBtn.textContent=light?'Dark mode':'Light mode';
-  };
+/* list refs */
+const rangeStart = document.getElementById('range-start');
+const rangeEnd   = document.getElementById('range-end');
+const cbAppt     = document.getElementById('cb-appointments');
+const cbWalk     = document.getElementById('cb-walkins');
+const appointmentsList = document.getElementById('appointments-list');
+const clientSearch     = document.getElementById('client-search');
 
-  /* ---------- LOGIN FLOW ---------- */
-  loginBtn.onclick=async()=>{
-    loginMsg.textContent='';
-    const e=loginEmail.value.trim(), p=loginPass.value.trim();
-    if(!e||!p){loginMsg.textContent='Email & password required.';return;}
+/* ---------- session ---------- */
+let role='', allowedLocation='';
+let artistMap={}, currentApptId=null;
 
-    const {data,error}=await supabase.from('users').select('*').eq('email',e);
-    if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-    const u=data[0];
-    if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
+/* ---------- THEME ---------- */
+(function(){
+  if(localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeBtn.textContent='Dark mode';
+  }
+})();
+themeBtn.onclick=()=>{
+  const light=document.body.classList.toggle('light');
+  themeBtn.textContent=light?'Dark mode':'Light mode';
+  localStorage.setItem('ui-theme',light?'light':'dark');
+};
 
-    role=u.role;allowedLocation=u.location_id||'';
-    if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
+/* ---------- LOGIN ---------- */
+loginBtn.onclick = async ()=>{
+  loginMsg.textContent='';
+  const e=loginEmail.value.trim(), p=loginPass.value.trim();
+  if(!e||!p){loginMsg.textContent='Email & password required.';return;}
 
-    loginSec.classList.add('hidden');
-    mainSec.classList.remove('hidden');
+  const {data,error}=await supabase.from('users').select('*').eq('email',e);
+  if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
+  const u=data[0];
+  if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
 
-    await loadLocations();
-    dayInput.value=todayISO();
-    await loadArtistsForLocation(locationFilter.value);
-    setDefaultRange();
-    loadDay();
-    loadAppointmentsList();
-  };
+  role=u.role; allowedLocation=u.location_id||'';
+  if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
 
-  logoutBtn.onclick=()=>{
-    role='';allowedLocation='';
-    artistMap={};currentApptId=null;
-    mainSec.classList.add('hidden');
-    loginSec.classList.remove('hidden');
-    loginEmail.value='';loginPass.value='';loginMsg.textContent='';
-  };
+  loginSec.classList.add('hidden');
+  mainSec.classList.remove('hidden');
 
-  /* ---------- LOCATION / ARTIST LOADERS ---------- */
-  async function loadLocations(){
-    locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-    let q=supabase.from('locations').select('*');
-    if(role!=='gm') q=q.eq('id',allowedLocation);
-    const {data}=await q;
-    data.forEach(l=>{
-      const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);
-    });
-    if(role!=='gm'){
-      locationFilter.value=allowedLocation;
-      locationFilter.disabled=true;
-    }
+  await loadLocations();
+  dayInput.value=todayISO();
+  await loadArtistsForLocation(locationFilter.value);
+  setDefaultRange();
+  loadDay();
+  loadAppointmentsList();
+};
+
+/* ---------- LOGOUT ---------- */
+logoutBtn.onclick=()=>{
+  role='';allowedLocation='';artistMap={};currentApptId=null;
+  loginEmail.value='';loginPass.value='';loginMsg.textContent='';
+  mainSec.classList.add('hidden');
+  loginSec.classList.remove('hidden');
+};
+
+/* ---------- LOCATIONS ---------- */
+async function loadLocations(){
+  locationFilter.innerHTML='<option value="">-- Select Location --</option>';
+  let q=supabase.from('locations').select('*');
+  if(role!=='gm') q=q.eq('id',allowedLocation);
+  const {data}=await q;
+  data.forEach(l=>{
+    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;
+    locationFilter.appendChild(o);
+  });
+  if(role!=='gm'){
+    locationFilter.value=allowedLocation;
+    locationFilter.disabled=true;
+  }else locationFilter.disabled=false;
+}
+
+/* ---------- ARTISTS ---------- */
+async function loadArtistsForLocation(locId){
+  artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
+  if(!locId)return;
+  const {data}=await supabase.from('artists').select('*').eq('location_id',locId);
+  data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
+    artistMap[a.id]=a;
+    /* modal select */
+    modalArtist.add(new Option(a.artist_name,a.id));
+    /* checkbox filter */
+    const wrap=document.createElement('div');wrap.className='artist-filter-item';
+    wrap.innerHTML=`<input type="checkbox" value="${a.id}" checked><label>${a.artist_name}</label>`;
+    artistFilterContainer.appendChild(wrap);
+  });
+}
+const filteredIds = () => [...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
+
+/* ---------- SCHEDULER ---------- */
+todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay();};
+dayInput.onchange=loadDay;
+locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadAppointmentsList();};
+artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList();});
+
+async function loadDay(){
+  dailyScheduler.innerHTML='';
+  const date=dayInput.value;if(!date)return;
+
+  /* hour lines */
+  for(let h=8;h<=24;h++){
+    const div=document.createElement('div');
+    div.className='hour-line';div.style.top=(h-8)*60+'px';
+    const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;
+    dailyScheduler.appendChild(div);
   }
 
-  async function loadArtistsForLocation(locId){
-    artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
-    if(!locId)return;
-    const {data}=await supabase.from('artists').select('*').eq('location_id',locId);
-    data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
-      artistMap[a.id]=a;
-      /* modal select */
-      const opt=document.createElement('option');opt.value=a.id;opt.textContent=a.artist_name;modalArtist.appendChild(opt);
-      /* checkbox filter */
-      const wrap=document.createElement('div');wrap.className='artist-filter-item';
-      const cb=document.createElement('input');cb.type='checkbox';cb.value=a.id;cb.checked=true;
-      const lb=document.createElement('label');lb.textContent=a.artist_name;wrap.append(cb,lb);
-      artistFilterContainer.appendChild(wrap);
+  const ids=filteredIds();if(!ids.length)return;
+  const wIdx=weekdayIndex(date);
+  const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const cStart=cols[wIdx]+'_start', cEnd=cols[wIdx]+'_end';
+
+  /* vacations */
+  const {data:vac}=await supabase.from('artist_vacations').select('artist_id')
+        .in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
+  const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
+
+  /* schedule blocks */
+  const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
+  artists.forEach((a,i)=>{
+    const st=a[cStart], en=a[cEnd]; if(!st||!en)return;
+    const block=document.createElement('div');block.className='schedule-block';
+    if(vacationSet.has(a.id)) block.classList.add('vac');
+    const top=toMinutes(st)-480, ht=toMinutes(en)-toMinutes(st);
+    block.style.cssText=`left:${80+i*120}px;width:110px;top:${top}px;height:${ht}px;`;
+    block.style.borderLeftColor=a.color||'#888';
+    block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacationSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
+    dailyScheduler.appendChild(block);
+  });
+
+  /* appointments */
+  const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
+  const byA={};artists.forEach(a=>byA[a.id]=[]);
+  appts?.forEach(ap=>byA[ap.artist_id]?.push(ap));
+
+  artists.forEach((a,col)=>{
+    const list=byA[a.id].sort((x,y)=>toMinutes(x.start_time)-toMinutes(y.start_time));
+    const subs=[];
+    list.forEach(ap=>{
+      let placed=false;
+      for(const s of subs){if(!overlaps(s[s.length-1],ap)){s.push(ap);placed=true;break;}}
+      if(!placed) subs.push([ap]);
     });
-  }
-  const filteredIds=()=>[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
-
-  /* ---------- DAILY SCHEDULER ---------- */
-  todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay();};
-  dayInput.onchange=loadDay;
-  locationFilter.onchange=async()=>{
-    await loadArtistsForLocation(locationFilter.value);
-    loadDay();loadAppointmentsList();
-  };
-  artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList();});
-
-  async function loadDay(){
-    dailyScheduler.innerHTML='';
-    const date=dayInput.value;if(!date)return;
-    for(let h=8;h<=24;h++){
-      const div=document.createElement('div');div.className='hour-line';div.style.top=(h-8)*60+'px';
-      const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;dailyScheduler.appendChild(div);
-    }
-    const ids=filteredIds();if(!ids.length)return;
-
-    const wIdx=weekdayIndex(date);
-    const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-    const cStart=cols[wIdx]+'_start', cEnd=cols[wIdx]+'_end';
-
-    /* vacations */
-    const {data:vac}=await supabase.from('artist_vacations')
-        .select('artist_id').in('artist_id',ids)
-        .lte('vacation_start',date).gte('vacation_end',date);
-    const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
-
-    /* schedule blocks */
-    const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-    artists.forEach((a,i)=>{
-      const st=a[cStart], en=a[cEnd]; if(!st||!en)return;
-      const block=document.createElement('div');block.className='schedule-block';
-      if(vacationSet.has(a.id))block.classList.add('vac');
-      const top=toMinutes(st)-480, ht=toMinutes(en)-toMinutes(st);
-      block.style.cssText=`left:${80+i*120}px;width:110px;top:${top}px;height:${ht}px;`;
-      block.style.borderLeftColor=a.color||'#888';
-      block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacationSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
-      dailyScheduler.appendChild(block);
-    });
-
-    /* appointments */
-    const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
-    const byA={};artists.forEach(a=>byA[a.id]=[]);
-    appts?.forEach(ap=>byA[ap.artist_id]?.push(ap));
-
-    artists.forEach((a,col)=>{
-      const list=byA[a.id].sort((x,y)=>toMinutes(x.start_time)-toMinutes(y.start_time));
-      const subs=[];
-      list.forEach(ap=>{
-        let placed=false;
-        for(const s of subs){if(!overlaps(s[s.length-1],ap)){s.push(ap);placed=true;break;}}
-        if(!placed)subs.push([ap]);
+    subs.forEach((sub,subIdx)=>{
+      sub.forEach(ap=>{
+        const t0=toMinutes(ap.start_time)-480, ht=toMinutes(ap.end_time)-toMinutes(ap.start_time);
+        const w=110/subs.length, left=80+col*120+subIdx*w;
+        const div=document.createElement('div');div.className='appointment-block';
+        div.style.cssText=`left:${left}px;top:${t0}px;width:${w-2}px;height:${ht}px;background:${a.color||'#555'}`;
+        div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
+        div.onclick=e=>{e.stopPropagation();openExistingApptModal(ap.id);};
+        dailyScheduler.appendChild(div);
       });
-      subs.forEach((sub,subIdx)=>{
-        sub.forEach(ap=>{
-          const t0=toMinutes(ap.start_time)-480, ht=toMinutes(ap.end_time)-toMinutes(ap.start_time);
-          const w=110/subs.length, left=80+col*120+subIdx*w;
-          const div=document.createElement('div');div.className='appointment-block';
-          div.style.cssText=`left:${left}px;top:${t0}px;width:${w-2}px;height:${ht}px;background:${a.color||'#555'}`;
-          div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
-          div.onclick=e=>{e.stopPropagation();openExistingApptModal(ap.id);};
-          dailyScheduler.appendChild(div);
-        });
-      });
     });
+  });
 
-    dailyScheduler.onclick=e=>{
-      if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c)))return;
-      const y=e.clientY-dailyScheduler.getBoundingClientRect().top;
-      const mins=Math.floor(y), h=Math.floor(mins/60)+8, m=String(mins%60).padStart(2,'0');
-      openNewApptModal(`${String(h).padStart(2,'0')}:${m}`,date);
-    };
-  }
-
-  /* ---------- MODAL CRUD ---------- */
-  function openNewApptModal(slot,date){
-    currentApptId=null;modalTitle.textContent='New Appointment';
-    modalStart.value=slot;modalEnd.value=slot;modalArtist.value='';
-    [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
-    modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
-    apptModal.style.display='block';
-  }
-  async function openExistingApptModal(id){
-    currentApptId=id;
-    const {data,error}=await supabase.from('artist_appointments').select('*').eq('id',id);
-    if(error||!data||!data.length){alert('Error loading');return;}
-    const ap=data[0];
-    modalTitle.textContent='Edit Appointment';
-    modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;
-    modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';modalEmail.value=ap.email||'';
-    modalDesc.value=ap.notes||'';modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';
-    modalType.value=ap.appointment_type;deleteBtn.style.display=completeBtn.style.display='inline-block';
-    apptModal.style.display='block';
-  }
-  cancelBtn.onclick=()=>apptModal.style.display='none';
-
-  saveBtn.onclick=async()=>{
-    const day=dayInput.value;if(!day){alert('Select date first');return;}
-    if(!modalStart.value||!modalEnd.value){alert('Start/End required');return;}
-    const {data:conflict}=await supabase.from('artist_appointments').select('*')
-         .eq('date',day).eq('artist_id',modalArtist.value);
-    if(conflict&&isOverlap(conflict,modalStart.value,modalEnd.value,currentApptId)){alert('Overlap');return;}
-    const payload={
-      artist_id:modalArtist.value,date:day,start_time:modalStart.value,end_time:modalEnd.value,
-      appointment_type:modalType.value,client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
-      email:modalEmail.value.trim(),notes:modalDesc.value.trim(),
-      deposit:modalDeposit.value?parseFloat(modalDeposit.value):null,
-      price  :modalPrice.value  ?parseFloat(modalPrice.value)  :null,
-      tip    :modalTip.value    ?parseFloat(modalTip.value)    :null
-    };
-    let err;
-    if(currentApptId)({error:err}=await supabase.from('artist_appointments').update(payload).eq('id',currentApptId));
-    else              ({error:err}=await supabase.from('artist_appointments').insert([payload]));
-    if(err){console.error(err);alert('Error saving');return;}
-    apptModal.style.display='none';loadDay();loadAppointmentsList();
+  dailyScheduler.onclick=e=>{
+    if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c))) return;
+    const y=e.clientY-dailyScheduler.getBoundingClientRect().top;
+    const mins=Math.floor(y), h=Math.floor(mins/60)+8, m=String(mins%60).padStart(2,'0');
+    openNewApptModal(`${String(h).padStart(2,'0')}:${m}`,date);
   };
-  deleteBtn.onclick=async()=>{
-    if(!currentApptId||!confirm('Delete this appointment?'))return;
-    const {error}=await supabase.from('artist_appointments').delete().eq('id',currentApptId);
-    if(error){console.error(error);alert('Error deleting');return;}
-    apptModal.style.display='none';loadDay();loadAppointmentsList();
+}
+
+/* ---------- MODAL ---------- */
+function openNewApptModal(slot,date){
+  currentApptId=null;modalTitle.textContent='New Appointment';
+  modalStart.value=slot;modalEnd.value=slot;modalArtist.value='';
+  [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
+  modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
+  apptModal.style.display='block';
+}
+async function openExistingApptModal(id){
+  currentApptId=id;
+  const {data,error}=await supabase.from('artist_appointments').select('*').eq('id',id);
+  if(error||!data?.length){alert('Error loading');return;}
+  const ap=data[0];
+  modalTitle.textContent='Edit Appointment';
+  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;
+  modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';
+  modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
+  modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';
+  modalType.value=ap.appointment_type;
+  deleteBtn.style.display=completeBtn.style.display='inline-block';
+  apptModal.style.display='block';
+}
+cancelBtn.onclick=()=>apptModal.style.display='none';
+
+function isOverlap(list,s,e,skip){
+  const sN=toMinutes(s), eN=toMinutes(e);
+  return list.some(ap=>ap.id!==skip && sN<toMinutes(ap.end_time)&&toMinutes(ap.start_time)<eN);
+}
+
+saveBtn.onclick=async()=>{
+  const day=dayInput.value;if(!day){alert('Select date first');return;}
+  if(!modalStart.value||!modalEnd.value){alert('Start/End required');return;}
+
+  const {data:conflict}=await supabase.from('artist_appointments').select('*')
+        .eq('date',day).eq('artist_id',modalArtist.value);
+  if(conflict && isOverlap(conflict,modalStart.value,modalEnd.value,currentApptId))
+  {alert('Overlap');return;}
+
+  const payload={
+    artist_id:modalArtist.value,date:day,start_time:modalStart.value,end_time:modalEnd.value,
+    appointment_type:modalType.value,client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
+    email:modalEmail.value.trim(),notes:modalDesc.value.trim(),
+    deposit:modalDeposit.value?parseFloat(modalDeposit.value):null,
+    price  :modalPrice.value  ?parseFloat(modalPrice.value)  :null,
+    tip    :modalTip.value    ?parseFloat(modalTip.value)    :null
   };
-  completeBtn.onclick=async()=>{
-    if(!currentApptId)return;
-    const {error}=await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);
-    if(error){console.error(error);alert('Error');return;}
-    apptModal.style.display='none';loadDay();loadAppointmentsList();
-  };
+  let err;
+  if(currentApptId)({error:err}=await supabase.from('artist_appointments').update(payload).eq('id',currentApptId));
+  else              ({error:err}=await supabase.from('artist_appointments').insert([payload]));
+  if(err){console.error(err);alert('Error saving');return;}
+  apptModal.style.display='none';loadDay();loadAppointmentsList();
+};
+deleteBtn.onclick=async()=>{
+  if(!currentApptId||!confirm('Delete this appointment?'))return;
+  const {error}=await supabase.from('artist_appointments').delete().eq('id',currentApptId);
+  if(error){console.error(error);alert('Error deleting');return;}
+  apptModal.style.display='none';loadDay();loadAppointmentsList();
+};
+completeBtn.onclick=async()=>{
+  if(!currentApptId)return;
+  const {error}=await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);
+  if(error){console.error(error);alert('Error');return;}
+  apptModal.style.display='none';loadDay();loadAppointmentsList();
+};
 
-  function isOverlap(list,s,e,skip){
-    const sN=toMinutes(s), eN=toMinutes(e);
-    return list.some(ap=>ap.id!==skip&&sN<toMinutes(ap.end_time)&&toMinutes(ap.start_time)<eN);
-  }
+/* ---------- LIST ---------- */
+function setDefaultRange(){
+  const now=new Date();
+  rangeStart.value=new Date(now-7*86400000).toISOString().split('T')[0];
+  rangeEnd.value  =new Date(now.getTime()+7*86400000).toISOString().split('T')[0];
+}
+[rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
+clientSearch.addEventListener('input',loadAppointmentsList);
 
-  /* ---------- APPOINTMENT LIST ---------- */
-  function setDefaultRange(){
-    const now=new Date();
-    rangeStart.value=new Date(now-7*86400000).toISOString().split('T')[0];
-    rangeEnd.value  =new Date(now.getTime()+7*86400000).toISOString().split('T')[0];
-  }
-  [rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
-  clientSearch.addEventListener('input',loadAppointmentsList);
+async function loadAppointmentsList(){
+  appointmentsList.innerHTML='';
+  const ids=filteredIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
+  if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select a date range.';return;}
 
-  async function loadAppointmentsList(){
-    appointmentsList.innerHTML='';
-    const ids=filteredIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
-    if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select a date range.';return;}
+  const types=[];
+  if(cbAppt.checked)types.push('appointment','tentative');
+  if(cbWalk.checked)types.push('walk-in');
+  if(!types.length){appointmentsList.textContent='No types selected.';return;}
 
-    const types=[];
-    if(cbAppt.checked)types.push('appointment','tentative');
-    if(cbWalk.checked)types.push('walk-in');
-    if(!types.length){appointmentsList.textContent='No types selected.';return;}
+  let q=supabase.from('artist_appointments')
+        .select('*, artists!inner(location_id,artist_name)')
+        .gte('date',rangeStart.value).lte('date',rangeEnd.value)
+        .in('appointment_type',types).in('artist_id',ids);
 
-    let q=supabase.from('artist_appointments')
-      .select('*, artists!inner(location_id,artist_name)')
-      .gte('date',rangeStart.value).lte('date',rangeEnd.value)
-      .in('appointment_type',types)
-      .in('artist_id',ids);
-    if(role!=='gm')q=q.eq('artists.location_id',allowedLocation);
-    else if(locationFilter.value)q=q.eq('artists.location_id',locationFilter.value);
+  if(role!=='gm') q=q.eq('artists.location_id',allowedLocation);
+  else if(locationFilter.value) q=q.eq('artists.location_id',locationFilter.value);
 
-    const term=clientSearch.value.trim();
-    if(term)q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
+  const term=clientSearch.value.trim();
+  if(term) q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
 
-    const {data,error}=await q;
-    if(error){console.error(error);appointmentsList.textContent='Error.';return;}
-    if(!data?.length){appointmentsList.textContent='No matching records.';return;}
+  const {data,error}=await q;
+  if(error){console.error(error);appointmentsList.textContent='Error.';return;}
+  if(!data?.length){appointmentsList.textContent='No matching records.';return;}
 
-    data.sort((a,b)=>a.date===b.date?toMinutes(a.start_time)-toMinutes(b.start_time):(a.date<b.date?-1:1));
-    data.forEach(ap=>{
-      const div=document.createElement('div');div.className='appt-item';
-      div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4>
-        <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
-        <p>Client: ${ap.client_name||'N/A'}</p>
-        <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
-      div.onclick=()=>{dayInput.value=ap.date;loadDay();};
-      appointmentsList.appendChild(div);
-    });
-  }
+  data.sort((a,b)=>a.date===b.date ? toMinutes(a.start_time)-toMinutes(b.start_time) : (a.date<b.date?-1:1));
+  data.forEach(ap=>{
+    const div=document.createElement('div');div.className='appt-item';
+    div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4>
+      <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
+      <p>Client: ${ap.client_name||'N/A'}</p>
+      <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
+    div.onclick=()=>{dayInput.value=ap.date;loadDay();};
+    appointmentsList.appendChild(div);
+  });
+}
   </script>
 </body>
 </html>
