@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title>Artists Payroll</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-  <!--  CSP  -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -15,7 +13,6 @@
           object-src 'none';
         ">
 
-  <!-- ─── THEME (shared palette) ─── -->
   <style>
     :root{
       --bg-0:#111;--bg-1:#222;--bg-2:#333;
@@ -29,7 +26,6 @@
     }
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
     body{background:var(--bg-0);color:var(--text);max-width:900px;margin:20px auto;padding:20px;transition:.25s background}
-
     h1{text-align:center;margin-bottom:20px}
     h2{margin:10px 0 14px}
     label{display:block;font-weight:700;margin:10px 0 4px}
@@ -43,13 +39,10 @@
     .btn-danger{background:var(--danger);color:#fff}
     .btn-accent{background:var(--accent);color:#fff}
     .btn-light {background:var(--bg-2);color:var(--text)}
-
     .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:26px}
     .hidden{display:none}
     .message{color:var(--danger);font-size:.9em;margin-top:4px}
-
     .top-bar{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
-
     .table-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
     table{width:100%;border-collapse:collapse;font-size:.9em}
     th,td{border:1px solid var(--border);padding:8px;text-align:left}
@@ -60,7 +53,7 @@
 
   <h1>Artists Payroll</h1>
 
-  <!-- LOGIN SECTION -->
+  <!-- LOGIN -->
   <div id="login-section" class="card">
     <label>Email</label><input id="email" type="email">
     <label>Password</label><input id="password" type="password">
@@ -68,7 +61,7 @@
     <div id="login-msg" class="message"></div>
   </div>
 
-  <!-- PAYROLL SECTION -->
+  <!-- PAYROLL -->
   <div id="payroll-card" class="card hidden">
     <div class="top-bar">
       <button id="logout-btn" class="btn-danger">Logout</button>
@@ -94,21 +87,21 @@
     </div>
   </div>
 
-  <!-- NO-ACCESS -->
+  <!-- NO ACCESS -->
   <div id="no-access" class="card hidden" style="border-color:var(--danger);text-align:center;color:var(--danger)">
     You do not have access to the Payroll page.
   </div>
 
-  <!-- SUPABASE -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-/* ---------- Supabase ---------- */
+/* ----------------- Supabase ----------------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ---------- DOM ---------- */
+/* ----------------- DOM ----------------- */
 const loginSec=document.getElementById('login-section');
 const emailIn =document.getElementById('email');
 const passIn  =document.getElementById('password');
@@ -127,17 +120,17 @@ const payMsg=document.getElementById('pay-msg');
 const tbody=document.getElementById('pay-body');
 const noAccess=document.getElementById('no-access');
 
-/* ---------- Access ---------- */
+/* ----------------- Access ----------------- */
 const ALLOWED=['gm','ad','hr'];
 let role='';
 
-/* ---------- Theme ---------- */
+/* ----------------- Theme ----------------- */
 themeBtn.onclick=()=>{
   const light=document.body.classList.toggle('light');
   themeBtn.textContent=light?'Dark mode':'Light mode';
 };
 
-/* ---------- Login ---------- */
+/* ----------------- Login ----------------- */
 loginBtn.onclick=async()=>{
   loginMsg.textContent='';
   if(!emailIn.value||!passIn.value){loginMsg.textContent='Email & password required.';return;}
@@ -172,7 +165,7 @@ logoutBtn.onclick=()=>{
   loginSec.classList.remove('hidden');
 };
 
-/* ---------- Init ---------- */
+/* ----------------- Init ----------------- */
 window.addEventListener('DOMContentLoaded',()=>{
   role=localStorage.getItem('currentUserRole')||'';
   if(ALLOWED.includes(role)){
@@ -180,7 +173,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-/* ---------- Locations ---------- */
+/* ----------------- Locations ----------------- */
 async function loadLocations(){
   locSel.innerHTML='<option value="">-- All Locations --</option>';
   const {data}=await supabase.from('locations').select('*');
@@ -190,30 +183,36 @@ async function loadLocations(){
   });
 }
 
-/* ---------- Payroll ---------- */
+/* ----------------- Payroll logic ----------------- */
 genBtn.onclick=async()=>{
   payMsg.textContent='';tbody.innerHTML='';
   if(!sDate.value||!eDate.value){payMsg.textContent='Start and End dates required.';return;}
   if(eDate.value<sDate.value){payMsg.textContent='End date can’t be before Start date.';return;}
 
+  /*  Pull BOTH:
+        • walk-in  (always counts)
+        • completed appointments
+      Tip is 100 % to artist in both cases
+      Price split by percentage_split
+   */
   let q=supabase.from('artist_appointments')
-        .select('price,tip,artist_id, artists!inner(artist_name,percentage_split,location_id)')
+        .select('price,tip,artist_id,appointment_type, artists!inner(artist_name,percentage_split,location_id)')
         .gte('date',sDate.value).lte('date',eDate.value)
-        .eq('appointment_type','completed');        // only completed count toward payroll
+        .in('appointment_type',['walk-in','completed']);
 
   if(locSel.value) q=q.eq('artists.location_id',locSel.value);
 
   const {data,error}=await q;
   if(error){console.error(error);payMsg.textContent='Error fetching appointments.';return;}
-  if(!data.length){payMsg.textContent='No completed appointments in range.';return;}
+  if(!data.length){payMsg.textContent='No qualifying appointments in range.';return;}
 
   const sum={};
-  data.forEach(a=>{
-    if(!sum[a.artist_id]){
-      sum[a.artist_id]={name:a.artists.artist_name,split:a.artists.percentage_split||0,price:0,tip:0};
+  data.forEach(ap=>{
+    if(!sum[ap.artist_id]){
+      sum[ap.artist_id]={name:ap.artists.artist_name,split:ap.artists.percentage_split||0,price:0,tip:0};
     }
-    sum[a.artist_id].price+=a.price||0;
-    sum[a.artist_id].tip  +=a.tip  ||0;              // tip 100 % to artist
+    sum[ap.artist_id].price+=ap.price||0; // walk-in OR completed appointment price
+    sum[ap.artist_id].tip  +=ap.tip  ||0; // tip always 100 %
   });
 
   Object.values(sum).forEach(r=>{
