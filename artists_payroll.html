@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Artists Payroll</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-  <!-- 
-    Content-Security-Policy:
-    - 'unsafe-eval' so Supabase can evaluate
-    - connect-src includes your .supabase.co domain
-  -->
+  <!--  CSP  -->
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
@@ -19,363 +15,230 @@
           object-src 'none';
         ">
 
+  <!-- ─── THEMES (same palette used across admin pages) ─── -->
   <style>
-    /* Dark theme reminiscent of index/artist portal */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root{
+      --bg-0:#111;--bg-1:#222;--bg-2:#333;
+      --border:#444;--text:#fff;--text-dim:#ccc;
+      --accent:#28a745;--info:#1976d2;--danger:#f44336;
     }
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    body.light{
+      --bg-0:#f7f7f7;--bg-1:#fff;--bg-2:#e4e4e4;
+      --border:#bbb;--text:#000;--text-dim:#555;
+      --accent:#0d6efd;--info:#0d6efd;--danger:#c62828;
     }
-    header {
-      background: #000;
-      border-bottom: 2px solid #444;
-      padding: 20px;
-      text-align: center;
-    }
-    header h1 {
-      font-size: 1.8rem;
-      color: #fff;
-      margin-bottom: 5px;
-    }
-    main {
-      flex: 1;
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 10px;
-    }
-    .section-box {
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button:hover {
-      background: #444;
-    }
-    .message {
-      color: #f33;
-      margin-top: 8px;
-    }
-    .hidden {
-      display: none;
-    }
-    /* Table styling for dark theme */
-    .table-container {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #444;
-      margin-top: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #333;
-    }
-    .no-access {
-      background: #222;
-      border: 1px solid #f44336;
-      color: #f44336;
-      padding: 15px;
-      text-align: center;
-      margin-top: 20px;
-      font-weight: bold;
-      border-radius: 4px;
-    }
-    /* Login modal overlay */
-    .modal-bg {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-    .modal-bg.active {
-      display: flex;
-    }
-    .modal-content {
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 20px;
-      max-width: 400px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .modal-content h2 {
-      margin-bottom: 10px;
-    }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+
+    body{background:var(--bg-0);color:var(--text);min-height:100vh;display:flex;flex-direction:column;transition:.25s background}
+
+    header{background:#000;border-bottom:2px solid #444;padding:20px;text-align:center}
+    header h1{color:#fff;font-size:1.8rem}
+
+    main{flex:1;max-width:900px;margin:20px auto;padding:10px}
+
+    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:26px}
+    .hidden{display:none}
+
+    label{display:block;font-weight:700;margin:10px 0 4px}
+    input,select,button{width:100%;padding:8px;margin-bottom:12px;background:var(--bg-2);color:var(--text);
+                         border:1px solid var(--border);border-radius:4px}
+    input:focus,select:focus{outline:2px solid var(--accent)}
+    button{cursor:pointer;transition:filter .2s}
+    button:hover{filter:brightness(1.08)}
+
+    .btn-accent{background:var(--accent);color:#fff}
+    .btn-info  {background:var(--info);color:#fff}
+    .btn-light {background:var(--bg-2);color:var(--text)}
+    .btn-danger{background:var(--danger);color:#fff}
+
+    .message{color:var(--danger);font-size:.9em;margin-top:6px}
+
+    .table-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
+    table{width:100%;border-collapse:collapse;font-size:.9em}
+    th,td{border:1px solid var(--border);padding:8px;text-align:left}
+    th{background:var(--bg-2)}
+
+    .top-bar{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+
+    /* modal */
+    .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);display:none;
+              justify-content:center;align-items:center;z-index:999}
+    .modal-bg.active{display:flex}
+    .modal-content{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:22px;width:90%;max-width:400px}
+    .modal-content h2{margin-bottom:12px;text-align:center}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Artists Payroll</h1>
-  </header>
+  <header><h1>Artists Payroll</h1></header>
+
   <main>
-    <!-- "Login" modal for GM/AD email -->
-    <div class="modal-bg" id="login-modal">
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="modal-bg">
       <div class="modal-content">
-        <h2>GM / AD Login</h2>
-        <label for="gm-email">Email:</label>
-        <input type="email" id="gm-email" placeholder="gm_or_ad@company.com" />
-        <div class="message" id="login-error"></div>
-        <button id="gm-login-btn">Login</button>
+        <h2>GM / AD / HR Login</h2>
+        <label>Email</label>
+        <input id="login-email" type="email" placeholder="user@company.com">
+        <div id="login-msg" class="message"></div>
+        <button id="login-btn" class="btn-info">Login</button>
       </div>
     </div>
 
-    <!-- The payroll section (hidden if role != gm/ad) -->
-    <div class="section-box hidden" id="payroll-section">
+    <!-- PAYROLL SECTION -->
+    <div id="payroll-card" class="card hidden">
+      <div class="top-bar">
+        <button id="logout-btn" class="btn-danger">Logout</button>
+        <button id="theme-btn"  class="btn-light">Light&nbsp;mode</button>
+      </div>
+
       <h2>Generate Payroll</h2>
 
-      <label for="location-select">Filter by Location</label>
-      <select id="location-select">
-        <option value="">-- All Locations --</option>
-      </select>
+      <label>Location</label>
+      <select id="loc-select"><option value="">-- All Locations --</option></select>
 
-      <label for="start-date">Start Date</label>
-      <input type="date" id="start-date" />
+      <label>Start Date</label>
+      <input type="date" id="start-date">
+      <label>End Date</label>
+      <input type="date" id="end-date">
 
-      <label for="end-date">End Date</label>
-      <input type="date" id="end-date" />
+      <button id="gen-btn" class="btn-accent">Generate Payroll</button>
+      <div id="pay-msg" class="message"></div>
 
-      <button id="generate-payroll-btn">Generate Payroll</button>
-      <div class="message" id="payroll-message"></div>
-
-      <div class="table-container">
-        <table id="payroll-table">
-          <thead>
-            <tr>
-              <th>Artist</th>
-              <th>Total Price</th>
-              <th>Total Tip</th>
-              <th>Split (%)</th>
-              <th>Artist Earnings</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Filled dynamically -->
-          </tbody>
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th>Artist</th><th>Total Price</th><th>Total Tip</th><th>Split %</th><th>Earnings</th></tr></thead>
+          <tbody id="pay-body"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- No-access message for FD or SM roles -->
-    <div id="no-access" class="no-access hidden">
+    <!-- NO ACCESS -->
+    <div id="no-access" class="card hidden" style="border-color:var(--danger);text-align:center;color:var(--danger)">
       You do not have access to the Payroll page.
     </div>
   </main>
 
-  <!-- Supabase -->
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-    // Initialize supabase
-    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+/* ---------- Supabase ---------- */
+const supabase = window.supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
 
-    // DOM references
-    const loginModal      = document.getElementById('login-modal');
-    const gmEmailInput    = document.getElementById('gm-email');
-    const gmLoginBtn      = document.getElementById('gm-login-btn');
-    const loginErrorMsg   = document.getElementById('login-error');
+/* ---------- Refs ---------- */
+const loginModal=document.getElementById('login-modal');
+const emailIn   =document.getElementById('login-email');
+const loginBtn  =document.getElementById('login-btn');
+const loginMsg  =document.getElementById('login-msg');
 
-    const payrollSection  = document.getElementById('payroll-section');
-    const noAccessDiv     = document.getElementById('no-access');
-    const locationSelect  = document.getElementById('location-select');
-    const startDateInput  = document.getElementById('start-date');
-    const endDateInput    = document.getElementById('end-date');
-    const generateBtn     = document.getElementById('generate-payroll-btn');
-    const payrollMessage  = document.getElementById('payroll-message');
-    const payrollTableBody= document.querySelector('#payroll-table tbody');
+const payrollCard=document.getElementById('payroll-card');
+const noAccess  =document.getElementById('no-access');
+const logoutBtn =document.getElementById('logout-btn');
+const themeBtn  =document.getElementById('theme-btn');
 
-    // On page load => check localStorage role. If 'gm'/'ad', skip modal; else show.
-    window.addEventListener('DOMContentLoaded', async () => {
-      const storedRole = localStorage.getItem('currentUserRole');
-      if (storedRole === 'gm' || storedRole === 'ad') {
-        // show payroll
-        payrollSection.classList.remove('hidden');
-        await loadLocations();
-      } else {
-        // show login modal
-        loginModal.classList.add('active');
-      }
-    });
+const locSel=document.getElementById('loc-select');
+const sDate=document.getElementById('start-date');
+const eDate=document.getElementById('end-date');
+const genBtn=document.getElementById('gen-btn');
+const payMsg=document.getElementById('pay-msg');
+const tbody=document.getElementById('pay-body');
 
-    // GM/AD login
-    gmLoginBtn.addEventListener('click', async () => {
-      loginErrorMsg.textContent='';
-      const emailVal = gmEmailInput.value.trim();
-      if(!emailVal){
-        loginErrorMsg.textContent='Email required.';
-        return;
-      }
-      // Check user in supabase => must have role in ('gm','ad')
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('id, role')
-        .eq('email', emailVal)
-        .in('role',['gm','ad']);
+/* ---------- Session ---------- */
+let role='';
 
-      if(error){
-        console.error(error);
-        loginErrorMsg.textContent='Error checking GM/AD user.';
-        return;
-      }
-      if(!users || users.length===0){
-        loginErrorMsg.textContent='No GM/AD user found with this email.';
-        return;
-      }
-      // success => store role in localStorage
-      const user=users[0];
-      localStorage.setItem('currentUserRole', user.role);
+/* ---------- Theme ---------- */
+themeBtn.onclick=()=>{
+  const light=document.body.classList.toggle('light');
+  themeBtn.textContent=light?'Dark mode':'Light mode';
+};
 
-      // close modal, show payroll
-      loginModal.classList.remove('active');
-      payrollSection.classList.remove('hidden');
-      await loadLocations();
-    });
+/* ---------- Login Flow ---------- */
+const ALLOWED=['gm','ad','hr'];
 
-    // load locations
-    async function loadLocations() {
-      locationSelect.innerHTML = '<option value="">-- All Locations --</option>';
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*');
-      if (error) {
-        console.error(error);
-        return;
-      }
-      data.forEach(loc => {
-        const opt = document.createElement('option');
-        opt.value = loc.id;
-        opt.textContent = loc.location_name;
-        locationSelect.appendChild(opt);
-      });
+function showLogin(){loginModal.classList.add('active');}
+function hideLogin(){loginModal.classList.remove('active');}
+
+async function init(){
+  role=localStorage.getItem('currentUserRole')||'';
+  if(ALLOWED.includes(role)){
+    payrollCard.classList.remove('hidden');
+    await loadLocations();
+  }else{
+    showLogin();
+  }
+}
+init();
+
+loginBtn.onclick=async()=>{
+  loginMsg.textContent='';
+  const email=emailIn.value.trim();
+  if(!email){loginMsg.textContent='Email required.';return;}
+  const {data,error}=await supabase.from('users').select('role').eq('email',email).in('role',ALLOWED);
+  if(error||!data.length){loginMsg.textContent='Access denied.';return;}
+  role=data[0].role;
+  localStorage.setItem('currentUserRole',role);
+  hideLogin();
+  payrollCard.classList.remove('hidden');
+  await loadLocations();
+};
+
+logoutBtn.onclick=()=>{
+  localStorage.removeItem('currentUserRole');
+  role='';
+  payrollCard.classList.add('hidden');
+  tbody.innerHTML=''; payMsg.textContent='';
+  showLogin();
+};
+
+/* ---------- Locations ---------- */
+async function loadLocations(){
+  locSel.innerHTML='<option value="">-- All Locations --</option>';
+  const {data}=await supabase.from('locations').select('*');
+  data.forEach(l=>{
+    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locSel.appendChild(o);
+  });
+}
+
+/* ---------- Generate Payroll ---------- */
+genBtn.onclick=async()=>{
+  payMsg.textContent=''; tbody.innerHTML='';
+  if(!sDate.value||!eDate.value){payMsg.textContent='Start & End dates required.';return;}
+  if(eDate.value<sDate.value){payMsg.textContent='End date can’t be before start.';return;}
+
+  let q=supabase.from('artist_appointments')
+        .select('price,tip,artist_id, artists!inner(artist_name,percentage_split,location_id)')
+        .gte('date',sDate.value).lte('date',eDate.value)
+        .in('appointment_type',['completed','walk-in']);
+
+  if(locSel.value) q=q.eq('artists.location_id',locSel.value);
+
+  const {data,error}=await q;
+  if(error){console.error(error);payMsg.textContent='Error fetching.';return;}
+  if(!data.length){payMsg.textContent='No appointments in range.';return;}
+
+  const summary={};
+  data.forEach(a=>{
+    const id=a.artist_id;
+    if(!summary[id]){
+      summary[id]={name:a.artists.artist_name,split:a.artists.percentage_split||0,price:0,tip:0};
     }
+    summary[id].price+=a.price||0;
+    summary[id].tip  +=a.tip  ||0;
+  });
 
-    // Generate payroll logic
-    generateBtn.addEventListener('click', async () => {
-      payrollMessage.textContent = '';
-      payrollTableBody.innerHTML = '';
-      const locVal = locationSelect.value;
-      const startVal = startDateInput.value;
-      const endVal   = endDateInput.value;
-
-      if (!startVal || !endVal) {
-        payrollMessage.textContent = 'Start Date and End Date are required.';
-        return;
-      }
-      if (endVal < startVal) {
-        payrollMessage.textContent = 'End Date cannot be before Start Date.';
-        return;
-      }
-
-      // We'll query completed or walk-in appointments within the date range
-      // then group by artist to sum up price, tip
-      let query = supabase
-        .from('artist_appointments')
-        .select('price, tip, artist_id, artists!inner(artist_name, percentage_split, location_id)')
-        .gte('date', startVal)
-        .lte('date', endVal)
-        .in('appointment_type', ['completed','walk-in']);
-
-      if (locVal) {
-        // Filter by location if chosen
-        query = query.eq('artists.location_id', locVal);
-      }
-
-      const { data: appts, error } = await query;
-      if (error) {
-        console.error(error);
-        payrollMessage.textContent = 'Error fetching appointments.';
-        return;
-      }
-      if (!appts || appts.length === 0) {
-        payrollMessage.textContent = 'No completed or walk-in appointments found in this range.';
-        return;
-      }
-
-      // Group by artist
-      let artistTotals = {};
-      appts.forEach(ap => {
-        const aId = ap.artist_id;
-        if (!artistTotals[aId]) {
-          artistTotals[aId] = {
-            name: ap.artists.artist_name,
-            split: ap.artists.percentage_split || 0,
-            totalPrice: 0,
-            totalTip: 0
-          };
-        }
-        artistTotals[aId].totalPrice += ap.price || 0;
-        artistTotals[aId].totalTip   += ap.tip || 0;
-      });
-
-      // Build table
-      for (let aId in artistTotals) {
-        const row = artistTotals[aId];
-        const splitVal = row.split; 
-        // The artist takes (price * split%) + 100% of tip
-        const fromPrice = (row.totalPrice * (splitVal/100));
-        const fromTip   = row.totalTip;
-        const artistEarnings = fromPrice + fromTip;
-
-        const tr = document.createElement('tr');
-        const tdName  = document.createElement('td');
-        const tdPrice = document.createElement('td');
-        const tdTip   = document.createElement('td');
-        const tdSplit = document.createElement('td');
-        const tdTotal = document.createElement('td');
-
-        tdName.textContent  = row.name;
-        tdPrice.textContent = row.totalPrice.toFixed(2);
-        tdTip.textContent   = row.totalTip.toFixed(2);
-        tdSplit.textContent = splitVal + '%';
-        tdTotal.textContent = artistEarnings.toFixed(2);
-
-        tr.appendChild(tdName);
-        tr.appendChild(tdPrice);
-        tr.appendChild(tdTip);
-        tr.appendChild(tdSplit);
-        tr.appendChild(tdTotal);
-        payrollTableBody.appendChild(tr);
-      }
-    });
+  Object.values(summary).forEach(r=>{
+    const earn=(r.price*(r.split/100))+r.tip;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${r.name}</td>
+      <td>${r.price.toFixed(2)}</td>
+      <td>${r.tip.toFixed(2)}</td>
+      <td>${r.split}%</td>
+      <td>${earn.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+};
   </script>
 </body>
 </html>
