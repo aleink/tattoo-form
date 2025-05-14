@@ -160,13 +160,26 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
 /* ---------- Helpers ---------- */
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
+function anyToMin(t){
+  if(!t)return 0;
+  t=t.trim();
+  if(/[ap]m$/i.test(t)){                       /* 12-hour with AM/PM */
+    let [hm,ampm]=t.split(' ');
+    let [h,m]=hm.split(':').map(Number);
+    ampm=ampm.toLowerCase();
+    if(ampm==='pm'&&h!==12)h+=12;
+    if(ampm==='am'&&h===12)h=0;
+    return h*60+m;
+  }
+  return toMin(t);                             /* 24-hour */
+}
 const minsTo12=m=>{
   let h=Math.floor(m/60),mm=m%60,am='AM';
   if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}
   return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
 };
 
-/* buildFree now applies a 15-minute buffer around every existing appt */
+/* buildFree applies a 15-minute buffer around EVERY existing appt (walk-in, appointment, *tentative*) */
 function buildFree(sDayStart,sDayEnd,apps){
   const BUFFER=15;
   const busy=apps.map(a=>{
@@ -196,15 +209,15 @@ function buildFree(sDayStart,sDayEnd,apps){
 /* base minutes by area – calibrated */
 function baseMinutes(){
   const area=(+hIn.value||0)*(+wIn.value||0);
-  if(area<1)  return 10;   // micro
+  if(area<1)  return 10;
   if(area<=2) return 15;
-  if(area<=6) return 20;   // updated from 45
+  if(area<=6) return 20;
   if(area<=9) return 60;
-  if(area<=12)return 90;   // updated from 75
+  if(area<=12)return 90;
   if(area<=18)return 120;
-  if(area<=25)return 180;  // mid-range 3 hr
-  if(area<=38)return 300;  // updated from 285
-  return 9999;             // >39 sq-in full day
+  if(area<=25)return 180;
+  if(area<=38)return 300;
+  return 9999;
 }
 /* multiplier by style */
 const multiMap={
@@ -222,7 +235,7 @@ function needMin(){
   const b=baseMinutes();
   if(b>=9999)return 9999;
   const mult=multiMap[styleSel.value]??1;
-  return Math.ceil(b*mult/5)*5;      // round to nearest 5
+  return Math.ceil(b*mult/5)*5;
 }
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
@@ -261,7 +274,7 @@ function updateUI(){
   }else if(prioSel.value==='artistPriority'){
     artistSect.classList.remove('hidden');
     dateSect.classList.add('hidden');
-    loadArtistDropdown();   // will preserve selection if already chosen
+    loadArtistDropdown();
   }else{
     dateSect.classList.add('hidden');
     artistSect.classList.add('hidden');
@@ -440,22 +453,49 @@ function slotBtn(txt,start,end,artistId,date,container){
   container.appendChild(div);
 }
 
+/* ---------- final availability re-check ---------- */
+async function slotStillAvailable(){
+  const artistId=hidA.value,date=hidD.value;
+  const startMin=anyToMin(hidS.value), endMin=anyToMin(hidE.value);
+  /* vacations? */
+  const {data:vac}=await supabase.from('artist_vacations').select('id')
+                                 .eq('artist_id',artistId)
+                                 .lte('vacation_start',date).gte('vacation_end',date);
+  if(vac?.length)return false;
+
+  /* any overlapping appointment (BUFFER applied) */
+  const {data:apps}=await supabase.from('artist_appointments')
+                                  .select('*')
+                                  .eq('artist_id',artistId).eq('date',date);
+  const BUFFER=15;
+  return !apps.some(ap=>{
+    const s=toMin(ap.start_time)-BUFFER;
+    const e=toMin(ap.end_time)+BUFFER;
+    return endMin> s && startMin< e;   // overlap
+  });
+}
+
 /* ---------- submit to Make ---------- */
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
   if(!hidA.value){alert('Please pick an appointment slot.');return;}
   const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');
-  submitBtn.disabled=true;                 // stop double-submits
+  submitBtn.disabled=true;
+
+  if(!(await slotStillAvailable())){
+    alert('Sorry, that slot has just been taken. Please pick another.');
+    submitBtn.disabled=false;
+    clearSel();updateUI();
+    return;
+  }
 
   const fd=new FormData(e.target);
-  const r=await fetch(
-    'https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',
-    {method:'POST',body:fd}
-  );
+  const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
 
   if(r.ok){
-    // wipe screen and replace with success confirmation
-    document.body.innerHTML='<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>';
+    document.open();
+    document.write('<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>');
+    document.close();
   }else{
     alert('Submission error – please try again.');
     submitBtn.disabled=false;
