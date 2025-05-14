@@ -1,223 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Manage Schedules</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Manage Schedules</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-  <!--  ─── CSP (unchanged) ─── -->
-  <meta http-equiv="Content-Security-Policy"
-        content="
-          default-src 'self';
-          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
-          style-src 'self' 'unsafe-inline';
-          object-src 'none';
-        ">
+<!-- ─── CSP ─── -->
+<meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+        connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+        style-src 'self' 'unsafe-inline';
+        object-src 'none';
+      ">
 
-  <!--  ─── VISUAL THEME (dark, consistent with other pages) ─── -->
-  <style>
-    :root{
-      --bg-0:#111;   /* body background      */
-      --bg-1:#222;   /* card / section       */
-      --bg-2:#333;   /* button / hover bg    */
-      --border:#444; /* borders & outlines   */
-      --text:#fff;   /* main text            */
-      --text-dim:#ccc;
-      --accent:#28a745;
-    }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-    body{
-      background:var(--bg-0);color:var(--text);
-      max-width:750px;margin:20px auto;padding:20px;
-    }
-    h1{text-align:center;margin-bottom:18px}
-    h2,h3{margin:8px 0 14px}
-    p{font-size:.9em;color:var(--text-dim)}
+<!-- ─── THEMES ─── -->
+<style>
+:root{                              /* DARK (default) */
+  --bg0:#111;--bg1:#222;--bg2:#333;
+  --border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745;
+}
+body.light{                         /* LIGHT override */
+  --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
+  --border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;
+}
 
-    /* Card-style sections */
-    .login-section,.schedules-section{
-      background:var(--bg-1);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:18px;margin-bottom:24px;
-    }
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+body{
+  background:var(--bg0);color:var(--txt);
+  max-width:820px;margin:32px auto;padding:28px;
+  transition:background .25s,color .25s;
+}
+h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
+h2,h3{margin:10px 0 14px;font-size:1.25rem}
+p {font-size:.9em;color:var(--txt-dim)}
 
-    label{font-weight:700;display:block;margin:10px 0 4px}
-    input,select{
-      width:100%;padding:8px;
-      background:var(--bg-0);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;
-      margin-bottom:12px;
-    }
-    input:focus,select:focus{outline:2px solid var(--accent)}
+.card{
+  background:var(--bg1);border:1px solid var(--border);
+  border-radius:6px;padding:22px;margin-bottom:30px;
+}
 
-    /* Buttons */
-    button{
-      background:var(--bg-2);color:var(--text);
-      border:none;border-radius:4px;
-      padding:8px 16px;cursor:pointer;
-      transition:background .2s;
-    }
-    button:hover{background:#555}
+label{display:block;font-weight:700;margin:10px 0 4px}
+input,select{
+  width:100%;padding:8px;background:var(--bg0);color:var(--txt);
+  border:1px solid var(--border);border-radius:4px;margin-bottom:12px
+}
+input:focus,select:focus{outline:2px solid var(--accent)}
 
-    .message{color:#ff6b6b;margin-top:8px;font-size:.9em}
-    .hidden{display:none}
+button{
+  background:var(--bg2);color:var(--txt);border:none;border-radius:4px;
+  padding:8px 16px;cursor:pointer;transition:background .2s
+}
+button:hover{background:#555}
+.btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
 
-    /* Grid for the 7 day blocks */
-    .days-container{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-      gap:16px;margin-top:14px;
-    }
-    .day-block{
-      background:var(--bg-0);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:12px;
-    }
-    .day-block h3{
-      text-align:center;margin-bottom:10px;font-size:1em;color:var(--accent)
-    }
-  </style>
+#top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+#top-bar.hidden{display:none}
+#theme-btn{min-width:110px}
+
+.message{color:#ff6262;font-size:.9em;margin-top:8px}
+.hidden{display:none}
+
+/* day blocks */
+.days-container{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:16px;margin-top:16px
+}
+.day-block{
+  background:var(--bg0);border:1px solid var(--border);
+  border-radius:6px;padding:12px
+}
+.day-block h3{text-align:center;margin-bottom:10px;font-size:1rem;color:var(--accent)}
+</style>
 </head>
 <body>
-  <h1>Manage Artist Schedules</h1>
+<h1>Manage Artist Schedules</h1>
 
-  <!-- ───── GM Login ───── -->
-  <div class="login-section" id="login-section">
-    <label for="gm-email">GM Email</label>
-    <input type="email" id="gm-email">
-
-    <label for="gm-password">GM Password</label>
-    <input type="password" id="gm-password">
-
-    <button id="gm-login-btn">Login</button>
-    <div class="message" id="login-message"></div>
+<!--  TOP BAR (after login) -->
+<div id="top-bar" class="hidden">
+  <div style="font-weight:600">Schedules Manager</div>
+  <div>
+    <button id="theme-btn" class="btn-mini">Light mode</button>
+    <button id="logout-btn" class="btn-mini">Logout</button>
   </div>
+</div>
 
-  <!-- ───── Main schedules section ───── -->
-  <div class="schedules-section hidden" id="schedules-section">
-    <h2>Assign Working Days &amp; Hours</h2>
+<!--  LOGIN  -->
+<div id="login-section" class="card">
+  <label>Email</label><input id="login-email" type="email" autocomplete="username">
+  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
+  <button id="login-btn">Login</button>
+  <div id="login-msg" class="message"></div>
+</div>
 
-    <label for="location-filter">Filter by Location</label>
-    <select id="location-filter">
-      <option value="">-- Select Location --</option>
-    </select>
+<!--  MAIN  -->
+<div id="sched-section" class="card hidden">
+  <h2>Assign Working Days & Hours</h2>
 
-    <label for="artist-filter">Select Artist</label>
-    <select id="artist-filter">
-      <option value="">-- Select Artist --</option>
-    </select>
+  <label>Location</label>
+  <select id="loc-filter"><option value="">-- Select Location --</option></select>
 
-    <hr style="border-color:var(--border);margin:18px 0">
+  <label>Artist</label>
+  <select id="artist-filter"><option value="">-- Select Artist --</option></select>
 
-    <h3>Weekly Schedule</h3>
-    <p>Select start/end time for each day. Leave blank if the artist doesn’t work that day.</p>
+  <hr style="border-color:var(--border);margin:20px 0">
 
-    <div class="days-container" id="days-container"><!-- JS builds blocks --></div>
+  <h3>Weekly Schedule</h3>
+  <p>Select start/end time for each day. Leave blank if the artist is off.</p>
 
-    <button id="save-schedule-btn" style="margin-top:12px">Save Schedule</button>
-    <div class="message" id="schedule-message"></div>
-  </div>
+  <div id="days-wrap" class="days-container"></div>
 
-  <!-- Supabase JS (logic untouched) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
-  <script>
-    /* ────────── JS logic (unchanged) ────────── */
-    const supabaseUrl = 'https://shlvjhipxnslrncczopn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  <button id="save-btn" style="margin-top:14px">Save Schedule</button>
+  <div id="sched-msg" class="message"></div>
+</div>
 
-    const loginSection = document.getElementById('login-section');
-    const gmEmailInput = document.getElementById('gm-email');
-    const gmPasswordInput = document.getElementById('gm-password');
-    const gmLoginBtn = document.getElementById('gm-login-btn');
-    const loginMessage = document.getElementById('login-message');
+<!--  SUPABASE  -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+<script>
+/* ----------  INIT ---------- */
+const supabase = window.supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
 
-    const schedulesSection = document.getElementById('schedules-section');
-    const locationFilter = document.getElementById('location-filter');
-    const artistFilter = document.getElementById('artist-filter');
-    const daysContainer = document.getElementById('days-container');
-    const saveScheduleBtn = document.getElementById('save-schedule-btn');
-    const scheduleMessage = document.getElementById('schedule-message');
+/* ----------  DOM ---------- */
+const topBar     = document.getElementById('top-bar');
+const themeBtn   = document.getElementById('theme-btn');
+const logoutBtn  = document.getElementById('logout-btn');
 
-    const dayNames = [
-      { key: 'sunday',    label: 'Sunday'    },
-      { key: 'monday',    label: 'Monday'    },
-      { key: 'tuesday',   label: 'Tuesday'   },
-      { key: 'wednesday', label: 'Wednesday' },
-      { key: 'thursday',  label: 'Thursday'  },
-      { key: 'friday',    label: 'Friday'    },
-      { key: 'saturday',  label: 'Saturday'  }
-    ];
-    let dayInputs = {};
+const loginSec   = document.getElementById('login-section');
+const loginEmail = document.getElementById('login-email');
+const loginPass  = document.getElementById('login-pass');
+const loginBtn   = document.getElementById('login-btn');
+const loginMsg   = document.getElementById('login-msg');
 
-    function buildDayBlocks(){
-      daysContainer.innerHTML='';
-      dayNames.forEach(d=>{
-        const block=document.createElement('div');block.className='day-block';
-        block.innerHTML=`
-          <h3>${d.label}</h3>
-          <label>Start Time</label><input type="time">
-          <label>End Time</label><input type="time">
-        `;
-        const [st,ed]=block.querySelectorAll('input');
-        dayInputs[d.key]={start:st,end:ed};
-        daysContainer.appendChild(block);
-      });
-    }
-    buildDayBlocks();
+const schedSec   = document.getElementById('sched-section');
+const locFilter  = document.getElementById('loc-filter');
+const artistFilter = document.getElementById('artist-filter');
+const daysWrap   = document.getElementById('days-wrap');
+const saveBtn    = document.getElementById('save-btn');
+const schedMsg   = document.getElementById('sched-msg');
 
-    gmLoginBtn.addEventListener('click',async()=>{
-      loginMessage.textContent='';
-      const e=gmEmailInput.value.trim(),p=gmPasswordInput.value.trim();
-      if(!e||!p){loginMessage.textContent='Email and Password required.';return;}
-      const {data,error}=await supabase.from('users').select('*').eq('email',e).eq('role','gm');
-      if(error||!data?.length){loginMessage.textContent='Invalid GM credentials or not a GM.';return;}
-      if(data[0].password_hash!==p){loginMessage.textContent='Invalid credentials.';return;}
-      loginSection.classList.add('hidden');schedulesSection.classList.remove('hidden');loadLocations();
-    });
+/* ----------  THEME ---------- */
+(function(){
+  if(localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeBtn.textContent='Dark mode';
+  }
+})();
+themeBtn.onclick = ()=>{
+  const light=document.body.classList.toggle('light');
+  themeBtn.textContent = light ? 'Dark mode' : 'Light mode';
+  localStorage.setItem('ui-theme',light?'light':'dark');
+};
 
-    async function loadLocations(){
-      locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-      const {data}=await supabase.from('locations').select('*');
-      data?.forEach(l=>{
-        const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;locationFilter.appendChild(o);
-      });
-    }
-
-    locationFilter.addEventListener('change',async()=>{
-      artistFilter.innerHTML='<option value="">-- Select Artist --</option>';clearDayInputs();
-      if(!locationFilter.value)return;
-      const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locationFilter.value);
-      data?.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistFilter.appendChild(o);});
-    });
-
-    artistFilter.addEventListener('change',async()=>{
-      clearDayInputs();if(!artistFilter.value)return;
-      const {data,error}=await supabase.from('artists').select('*').eq('id',artistFilter.value).single();
-      if(error||!data){scheduleMessage.textContent='Error loading artist schedule.';return;}
-      dayNames.forEach(d=>{
-        const s=d.key+'_start',e=d.key+'_end';
-        if(data[s])dayInputs[d.key].start.value=data[s];
-        if(data[e])dayInputs[d.key].end.value=data[e];
-      });
-    });
-
-    function clearDayInputs(){dayNames.forEach(d=>{dayInputs[d.key].start.value='';dayInputs[d.key].end.value='';});scheduleMessage.textContent='';}
-
-    saveScheduleBtn.addEventListener('click',async()=>{
-      scheduleMessage.textContent='';
-      if(!artistFilter.value){scheduleMessage.textContent='Select an artist first.';return;}
-      const obj={};
-      dayNames.forEach(d=>{
-        obj[d.key+'_start']=dayInputs[d.key].start.value||null;
-        obj[d.key+'_end'  ]=dayInputs[d.key].end.value  ||null;
-      });
-      const {error}=await supabase.from('artists').update(obj).eq('id',artistFilter.value);
-      scheduleMessage.textContent=error?'Error saving schedule.':'Schedule saved!';
-    });
-  </script>
-</body>
-</html>
+/* ----------  STATE ---------- */
+let role='', scopeLoc='';
+const dayNames=[
+  {key:'sunday',label:'Sunday'},
+  {key:'monday',label:'Monday'},
+  {key:'tuesday',label:'Tuesday'},
+  {key:'wednesday',label:'Wednesday'},
+  {key:'thursday',label:'Thursday'},
+  {key:'friday',label:'Friday'},
+  {key:'saturday',label:'Saturday'}
+];
+const dayInputs={};                 // { sunday:{start,end},
