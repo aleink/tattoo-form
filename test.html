@@ -270,7 +270,7 @@ async function showWalkInMessage(){
   listArtistsDate.innerHTML='';
   listSlotsDate.innerHTML='';
   listSlotsDate.classList.add('hidden');
-
+  
   if(!locSel.value){
     listArtistsDate.innerHTML='<p>Please select a location first.</p>';
     return;
@@ -280,19 +280,20 @@ async function showWalkInMessage(){
       .select('address,business_hours,phone').eq('id',locSel.value).single();
 
   if(error||!data){
-    listArtistsDate.innerHTML='<p>We accept walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
+    listArtistsDate.innerHTML='<p>We take walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
     return;
   }
 
   listArtistsDate.innerHTML=
-    `<p>For same-day tattoos, we accept walk-ins on a first-come, first-served basis. Feel free to stop by the shop or call us if you have any questions!</p><br><br>
-
-     <p><strong>Address:</strong> ${data.address||'N/A'}</p><br>
-
-     <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p><br>
-
+    `<p>For same-day tattoos, we accept walk-ins on a <strong>first-come, first-served</strong> basis. Feel free to stop by the shop or call us if you have any questions!</p>
+     <br>
+     <p><strong>Address:</strong> ${data.address||'N/A'}</p>
+     <br>
+     <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p>
+     <br>
      <p><strong>Phone:</strong> ${data.phone||'N/A'}</p>`;
 }
+
 
 
 
