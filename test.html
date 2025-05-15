@@ -286,13 +286,14 @@ async function showWalkInMessage(){
 
   listArtistsDate.innerHTML=
     `<p>For same-day tattoos, we accept walk-ins on a first-come, first-served basis. Feel free to stop by the shop or call us if you have any questions!</p>
-     <p> </p>
+     <hr />
      <p><strong>Address:</strong> ${data.address||'N/A'}</p>
-     <p> </p>
+     <hr />
      <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p>
-     <p> </p>
+     <hr />
      <p><strong>Phone:</strong> ${data.phone||'N/A'}</p>`;
 }
+
 
 /* ---------- DATE-priority flow ---------- */
 async function loadArtistsForDate(){
