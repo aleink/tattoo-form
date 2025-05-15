@@ -267,23 +267,30 @@ function updateUI(){
 
 /* ---------- Helper for walk-in message ---------- */
 async function showWalkInMessage(){
-  listArtistsDate.innerHTML='';listSlotsDate.innerHTML='';
+  listArtistsDate.innerHTML='';
+  listSlotsDate.innerHTML='';
   listSlotsDate.classList.add('hidden');
+
   if(!locSel.value){
     listArtistsDate.innerHTML='<p>Please select a location first.</p>';
     return;
   }
+
   const {data,error}=await supabase.from('locations')
       .select('address,business_hours,phone').eq('id',locSel.value).single();
+
   if(error||!data){
-    listArtistsDate.innerHTML='<p>We take walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
+    listArtistsDate.innerHTML='<p>We accept walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
     return;
   }
+
   listArtistsDate.innerHTML=
-    `<p>For tattoos within <strong>today</strong> we take walk-ins on a first-come, first-served basis. 
-      You’re more than welcome to stop by the shop or call us with any questions.</p>
+    `<p>For same-day tattoos, we accept walk-ins on a first-come, first-served basis. Feel free to stop by the shop or call us if you have any questions!</p>
+
      <p><strong>Address:</strong> ${data.address||'N/A'}</p>
+
      <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p>
+
      <p><strong>Phone:</strong> ${data.phone||'N/A'}</p>`;
 }
 
