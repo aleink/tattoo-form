@@ -159,11 +159,13 @@ document.addEventListener('DOMContentLoaded',async()=>{
 });
 
 /* ---------- Helpers ---------- */
+const todayISO = () => new Date().toISOString().split('T')[0];  /* today's yyyy-mm-dd */
+
 const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
 function anyToMin(t){
   if(!t)return 0;
   t=t.trim();
-  if(/[ap]m$/i.test(t)){                       /* 12-hour with AM/PM */
+  if(/[ap]m$/i.test(t)){
     let [hm,ampm]=t.split(' ');
     let [h,m]=hm.split(':').map(Number);
     ampm=ampm.toLowerCase();
@@ -171,15 +173,13 @@ function anyToMin(t){
     if(ampm==='am'&&h===12)h=0;
     return h*60+m;
   }
-  return toMin(t);                             /* 24-hour */
+  return toMin(t);
 }
 const minsTo12=m=>{
   let h=Math.floor(m/60),mm=m%60,am='AM';
   if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}
   return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
 };
-
-/* buildFree applies a 15-minute buffer around EVERY existing appt (walk-in, appointment, *tentative*) */
 function buildFree(sDayStart,sDayEnd,apps){
   const BUFFER=15;
   const busy=apps.map(a=>{
@@ -187,7 +187,6 @@ function buildFree(sDayStart,sDayEnd,apps){
     const en=Math.min(sDayEnd,toMin(a.end_time)+BUFFER);
     return {s:st,e:en};
   }).sort((a,b)=>a.s-b.s);
-
   const free=[];let cur=sDayStart;
   busy.forEach(b=>{
     if(b.s>cur)free.push({s:cur,e:b.s});
@@ -196,8 +195,6 @@ function buildFree(sDayStart,sDayEnd,apps){
   if(cur<sDayEnd)free.push({s:cur,e:sDayEnd});
   return free;
 }
-
-/* fractions rounding */
 [hIn,wIn].forEach(inp=>{
   inp.addEventListener('change',()=>{
     const v=parseFloat(inp.value||'0');
@@ -205,8 +202,6 @@ function buildFree(sDayStart,sDayEnd,apps){
     clearSel();updateUI();
   });
 });
-
-/* base minutes by area – calibrated */
 function baseMinutes(){
   const area=(+hIn.value||0)*(+wIn.value||0);
   if(area<1)  return 10;
@@ -219,7 +214,6 @@ function baseMinutes(){
   if(area<=38)return 300;
   return 9999;
 }
-/* multiplier by style */
 const multiMap={
   'Single colour (e.g. black, red)':1,
   'Color (2 + solid colours)':1.1,
@@ -240,50 +234,78 @@ function needMin(){
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
 /* ---------- Watchers ---------- */
-[
-  locSel,prioSel,dateInput,rangeStart,rangeEnd,hIn,wIn,styleSel
-].forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
-
+[locSel,prioSel,dateInput,rangeStart,rangeEnd,hIn,wIn,styleSel]
+  .forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
 artistPick.addEventListener('change',()=>{
-  clearSel();
-  listDays.innerHTML='';
-  listSlotsArtist.innerHTML='';
-  listSlotsArtist.classList.add('hidden');
-  loadDays();
+  clearSel();listDays.innerHTML='';listSlotsArtist.innerHTML='';
+  listSlotsArtist.classList.add('hidden');loadDays();
 });
 
-/* ---------- Clear slot highlight/hidden values ---------- */
+/* ---------- Clear selections ---------- */
 function clearSel(){
   document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));
   hidA.value=hidD.value=hidS.value=hidE.value='';
 }
 
-/* ---------- Main UI refresh ---------- */
+/* ---------- UI refresh ---------- */
 function updateUI(){
-  listArtistsDate.innerHTML='';
-  listSlotsDate.innerHTML='';
+  listArtistsDate.innerHTML='';listSlotsDate.innerHTML='';
   listSlotsDate.classList.add('hidden');
-  listDays.innerHTML='';
-  listSlotsArtist.innerHTML='';
+  listDays.innerHTML='';listSlotsArtist.innerHTML='';
   listSlotsArtist.classList.add('hidden');
 
   if(prioSel.value==='datePriority'){
-    dateSect.classList.remove('hidden');
-    artistSect.classList.add('hidden');
+    dateSect.classList.remove('hidden');artistSect.classList.add('hidden');
     loadArtistsForDate();
   }else if(prioSel.value==='artistPriority'){
-    artistSect.classList.remove('hidden');
-    dateSect.classList.add('hidden');
+    artistSect.classList.remove('hidden');dateSect.classList.add('hidden');
     loadArtistDropdown();
   }else{
-    dateSect.classList.add('hidden');
-    artistSect.classList.add('hidden');
+    dateSect.classList.add('hidden');artistSect.classList.add('hidden');
   }
 }
+
+/* ---------- Helper for walk-in message ---------- */
+async function showWalkInMessage(){
+  listArtistsDate.innerHTML='';
+  listSlotsDate.innerHTML='';
+  listSlotsDate.classList.add('hidden');
+  
+  if(!locSel.value){
+    listArtistsDate.innerHTML='<p>Please select a location first.</p>';
+    return;
+  }
+
+  const {data,error}=await supabase.from('locations')
+      .select('address,business_hours,phone').eq('id',locSel.value).single();
+
+  if(error||!data){
+    listArtistsDate.innerHTML='<p>We take walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
+    return;
+  }
+
+  listArtistsDate.innerHTML=
+    `<p>For same-day tattoos, we accept walk-ins on a <strong>first-come, first-served</strong> basis. Feel free to stop by the shop or call us if you have any questions!</p>
+     <br>
+     <p><strong>Address:</strong> ${data.address||'N/A'}</p>
+     <br>
+     <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p>
+     <br>
+     <p><strong>Phone:</strong> ${data.phone||'N/A'}</p>`;
+}
+
+
+
 
 /* ---------- DATE-priority flow ---------- */
 async function loadArtistsForDate(){
   if(!locSel.value||!dateInput.value)return;
+
+  /* Walk-in shortcut for today */
+  if(dateInput.value===todayISO()){
+    await showWalkInMessage();
+    return;
+  }
 
   const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
   const artIds=arts.map(a=>a.id);
@@ -292,7 +314,6 @@ async function loadArtistsForDate(){
         .in('artist_id',artIds)
         .lte('vacation_start',dateInput.value)
         .gte('vacation_end',dateInput.value);
-
   const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
   const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
   const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
@@ -317,8 +338,7 @@ async function loadArtistsForDate(){
   });
 }
 async function showSlotsDate(artist){
-  listSlotsDate.innerHTML='';
-  listSlotsDate.classList.remove('hidden');
+  listSlotsDate.innerHTML='';listSlotsDate.classList.remove('hidden');
   const need=needMin();
   const {data:apps}=await supabase.from('artist_appointments').select('*')
                                   .eq('artist_id',artist.id).eq('date',dateInput.value);
@@ -346,26 +366,20 @@ async function showSlotsDate(artist){
   if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
 }
 
-/* ---------- ARTIST-priority flow ---------- */
+/* ---------- ARTIST-priority flow (unchanged) ---------- */
 async function loadArtistDropdown(){
   const prev=artistPick.value;
   artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
   if(!locSel.value)return;
   const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
   data?.forEach(a=>{
-    const o=document.createElement('option');
-    o.value=a.id;o.textContent=a.artist_name;
-    artistPick.appendChild(o);
+    const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistPick.appendChild(o);
   });
-  if(prev && artistPick.querySelector(`option[value="${prev}"]`)){
-    artistPick.value=prev;
-  }
+  if(prev && artistPick.querySelector(`option[value="${prev}"]`))artistPick.value=prev;
   loadDays();
 }
 async function loadDays(){
-  listDays.innerHTML='';
-  listSlotsArtist.innerHTML='';
-  listSlotsArtist.classList.add('hidden');
+  listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
   if(!artistPick.value||!rangeStart.value||!rangeEnd.value)return;
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:apps}=await supabase.from('artist_appointments').select('*')
@@ -403,8 +417,7 @@ async function loadDays(){
   });
 }
 async function showSlotsArtistDay(day){
-  listSlotsArtist.innerHTML='';
-  listSlotsArtist.classList.remove('hidden');
+  listSlotsArtist.innerHTML='';listSlotsArtist.classList.remove('hidden');
   const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
   const {data:vac}=await supabase.from('artist_vacations').select('id')
                                  .eq('artist_id',artist.id)
@@ -413,7 +426,6 @@ async function showSlotsArtistDay(day){
     listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';
     return;
   }
-
   const {data:apps}=await supabase.from('artist_appointments').select('*')
                                   .eq('artist_id',artistPick.value).eq('date',day);
   const idx=new Date(`${day}T00:00:00Z`).getUTCDay();
@@ -453,52 +465,43 @@ function slotBtn(txt,start,end,artistId,date,container){
   container.appendChild(div);
 }
 
-/* ---------- final availability re-check ---------- */
+/* ---------- final re-check ---------- */
 async function slotStillAvailable(){
   const artistId=hidA.value,date=hidD.value;
+  if(!artistId||!date)return false;
   const startMin=anyToMin(hidS.value), endMin=anyToMin(hidE.value);
-  /* vacations? */
   const {data:vac}=await supabase.from('artist_vacations').select('id')
                                  .eq('artist_id',artistId)
                                  .lte('vacation_start',date).gte('vacation_end',date);
   if(vac?.length)return false;
-
-  /* any overlapping appointment (BUFFER applied) */
-  const {data:apps}=await supabase.from('artist_appointments')
-                                  .select('*')
+  const {data:apps}=await supabase.from('artist_appointments').select('*')
                                   .eq('artist_id',artistId).eq('date',date);
   const BUFFER=15;
   return !apps.some(ap=>{
-    const s=toMin(ap.start_time)-BUFFER;
-    const e=toMin(ap.end_time)+BUFFER;
-    return endMin> s && startMin< e;   // overlap
+    const s=toMin(ap.start_time)-BUFFER, e=toMin(ap.end_time)+BUFFER;
+    return endMin> s && startMin< e;
   });
 }
 
-/* ---------- submit to Make ---------- */
+/* ---------- Submit ---------- */
 document.getElementById('tattoo-form').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(!hidA.value){alert('Please pick an appointment slot.');return;}
-  const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');
-  submitBtn.disabled=true;
+  if(!hidA.value&&hidD.value!==todayISO()){alert('Please pick an appointment slot.');return;}
+  const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');submitBtn.disabled=true;
 
-  if(!(await slotStillAvailable())){
+  if(hidD.value!==todayISO() && !(await slotStillAvailable())){
     alert('Sorry, that slot has just been taken. Please pick another.');
-    submitBtn.disabled=false;
-    clearSel();updateUI();
-    return;
+    submitBtn.disabled=false;clearSel();updateUI();return;
   }
 
   const fd=new FormData(e.target);
   const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
-
   if(r.ok){
     document.open();
     document.write('<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>');
     document.close();
   }else{
-    alert('Submission error – please try again.');
-    submitBtn.disabled=false;
+    alert('Submission error – please try again.');submitBtn.disabled=false;
   }
 });
 </script>
