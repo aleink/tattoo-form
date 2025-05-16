@@ -26,10 +26,13 @@ main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:cen
 .card a{display:inline-block;background:#777;color:#fff;text-decoration:none;padding:8px 16px;border-radius:4px;transition:background .2s}
 .card a:hover{background:#999}
 
+/* top bar */
 #top-bar{display:none;background:#000;border-bottom:2px solid var(--border);padding:12px 20px;align-items:center;justify-content:space-between}
 #top-bar button{background:var(--bg1);color:var(--txt);border:none;border-radius:4px;padding:6px 14px;cursor:pointer}
 #top-bar button:hover{background:#444}
+#back-btn{display:none;margin-right:12px}
 
+/* login box */
 #login-section{display:none;max-width:420px;margin:60px auto;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:28px}
 #login-section label{font-weight:700;display:block;margin:10px 0 4px}
 #login-section input{width:100%;padding:8px;background:var(--bg0);color:var(--txt);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
@@ -38,20 +41,23 @@ main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:cen
 #login-msg{color:#ff6161;font-size:.9rem;margin-top:6px;text-align:center}
 </style>
 
-<!-- Supabase -->
+<!-- Supabase (same project key) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
-<!-- top bar -->
+<!-- top bar (Back + title + Logout) -->
 <div id="top-bar">
-  <div style="font-weight:600">Club Tattoo Dashboard</div>
+  <div style="display:flex;align-items:center">
+    <button id="back-btn">← Back</button>
+    <span style="font-weight:600">Club Tattoo Dashboard</span>
+  </div>
   <button id="logout-btn">Logout</button>
 </div>
 
 <header>
   <h1>Club Tattoo Management Tool</h1>
-  <p>Central portal for booking, scheduling, artist management and more.</p>
+  <p>Single portal for booking, scheduling, artist management, payroll, and more.</p>
 </header>
 
 <!-- login -->
@@ -62,7 +68,7 @@ main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:cen
   <div id="login-msg"></div>
 </section>
 
-<!-- main content -->
+<!-- dashboard cards -->
 <main id="main-content" style="display:none">
   <h2 style="font-size:1.35rem;margin-bottom:22px">Choose a Section</h2>
   <div class="links-grid">
@@ -96,41 +102,45 @@ main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:cen
 <footer><p>&copy; <span id="year"></span> Club Tattoo — All rights reserved.</p></footer>
 
 <script>
+/* ---------- Supabase ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* DOM */
-const loginSec=document.getElementById('login-section');
-const loginEmail=document.getElementById('login-email');
-const loginPass=document.getElementById('login-pass');
-const loginBtn=document.getElementById('login-btn');
-const loginMsg=document.getElementById('login-msg');
+/* ---------- DOM ---------- */
+const loginSec = document.getElementById('login-section');
+const loginEmail = document.getElementById('login-email');
+const loginPass  = document.getElementById('login-pass');
+const loginBtn   = document.getElementById('login-btn');
+const loginMsg   = document.getElementById('login-msg');
 
-const topBar=document.getElementById('top-bar');
-const logoutBtn=document.getElementById('logout-btn');
-const mainCont=document.getElementById('main-content');
+const topBar   = document.getElementById('top-bar');
+const backBtn  = document.getElementById('back-btn');
+const logoutBtn= document.getElementById('logout-btn');
+const mainCont = document.getElementById('main-content');
+document.getElementById('year').textContent = new Date().getFullYear();
 
-/* year */
-document.getElementById('year').textContent=new Date().getFullYear();
+/* Show back-button on any page that is NOT index.html */
+if(!/index\.html$/.test(location.pathname) && location.pathname !== '/' ){
+  backBtn.style.display='inline-block';
+  backBtn.onclick=()=>location.href='index.html';
+}
 
-/* theme */
-(function(){
-  if(localStorage.getItem('ui-theme')==='light')
-    document.body.classList.add('light');
-})();
+/* Auto-login if role is stored */
+const storedRole = localStorage.getItem('currentUserRole');
+if(storedRole){ showApp(storedRole); } else { loginSec.style.display='block'; }
 
-/* auto-show if already logged */
-const storedRole=localStorage.getItem('currentUserRole');
-if(storedRole) showApp(storedRole); else loginSec.style.display='block';
-
-/* login */
-loginBtn.onclick=async()=>{
+/* Login handler */
+loginBtn.onclick = async () =>{
   loginMsg.textContent='';
   if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Enter e-mail & password.';return;}
-  const {data:user,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim()).single();
-  if(error||!user||user.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
+
+  const {data:user,error}=await supabase.from('users')
+      .select('*').eq('email',loginEmail.value.trim()).single();
+  if(error||!user||user.password_hash!==loginPass.value.trim()){
+    loginMsg.textContent='Invalid credentials.';return;
+  }
 
   localStorage.setItem('currentUserId',user.id);
   localStorage.setItem('currentUserRole',user.role);
@@ -139,13 +149,10 @@ loginBtn.onclick=async()=>{
   showApp(user.role);
 };
 
-/* logout */
-logoutBtn.onclick=()=>{
-  localStorage.clear();
-  location.reload();
-};
+/* Logout */
+logoutBtn.onclick = ()=>{ localStorage.clear(); location.reload(); };
 
-/* display according to role */
+/* Show dashboard & filter cards */
 function showApp(role){
   loginSec.style.display='none';
   topBar.style.display='flex';
@@ -153,24 +160,22 @@ function showApp(role){
   filterCards(role);
 }
 
-/* hide/show cards */
+/* Card visibility per role */
 function filterCards(role){
-  const cards=['calendar','artists','schedules','vacations','payroll','locations'];
-  cards.forEach(c=>document.getElementById(`card-${c}`).style.display='none');
+  const hideAll=ids=>ids.forEach(id=>document.getElementById(id).style.display='none');
+  const show=ids=>ids.forEach(id=>document.getElementById(id).style.display='block');
+
+  const all=['card-calendar','card-artists','card-schedules','card-vacations','card-payroll','card-locations'];
+  hideAll(all);
 
   switch(role){
     case 'gm':
-    case 'owner':
-      cards.forEach(c=>show(c));break;
-    case 'sm':
-      ['calendar','artists','schedules','vacations'].forEach(show);break;
-    case 'fd':
-      show('calendar');break;
-    case 'ad':
-      show('payroll');break;
-    default: /* no cards */ break;
+    case 'owner':   show(all); break;
+    case 'sm':      show(['card-calendar','card-artists','card-schedules','card-vacations']); break;
+    case 'fd':      show(['card-calendar']); break;
+    case 'ad':      show(['card-payroll']); break;
+    default:        /* no cards */ break;
   }
-  function show(id){document.getElementById(`card-${id}`).style.display='block';}
 }
 </script>
 </body>
