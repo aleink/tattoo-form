@@ -53,11 +53,8 @@ button:hover{background:#555}
 .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
 
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
-.hidden{display:none}
 
-/* top bar */
 #top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-#top-bar.hidden{display:none}
 #theme-btn{min-width:110px}
 
 /* day grid */
@@ -80,17 +77,10 @@ button:hover{background:#555}
 <div id="top-bar" class="hidden">
   <div style="font-weight:600">Schedule Manager</div>
   <div>
+    <button id="back-btn"  class="btn-mini">Back</button>
     <button id="theme-btn" class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
   </div>
-</div>
-
-<!-- LOGIN -->
-<div id="login-section" class="card">
-  <label>Email</label><input id="login-email" type="email" autocomplete="username">
-  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
-  <button id="login-btn">Login</button>
-  <div id="login-msg" class="message"></div>
 </div>
 
 <!-- SCHEDULES -->
@@ -119,6 +109,14 @@ button:hover{background:#555}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
+/* ---------- CENTRAL LOGIN ENFORCEMENT ---------- */
+const role      = localStorage.getItem('currentUserRole');
+const scopeLoc  = localStorage.getItem('currentUserLoc') || '';
+const allowedRoles = ['gm','hr','sm'];
+if(!role || !allowedRoles.includes(role)){
+  window.location.href='index.html';
+}
+
 /* ---------- INIT ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
@@ -127,14 +125,9 @@ const supabase = window.supabase.createClient(
 
 /* ---------- DOM ---------- */
 const topBar     = document.getElementById('top-bar');
+const backBtn    = document.getElementById('back-btn');
 const themeBtn   = document.getElementById('theme-btn');
 const logoutBtn  = document.getElementById('logout-btn');
-
-const loginSec   = document.getElementById('login-section');
-const loginEmail = document.getElementById('login-email');
-const loginPass  = document.getElementById('login-pass');
-const loginBtn   = document.getElementById('login-btn');
-const loginMsg   = document.getElementById('login-msg');
 
 const schedSec   = document.getElementById('sched-section');
 const locFilter  = document.getElementById('loc-filter');
@@ -144,20 +137,17 @@ const saveBtn    = document.getElementById('save-btn');
 const schedMsg   = document.getElementById('sched-msg');
 
 /* ---------- THEME ---------- */
-(function(){
-  if(localStorage.getItem('ui-theme')==='light'){
-    document.body.classList.add('light');
-    themeBtn.textContent='Dark mode';
-  }
-})();
-themeBtn.onclick=()=>{
-  const light=document.body.classList.toggle('light');
-  themeBtn.textContent=light?'Dark mode':'Light mode';
-  localStorage.setItem('ui-theme',light?'light':'dark');
-};
+(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
+themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
+
+/* ---------- NAV ---------- */
+topBar.classList.remove('hidden');
+schedSec.classList.remove('hidden');
+
+backBtn.onclick = ()=>window.location.href='index.html';
+logoutBtn.onclick=()=>{localStorage.clear();window.location.href='index.html';};
 
 /* ---------- STATE ---------- */
-let role='', scopeLoc='';
 const dayIdx=[
   {k:'sunday',label:'Sunday'},
   {k:'monday',label:'Monday'},
@@ -179,45 +169,12 @@ function buildDayBlocks(){
       <label style="font-size:.8em">End</label><input type="time">
       <button class="btn-mini day-reset">Reset</button>`;
     const [st,ed]=block.querySelectorAll('input');
-    const resetBtn=block.querySelector('.day-reset');
-    resetBtn.onclick=()=>{st.value='';ed.value='';};
+    block.querySelector('.day-reset').onclick=()=>{st.value='';ed.value='';};
     dayInputs[d.k]={start:st,end:ed};
     daysWrap.appendChild(block);
   });
 }
 buildDayBlocks();
-
-/* ---------- LOGIN ---------- */
-loginBtn.onclick = async ()=>{
-  loginMsg.textContent='';
-  if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Email & password required.';return;}
-
-  const {data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
-  if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];
-  if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-
-  role=u.role; scopeLoc=u.location_id||'';
-  if(!['gm','hr','sm'].includes(role)){loginMsg.textContent='Access denied.';return;}
-
-  loginSec.classList.add('hidden');
-  schedSec.classList.remove('hidden');
-  topBar.classList.remove('hidden');
-  await loadLocations(); loadArtists();
-};
-
-/* ---------- LOGOUT ---------- */
-logoutBtn.onclick=()=>{
-  loginEmail.value=loginPass.value='';
-  role='';scopeLoc='';
-  loginSec.classList.remove('hidden');
-  schedSec.classList.add('hidden');
-  topBar.classList.add('hidden');
-  locFilter.innerHTML='<option value="">-- Select Location --</option>';
-  artistFilter.innerHTML='<option value="">-- Select Artist --</option>';
-  buildDayBlocks();
-  schedMsg.textContent='';
-};
 
 /* ---------- LOCATIONS ---------- */
 async function loadLocations(){
@@ -271,6 +228,9 @@ saveBtn.onclick = async()=>{
   const {error}=await supabase.from('artists').update(payload).eq('id',artistFilter.value);
   schedMsg.textContent=error?'Error saving schedule.':'Schedule saved!';
 };
+
+/* ---------- BOOT ---------- */
+loadLocations();
 </script>
 </body>
 </html>
