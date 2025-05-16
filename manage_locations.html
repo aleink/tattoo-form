@@ -69,7 +69,7 @@ tr:nth-child(even){background:var(--bg0)}
   </div>
 </div>
 
-<!-- LOCATION MANAGEMENT -->
+<!-- MAIN SECTION (hidden until permission check) -->
 <div id="loc-section" class="card hidden">
   <h2>Add / Edit Location</h2>
 
@@ -105,18 +105,32 @@ tr:nth-child(even){background:var(--bg0)}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ---------- ACCESS CONTROL ---------- */
-const role = localStorage.getItem('currentUserRole');
-if (role !== 'owner') {
-  // anyone else → kick back to dashboard
-  window.location.href = 'index.html';
-}
-
-/* ---------- INIT ---------- */
+/* ---------- Supabase client ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
+
+/* ---------- Permission check ---------- */
+(async()=>{
+  const role = localStorage.getItem('currentUserRole')||'';
+  /* fetch row for this page */
+  const {data:rows,error}=await supabase.from('page_roles')
+        .select('*')
+        .eq('page_slug','locations')
+        .single();
+
+  const allowed = rows ? !!rows[role] : (role==='owner'||role==='gm');   // fallback → owner & GM
+  if(!allowed){
+    window.location.href='index.html';
+    return;
+  }
+  /* show UI only after allowed */
+  initLocationsPage();
+})();
+
+/* ---------- All logic wrapped in a function so it only runs if allowed ---------- */
+function initLocationsPage(){
 
 /* ---------- DOM ---------- */
 const topBar  = document.getElementById('top-bar');
@@ -152,8 +166,8 @@ themeBtn.onclick=()=>{
 };
 
 /* ---------- NAV ---------- */
-backBtn.onclick  = () => window.location.href = 'index.html';
-logoutBtn.onclick= () => { localStorage.clear(); window.location.href = 'index.html'; };
+backBtn.onclick  = () => location.href = 'index.html';
+logoutBtn.onclick= () => { localStorage.clear(); location.href = 'index.html'; };
 
 /* ---------- BUSINESS HOURS HELPERS ---------- */
 const daysFull=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -162,62 +176,46 @@ const daysShort=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function addHoursRow(set={startDay:'Monday',endDay:'Monday',startTime:'',endTime:''}){
   const row=document.createElement('div');row.className='hours-row';
   const sDay=document.createElement('select'),eDay=document.createElement('select');
-  daysFull.forEach(d=>{
-    sDay.add(new Option(d,d));eDay.add(new Option(d,d));
-  });
+  daysFull.forEach(d=>{sDay.add(new Option(d,d));eDay.add(new Option(d,d));});
   sDay.value=set.startDay; eDay.value=set.endDay;
 
   const sTime=document.createElement('input');sTime.type='time';sTime.value=set.startTime||'';
   const eTime=document.createElement('input');eTime.type='time';eTime.value=set.endTime||'';
   const del=document.createElement('button');del.type='button';del.textContent='×';del.onclick=()=>row.remove();
-
   [sDay,eDay,sTime,eTime,del].forEach(el=>row.appendChild(el));
   hoursWrap.appendChild(row);
 }
 addHoursBtn.onclick=()=>addHoursRow();
 
 /* format array → multiline string */
-function formatHours(arr){
-  return arr.map(o=>{
-    const aIdx=daysFull.indexOf(o.startDay);
-    const bIdx=daysFull.indexOf(o.endDay);
-    const dayPart=aIdx===bIdx?daysShort[aIdx]:`${daysShort[aIdx]} - ${daysShort[bIdx]}`;
-    const tPart=`${to12(o.startTime)} - ${to12(o.endTime)}`;
-    return `${dayPart}: ${tPart}`;
-  }).join('\n');
-}
 function to12(t){
-  if(!t)return '';
-  let [h,m]=t.split(':').map(Number),amp='AM';
-  if(h===0){h=12;}
-  else if(h===12){amp='PM';}
-  else if(h>12){h-=12;amp='PM';}
+  if(!t)return '';let[h,m]=t.split(':').map(Number),amp='AM';
+  if(h===0){h=12;}else if(h===12){amp='PM';}else if(h>12){h-=12;amp='PM';}
   return `${h}${m===0?'':':'+String(m).padStart(2,'0')}${amp}`;
 }
+function formatHours(arr){
+  return arr.map(o=>{
+    const a=daysFull.indexOf(o.startDay),b=daysFull.indexOf(o.endDay);
+    const d=a===b?daysShort[a]:`${daysShort[a]} - ${daysShort[b]}`;
+    return `${d}: ${to12(o.startTime)} - ${to12(o.endTime)}`;
+  }).join('\n');
+}
+function to24(h,m,amp){h=+h;m=+(m||0);if(amp==='PM'&&h!==12)h+=12;if(amp==='AM'&&h===12)h=0;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
 function parseHours(txt){
-  const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
-  const out=[];
-  lines.forEach(l=>{
-    const m=l.match(/^([A-Za-z]{3})(?:\s*-\s*([A-Za-z]{3}))?:\s*(\d{1,2})(?::(\d{2}))?(AM|PM)\s*-\s*(\d{1,2})(?::(\d{2}))?(AM|PM)$/i);
-    if(!m)return;
-    const [,sd,ed,sh,shm,sa,eh,ehm,ea]=m;
-    out.push({
+  const re=/^([A-Za-z]{3})(?:\s*-\s*([A-Za-z]{3}))?:\s*(\d{1,2})(?::(\d{2}))?(AM|PM)\s*-\s*(\d{1,2})(?::(\d{2}))?(AM|PM)$/i;
+  return txt.split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(re);if(!m)return null;
+    const [,sd,ed,sh,sm,sa,eh,em,ea]=m;
+    return{
       startDay:daysFull[daysShort.indexOf(sd)],
       endDay  :ed?daysFull[daysShort.indexOf(ed)]:daysFull[daysShort.indexOf(sd)],
-      startTime:to24(sh,shm,sa),
-      endTime  :to24(eh,ehm,ea)
-    });
-  });
-  return out;
-}
-function to24(h,m,amp){
-  h=Number(h);m=Number(m||0);
-  if(amp.toUpperCase()==='PM' && h!==12)h+=12;
-  if(amp.toUpperCase()==='AM' && h===12)h=0;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      startTime:to24(sh,sm,sa),
+      endTime  :to24(eh,em,ea)
+    };
+  }).filter(Boolean);
 }
 
-/* ---------- LOAD / CRUD ---------- */
+/* ---------- LOAD TABLE ---------- */
 async function loadLocations(){
   tbody.innerHTML='';
   const {data,error}=await supabase.from('locations').select('*').order('location_name',{ascending:true});
@@ -240,6 +238,7 @@ async function loadLocations(){
   });
 }
 
+/* ---------- CRUD ---------- */
 window.editLoc=id=>{
   const row=[...tbody.children].find(r=>JSON.parse(r.dataset.location).id===id);
   if(!row)return;
@@ -252,35 +251,28 @@ window.editLoc=id=>{
   fields.tz.value=l.timezone||'';
   hoursWrap.innerHTML='';
   const sets=parseHours(l.business_hours||'');
-  (sets.length?sets:[{}]).forEach(s=>addHoursRow(s));
+  (sets.length?sets:[{}]).forEach(addHoursRow);
   locMsg.textContent='Editing – remember to Save.';
 };
-
 window.delLoc=async id=>{
   if(!confirm('Delete this location?'))return;
   const {error}=await supabase.from('locations').delete().eq('id',id);
   locMsg.textContent=error?'Error deleting.':'Location deleted.';
   if(!error){loadLocations();clearForm();}
 };
-
 saveBtn.onclick=async()=>{
   locMsg.textContent='';
   if(!fields.name.value.trim()){locMsg.textContent='Name required.';return;}
-
-  /* collect hours rows */
   const sets=[...hoursWrap.querySelectorAll('.hours-row')].map(r=>{
     const [sd,ed,st,et]=r.querySelectorAll('select,input');
-    return {startDay:sd.value,endDay:ed.value,startTime:st.value,endTime:et.value};
+    return{startDay:sd.value,endDay:ed.value,startTime:st.value,endTime:et.value};
   }).filter(s=>s.startTime&&s.endTime);
-  if(!sets.length){locMsg.textContent='At least one business-hours row required.';return;}
-
-  const hoursStr=formatHours(sets);
-
+  if(!sets.length){locMsg.textContent='At least one hours row required.';return;}
   const payload={
     location_name:fields.name.value.trim(),
     address      :fields.addr.value.trim()||null,
     phone        :fields.phone.value.trim()||null,
-    business_hours:hoursStr,
+    business_hours:formatHours(sets),
     email        :fields.email.value.trim()||null,
     timezone     :fields.tz.value.trim()||null
   };
@@ -290,7 +282,6 @@ saveBtn.onclick=async()=>{
   locMsg.textContent=res.error?'Error saving.':'Saved!';
   if(!res.error){loadLocations();clearForm();}
 };
-
 clearBtn.onclick=clearForm;
 function clearForm(){
   fields.id=null;
@@ -299,16 +290,12 @@ function clearForm(){
   locMsg.textContent='';
 }
 
-/* ---------- DOM READY ---------- */
-document.addEventListener('DOMContentLoaded',()=>{
-  topBar.classList.remove('hidden');
-  locSec.classList.remove('hidden');
-  loadLocations();
-});
+/* ---------- READY ---------- */
+topBar.classList.remove('hidden');
+locSec.classList.remove('hidden');
+loadLocations();
 
-/* expose helpers */
-window.editLoc=window.editLoc;
-window.delLoc =window.delLoc;
+} // <- end initLocationsPage
 </script>
 </body>
 </html>
