@@ -5,7 +5,7 @@
 <title>Calendar</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<!-- ─── CSP ─── -->
+<!--  CSP  -->
 <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -15,14 +15,14 @@
         object-src 'none';
       ">
 
-<!-- ─── VISUAL THEMES (identical to Manage-Artists) ─── -->
+<!-- ─── VISUAL THEME ─── -->
 <style>
-:root{                              /* DARK (default) */
+:root{
   --bg0:#111;--bg1:#222;--bg2:#333;
   --border:#444;--txt:#fff;--txt-dim:#ccc;
   --accent:#28a745;--info:#1976d2;--danger:#f44336;
 }
-body.light{                          /* LIGHT override */
+body.light{
   --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
   --border:#b7b7b7;--txt:#000;--txt-dim:#444;
   --accent:#0d6efd;--info:#0d6efd;--danger:#d32f2f;
@@ -31,58 +31,55 @@ body.light{                          /* LIGHT override */
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
 body{
   background:var(--bg0);color:var(--txt);
-  max-width:1200px;margin:32px auto;padding:20px;
+  max-width:1200px;margin:32px auto;padding:28px;
   transition:background .25s,color .25s;
 }
-header{
-  background:var(--bg1);
-  border-bottom:2px solid var(--border);
-  padding:20px;text-align:center
-}
-header h1{margin:0;font-size:1.8rem;color:var(--txt)}
+h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
 
-button{
-  background:var(--bg2);color:var(--txt);
-  border:none;border-radius:4px;
-  padding:8px 16px;cursor:pointer;
-  transition:background .2s
-}
-button:hover{background:#555}
-.btn-danger{background:var(--danger)!important;color:#fff}
-.btn-toggle{min-width:110px}
-
-select,
-input[type="date"],input[type="time"],
-input[type="text"],input[type="number"],
-input[type="email"],textarea{
-  background:var(--bg2);color:var(--txt);
-  border:1px solid var(--border);
-  border-radius:4px;padding:6px
-}
-select option{color:#000}
-
-.hidden{display:none}
-
-/* ---------- login card (same as Manage-Artists) ---------- */
+/*  login card (copied from Manage-Artists)  */
 .card{
   background:var(--bg1);border:1px solid var(--border);
-  border-radius:6px;padding:22px;max-width:420px;margin:40px auto
+  border-radius:6px;padding:22px;max-width:420px;margin:0 auto 30px;
 }
-.card label{display:block;font-weight:700;margin:10px 0 4px}
-.message{color:var(--danger);margin-top:8px;font-size:.9em}
+label{display:block;font-weight:700;margin:10px 0 4px}
+input,select,textarea{
+  width:100%;padding:8px;background:var(--bg0);color:var(--txt);
+  border:1px solid var(--border);border-radius:4px;margin-bottom:12px;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
+button{
+  background:var(--bg2);color:var(--txt);border:none;border-radius:4px;
+  padding:8px 16px;cursor:pointer;transition:background .2s
+}
+button:hover{background:#555}
+.btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
+.message{color:#ff6262;font-size:.9em;margin-top:8px}
+.hidden{display:none}
 
-/* ---------- top controls ---------- */
-.top-controls{display:flex;align-items:center;gap:14px;margin:18px 0;flex-wrap:wrap}
+/*  toggle buttons  */
+.toggle-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg2);color:var(--txt);border:1px solid var(--border);
+  border-radius:4px;padding:6px 12px;margin:4px 6px 4px 0;font-size:.9rem;
+  cursor:pointer;transition:background .15s,border .15s;
+}
+.toggle-btn span.icon{font-weight:bold}
+.toggle-btn.active{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+.toggle-btn.active span.icon::after{content:"✓"}
+.toggle-btn:not(.active) span.icon::after{content:"✕"}
 
-/* ---------- scheduler grid ---------- */
+/*  top  */
+.top-controls{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px;align-items:center}
+
+/*  scheduler  */
 #daily-scheduler{
-  position:relative;height:960px;
-  border:1px solid var(--border);
-  overflow-y:auto;margin-top:10px;
-  background:var(--bg2)
+  position:relative;height:960px;overflow:auto;
+  border:1px solid var(--border);background:var(--bg2)
 }
 .hour-line{
-  position:absolute;left:0;width:100%;
+  position:absolute;left:0;right:0;
   border-top:1px dashed var(--border);
   color:var(--txt-dim);font-size:12px;padding-left:5px
 }
@@ -93,35 +90,32 @@ select option{color:#000}
 }
 .schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
 .schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
-
 .appointment-block{
   position:absolute;background:var(--accent);color:#fff;
   border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box
 }
 
-/* ---------- modal ---------- */
+/*  modal  */
 #appt-modal{
-  display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);
+  display:none;position:fixed;left:50%;top:10px;transform:translateX(-50%);
   background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;
-  box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999
+  max-height:90vh;overflow:auto;z-index:999;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
 }
 #appt-modal h3{margin:0 0 10px}
 .modal-field{margin-bottom:10px}
-.modal-buttons{text-align:right;margin-top:10px}
-.modal-buttons button{margin-left:8px}
+.duration-wrap{margin-bottom:10px;display:flex;gap:6px}
+.duration-wrap input{margin-bottom:0}
+.modal-buttons{text-align:right;margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+#complete-appt-btn{margin-top:6px}
 
-/* ---------- artist filter ---------- */
-#artist-filter-container{margin-top:10px}
-.artist-filter-item{display:inline-block;margin-right:10px}
-.artist-filter-item label{margin-left:4px}
-
-/* ---------- list section ---------- */
+/*  list  */
 #appointments-list-section{
-  margin-top:24px;background:var(--bg1);
-  border:1px solid var(--border);border-radius:6px;padding:15px
+  margin-top:24px;background:var(--bg1);border:1px solid var(--border);
+  border-radius:6px;padding:15px
 }
 #appointments-list-section h2{margin-bottom:10px}
-.filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}
+.filters-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
 .appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
 .appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
@@ -130,29 +124,29 @@ select option{color:#000}
 </head>
 <body>
 
-<header><h1>Calendar</h1></header>
+<h1>Calendar</h1>
 
-<!-- ───── LOGIN (matches other pages) ───── -->
+<!-- LOGIN -->
 <div id="login-section" class="card">
-  <label>Email</label><input type="email" id="login-email" autocomplete="username">
-  <label>Password</label><input type="password" id="login-password" autocomplete="current-password">
+  <label>Email</label><input id="login-email" type="email" autocomplete="username">
+  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
   <button id="login-btn">Login</button>
-  <div id="login-message" class="message"></div>
+  <div id="login-msg" class="message"></div>
 </div>
 
-<!-- ───── MAIN UI ───── -->
+<!-- MAIN -->
 <div id="main-section" class="hidden">
 
   <div class="top-controls">
-    <button class="btn-danger" id="logout-btn">Logout</button>
-    <button class="btn-toggle"  id="theme-btn">Light mode</button>
-    <button               id="today-btn">Today</button>
+    <button id="theme-btn"  class="btn-mini">Light mode</button>
+    <button id="logout-btn" class="btn-mini">Logout</button>
+    <button id="today-btn">Today</button>
 
-    <label>Location:
+    <label>Location
       <select id="location-filter"><option value="">-- Select Location --</option></select>
     </label>
 
-    <label>Date:
+    <label>Date
       <input type="date" id="day-input">
     </label>
   </div>
@@ -160,21 +154,32 @@ select option{color:#000}
   <div id="artist-filter-container"></div>
   <div id="daily-scheduler"></div>
 
-  <!-- ---------- APPOINTMENT MODAL ---------- -->
+  <!-- MODAL -->
   <div id="appt-modal">
     <h3 id="modal-title">New Appointment</h3>
 
-    <div class="modal-field"><label>Start Time (5-min):</label><input type="time" id="modal-start-time" step="300"></div>
-    <div class="modal-field"><label>End Time (5-min):</label><input type="time" id="modal-end-time" step="300"></div>
-    <div class="modal-field"><label>Artist:</label><select id="modal-artist"></select></div>
-    <div class="modal-field"><label>Client Name:</label><input type="text" id="modal-client-name"></div>
-    <div class="modal-field"><label>Client Phone:</label><input type="text" id="modal-client-phone"></div>
-    <div class="modal-field"><label>Client Email:</label><input type="email" id="modal-email"></div>
-    <div class="modal-field"><label>Tattoo Description:</label><textarea id="modal-description"></textarea></div>
-    <div class="modal-field"><label>Deposit:</label><input type="number" id="modal-deposit"></div>
-    <div class="modal-field"><label>Price:</label><input type="number" id="modal-price"></div>
-    <div class="modal-field"><label>Tip:</label><input type="number" id="modal-tip"></div>
-    <div class="modal-field"><label>Appointment Type:</label>
+    <div class="modal-field"><label>Start Time (5-min)</label><input type="time" id="modal-start-time" step="300"></div>
+
+    <!-- Duration -->
+    <div class="modal-field">
+      <label>Duration</label>
+      <div class="duration-wrap">
+        <input id="modal-dur-h" type="number" min="0" step="1" placeholder="Hrs">
+        <input id="modal-dur-m" type="number" min="0" max="55" step="5" placeholder="Min">
+      </div>
+    </div>
+
+    <div class="modal-field"><label>End Time (5-min)</label><input  type="time" id="modal-end-time"   step="300"></div>
+
+    <div class="modal-field"><label>Artist</label><select id="modal-artist"></select></div>
+    <div class="modal-field"><label>Client Name</label><input type="text" id="modal-client-name"></div>
+    <div class="modal-field"><label>Client Phone</label><input type="text" id="modal-client-phone"></div>
+    <div class="modal-field"><label>Client Email</label><input type="email" id="modal-email"></div>
+    <div class="modal-field"><label>Description</label><textarea id="modal-description"></textarea></div>
+    <div class="modal-field"><label>Deposit</label><input type="number" id="modal-deposit"></div>
+    <div class="modal-field"><label>Price</label><input type="number" id="modal-price"></div>
+    <div class="modal-field"><label>Tip</label><input type="number" id="modal-tip"></div>
+    <div class="modal-field"><label>Type</label>
       <select id="modal-appt-type">
         <option value="walk-in">Walk-in</option>
         <option value="appointment">Appointment</option>
@@ -190,221 +195,190 @@ select option{color:#000}
     </div>
   </div>
 
-  <!-- ---------- LIST SECTION ---------- -->
+  <!-- LIST -->
   <div id="appointments-list-section">
     <h2>Appointments &amp; Walk-ins</h2>
 
     <div class="filters-row">
-      <label>From: <input type="date" id="range-start"></label>
-      <label>To:&nbsp;&nbsp;<input type="date" id="range-end"></label>
-      <label>Client search: <input type="text" id="client-search" placeholder="name / phone / email"></label>
-      <div>
-        <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
-        <label><input type="checkbox" id="cb-walkins"      checked> Walk-ins</label>
+      <label>From <input type="date" id="range-start"></label>
+      <label>To <input type="date" id="range-end"></label>
+
+      <div id="type-btns">
+        <button id="btn-appt" class="toggle-btn active"><span class="icon"></span>Appointments</button>
+        <button id="btn-walk" class="toggle-btn active"><span class="icon"></span>Walk-ins</button>
       </div>
+
+      <input id="client-search" style="flex:1;min-width:200px" placeholder="Search client…">
     </div>
 
     <div class="appointments-container" id="appointments-list"></div>
   </div>
-</div><!-- /main-section -->
+</div><!-- /MAIN -->
 
-<!-- ─── SUPABASE & JS ─── -->
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ---------- Supabase init ---------- */
+/* ---------- INIT / HELPERS ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
+const toMin=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
+const minToTime=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const round5=v=>{const m=toMin(v);return minToTime(Math.round(m/5)*5)};
+const overlaps=(a,b)=>toMin(a.start_time)<toMin(b.end_time)&&toMin(b.start_time)<toMin(a.end_time);
+const todayISO=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().split('T')[0];
+const dow=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-/* ---------- helpers ---------- */
-const toMinutes = t => {if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m};
-const overlaps  = (a,b)=>a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
-const weekdayIndex = d => {const [y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
-const todayISO = () => new Date().toISOString().split('T')[0];
+/* DOM refs – login */
+const loginSec=document.getElementById('login-section'),loginEmail=document.getElementById('login-email'),loginPass=document.getElementById('login-pass'),loginBtn=document.getElementById('login-btn'),loginMsg=document.getElementById('login-msg');
+/* main */
+const mainSec=document.getElementById('main-section'),themeBtn=document.getElementById('theme-btn'),logoutBtn=document.getElementById('logout-btn'),todayBtn=document.getElementById('today-btn');
+const locationFilter=document.getElementById('location-filter'),dayInput=document.getElementById('day-input');
+const artistFilterContainer=document.getElementById('artist-filter-container'),dailyScheduler=document.getElementById('daily-scheduler');
+/* modal */
+const apptModal=document.getElementById('appt-modal'),modalTitle=document.getElementById('modal-title'),modalStart=document.getElementById('modal-start-time'),modalEnd=document.getElementById('modal-end-time'),modalArtist=document.getElementById('modal-artist'),modalDurH=document.getElementById('modal-dur-h'),modalDurM=document.getElementById('modal-dur-m'),modalClientName=document.getElementById('modal-client-name'),modalClientPhone=document.getElementById('modal-client-phone'),modalEmail=document.getElementById('modal-email'),modalDesc=document.getElementById('modal-description'),modalDeposit=document.getElementById('modal-deposit'),modalPrice=document.getElementById('modal-price'),modalTip=document.getElementById('modal-tip'),modalType=document.getElementById('modal-appt-type'),saveBtn=document.getElementById('save-appt-btn'),cancelBtn=document.getElementById('cancel-appt-btn'),deleteBtn=document.getElementById('delete-appt-btn'),completeBtn=document.getElementById('complete-appt-btn');
+/* list */
+const rangeStart=document.getElementById('range-start'),rangeEnd=document.getElementById('range-end'),btnAppt=document.getElementById('btn-appt'),btnWalk=document.getElementById('btn-walk'),appointmentsList=document.getElementById('appointments-list'),clientSearch=document.getElementById('client-search');
 
-/* ---------- login refs ---------- */
-const loginSec  = document.getElementById('login-section');
-const loginEmail= document.getElementById('login-email');
-const loginPass = document.getElementById('login-password');
-const loginBtn  = document.getElementById('login-btn');
-const loginMsg  = document.getElementById('login-message');
+/* state */
+let role='',allowedLocation='',artistMap={},currentApptId=null;
 
-/* ---------- main refs ---------- */
-const mainSec       = document.getElementById('main-section');
-const themeBtn      = document.getElementById('theme-btn');
-const logoutBtn     = document.getElementById('logout-btn');
-const todayBtn      = document.getElementById('today-btn');
-const locationFilter= document.getElementById('location-filter');
-const dayInput      = document.getElementById('day-input');
-const artistFilterContainer = document.getElementById('artist-filter-container');
-const dailyScheduler= document.getElementById('daily-scheduler');
+/* THEME */
+(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode'}})();
+themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark')};
 
-/* modal refs */
-const apptModal      = document.getElementById('appt-modal');
-const modalTitle     = document.getElementById('modal-title');
-const modalStart     = document.getElementById('modal-start-time');
-const modalEnd       = document.getElementById('modal-end-time');
-const modalArtist    = document.getElementById('modal-artist');
-const modalClientName= document.getElementById('modal-client-name');
-const modalClientPhone=document.getElementById('modal-client-phone');
-const modalEmail     = document.getElementById('modal-email');
-const modalDesc      = document.getElementById('modal-description');
-const modalDeposit   = document.getElementById('modal-deposit');
-const modalPrice     = document.getElementById('modal-price');
-const modalTip       = document.getElementById('modal-tip');
-const modalType      = document.getElementById('modal-appt-type');
-const saveBtn        = document.getElementById('save-appt-btn');
-const cancelBtn      = document.getElementById('cancel-appt-btn');
-const deleteBtn      = document.getElementById('delete-appt-btn');
-const completeBtn    = document.getElementById('complete-appt-btn');
+/* AUTO-LOGIN */
+(()=>{const s=JSON.parse(localStorage.getItem('calendarUser')||'null');if(!s)return;role=s.role;allowedLocation=s.allowedLocation;loginSec.classList.add('hidden');mainSec.classList.remove('hidden');initApp();})();
 
-/* list refs */
-const rangeStart = document.getElementById('range-start');
-const rangeEnd   = document.getElementById('range-end');
-const cbAppt     = document.getElementById('cb-appointments');
-const cbWalk     = document.getElementById('cb-walkins');
-const appointmentsList = document.getElementById('appointments-list');
-const clientSearch     = document.getElementById('client-search');
-
-/* ---------- session ---------- */
-let role='', allowedLocation='';
-let artistMap={}, currentApptId=null;
-
-/* ---------- THEME ---------- */
-(function(){
-  if(localStorage.getItem('ui-theme')==='light'){
-    document.body.classList.add('light');
-    themeBtn.textContent='Dark mode';
-  }
-})();
-themeBtn.onclick=()=>{
-  const light=document.body.classList.toggle('light');
-  themeBtn.textContent=light?'Dark mode':'Light mode';
-  localStorage.setItem('ui-theme',light?'light':'dark');
-};
-
-/* ---------- LOGIN ---------- */
+/* LOGIN */
 loginBtn.onclick=async()=>{
   loginMsg.textContent='';
-  const e=loginEmail.value.trim(), p=loginPass.value.trim();
-  if(!e||!p){loginMsg.textContent='Email & password required.';return;}
+  if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Email & password required.';return;}
+  const{data}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
+  if(!data?.length||data[0].password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
+  role=data[0].role;allowedLocation=data[0].location_id||'';if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
+  localStorage.setItem('calendarUser',JSON.stringify({role,allowedLocation}));
+  loginSec.classList.add('hidden');mainSec.classList.remove('hidden');initApp();
+};
 
-  const {data,error}=await supabase.from('users').select('*').eq('email',e);
-  if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];
-  if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
+/* LOGOUT */
+logoutBtn.onclick=()=>{localStorage.removeItem('calendarUser');role='';allowedLocation='';artistMap={};currentApptId=null;mainSec.classList.add('hidden');loginSec.classList.remove('hidden')};
 
-  role=u.role;allowedLocation=u.location_id||'';
-  if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
-
-  loginSec.classList.add('hidden');
-  mainSec.classList.remove('hidden');
-
+/* INIT after login */
+async function initApp(){
   await loadLocations();
   dayInput.value=todayISO();
   await loadArtistsForLocation(locationFilter.value);
   setDefaultRange();
-  loadDay();
-  loadAppointmentsList();
-};
+  renderDay();renderList();realtime();
+}
 
-/* ---------- LOGOUT ---------- */
-logoutBtn.onclick=()=>{
-  role='';allowedLocation='';artistMap={};currentApptId=null;
-  loginEmail.value='';loginPass.value='';loginMsg.textContent='';
-  mainSec.classList.add('hidden');loginSec.classList.remove('hidden');
-};
-
-/* ---------- LOCATIONS ---------- */
+/* LOCATIONS */
 async function loadLocations(){
   locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-  let q=supabase.from('locations').select('*');
-  if(role!=='gm') q=q.eq('id',allowedLocation);
-  const {data}=await q;
-  data.forEach(l=>{
-    locationFilter.add(new Option(l.location_name,l.id));
-  });
-  if(role!=='gm'){
-    locationFilter.value=allowedLocation;
-    locationFilter.disabled=true;
-  }else locationFilter.disabled=false;
+  let q=supabase.from('locations').select('*');if(role!=='gm')q=q.eq('id',allowedLocation);
+  (await q).data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
+  if(role!=='gm'){locationFilter.value=allowedLocation;locationFilter.disabled=true}else locationFilter.disabled=false;
 }
 
-/* ---------- ARTISTS ---------- */
-async function loadArtistsForLocation(locId){
+/* ARTISTS */
+async function loadArtistsForLocation(loc){
   artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
-  if(!locId)return;
-  const {data}=await supabase.from('artists').select('*').eq('location_id',locId);
-  data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
+  if(!loc)return;
+  const arts=(await supabase.from('artists').select('*').eq('location_id',loc)).data||[];
+  arts.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
     artistMap[a.id]=a;
     modalArtist.add(new Option(a.artist_name,a.id));
-    const wrap=document.createElement('div');
-    wrap.className='artist-filter-item';
-    wrap.innerHTML=`<input type="checkbox" value="${a.id}" checked><label>${a.artist_name}</label>`;
-    artistFilterContainer.appendChild(wrap);
+
+    const btn=document.createElement('button');
+    btn.className='toggle-btn active';btn.dataset.id=a.id;
+    btn.innerHTML=`<span class="icon"></span>${a.artist_name}`;
+    btn.onclick=()=>{btn.classList.toggle('active');renderDay();renderList()};
+    artistFilterContainer.appendChild(btn);
   });
 }
-const filteredIds=()=>[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
+const visibleIds=()=>[...artistFilterContainer.querySelectorAll('.toggle-btn.active')].map(b=>b.dataset.id);
 
-/* ---------- SCHEDULER ---------- */
-todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay();};
-dayInput.onchange=loadDay;
-locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadAppointmentsList();};
-artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList();});
+/* VACATIONS helper */
+async function onVacation(id,date){
+  const{data}=await supabase.from('artist_vacations').select('id').eq('artist_id',id).lte('vacation_start',date).gte('vacation_end',date);
+  return !!data?.length;
+}
 
-async function loadDay(){
+/* TODAY */
+todayBtn.onclick=()=>{dayInput.value=todayISO();renderDay()};
+
+/* RENDER DAY */
+dayInput.onchange=renderDay;
+locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);renderDay();renderList()};
+
+async function renderDay(){
   dailyScheduler.innerHTML='';
-  const date=dayInput.value;if(!date)return;
+  /* hours */
   for(let h=8;h<=24;h++){
-    const div=document.createElement('div');
-    div.className='hour-line';div.style.top=(h-8)*60+'px';
-    const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;
-    dailyScheduler.appendChild(div);
+    const l=document.createElement('div');l.className='hour-line';
+    l.style.top=(h-8)*60+'px';
+    l.textContent=`${((h+11)%12)+1}:00 ${h<12?'AM':'PM'}`;
+    dailyScheduler.appendChild(l);
   }
-  const ids=filteredIds();if(!ids.length)return;
-  const wIdx=weekdayIndex(date);
-  const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const cStart=cols[wIdx]+'_start', cEnd=cols[wIdx]+'_end';
+  const date=dayInput.value;if(!date)return;
+  const ids=visibleIds();if(!ids.length)return;
 
-  const {data:vac}=await supabase.from('artist_vacations').select('artist_id')
-        .in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
-  const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
+  const idx=new Date(date+'T00:00').getDay(),kStart=dow[idx]+'_start',kEnd=dow[idx]+'_end';
+  const arts=ids.map(id=>artistMap[id]).filter(Boolean);
 
-  const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-  artists.forEach((a,i)=>{
-    const st=a[cStart], en=a[cEnd];if(!st||!en)return;
-    const block=document.createElement('div');block.className='schedule-block';
-    if(vacationSet.has(a.id))block.classList.add('vac');
-    const top=toMinutes(st)-480, ht=toMinutes(en)-toMinutes(st);
-    block.style.cssText=`left:${80+i*120}px;width:110px;top:${top}px;height:${ht}px;`;
-    block.style.borderLeftColor=a.color||'#888';
-    block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacationSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
-    dailyScheduler.appendChild(block);
+  /* build columns (smart) */
+  const COL_W=140,COL_X=100;
+  const columns=[], artCol={};
+  arts.forEach(a=>{
+    const s=toMin(a[kStart]||'00:00'),e=toMin(a[kEnd]||'00:00');if(!s||!e)return;
+    let placed=false;
+    for(let i=0;i<columns.length;i++){
+      if(columns[i].every(ax=>{
+        const ss=toMin(ax[kStart]||'00:00'),ee=toMin(ax[kEnd]||'00:00');
+        return e<=ss||s>=ee;
+      })){columns[i].push(a);artCol[a.id]=i;placed=true;break;}
+    }
+    if(!placed){columns.push([a]);artCol[a.id]=columns.length-1;}
+  });
+  dailyScheduler.style.minWidth=(COL_X+columns.length*COL_W)+'px';
+
+  const vacSet=new Set((await supabase.from('artist_vacations').select('artist_id').in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date)).data?.map(v=>v.artist_id)||[]);
+  arts.forEach(a=>{
+    const st=a[kStart],en=a[kEnd];if(!st||!en)return;
+    const left=COL_X+artCol[a.id]*COL_W;
+    const blk=document.createElement('div');blk.className='schedule-block';
+    if(vacSet.has(a.id))blk.classList.add('vac');
+    blk.style.cssText=`left:${left}px;width:${COL_W-10}px;top:${toMin(st)-480}px;height:${toMin(en)-toMin(st)}px;border-left-color:${a.color||'#888'}`;
+    blk.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
+    dailyScheduler.appendChild(blk);
   });
 
-  const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
-  const byA={};artists.forEach(a=>byA[a.id]=[]);
-  appts?.forEach(ap=>byA[ap.artist_id]?.push(ap));
+  /* appointments */
+  const appts=(await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids)).data||[];
+  const byArt={};ids.forEach(id=>byArt[id]=[]);
+  appts.forEach(ap=>byArt[ap.artist_id].push(ap));
 
-  artists.forEach((a,col)=>{
-    const list=byA[a.id].sort((x,y)=>toMinutes(x.start_time)-toMinutes(y.start_time));
-    const subs=[];
-    list.forEach(ap=>{
-      let placed=false;
-      for(const s of subs){if(!overlaps(s[s.length-1],ap)){s.push(ap);placed=true;break;}}
-      if(!placed)subs.push([ap]);
+  arts.forEach(a=>{
+    const col=artCol[a.id],x0=COL_X+col*COL_W;
+    const lst=byArt[a.id].sort((x,y)=>toMin(x.start_time)-toMin(y.start_time));
+    const layers=[];
+    lst.forEach(ap=>{
+      let ok=false;
+      for(const layer of layers){
+        if(!overlaps(layer[layer.length-1],ap)){layer.push(ap);ok=true;break;}
+      }
+      if(!ok)layers.push([ap]);
     });
-    subs.forEach((sub,subIdx)=>{
-      sub.forEach(ap=>{
-        const top=toMinutes(ap.start_time)-480;
-        const ht =toMinutes(ap.end_time)-toMinutes(ap.start_time);
-        const w  =110/subs.length;
-        const left=80+col*120+subIdx*w;
-        const div=document.createElement('div');div.className='appointment-block';
-        div.style.cssText=`left:${left}px;top:${top}px;width:${w-2}px;height:${ht}px;background:${a.color||'#555'}`;
+    layers.forEach((layer,i)=>{
+      layer.forEach(ap=>{
+        const w=(COL_W-10)/layers.length;
+        const div=document.createElement('div');
+        div.className='appointment-block';
+        div.style.cssText=`left:${x0+i*w}px;width:${w-2}px;top:${toMin(ap.start_time)-480}px;height:${toMin(ap.end_time)-toMin(ap.start_time)}px;background:${a.color||'#555'}`;
         div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
-        div.onclick=e=>{e.stopPropagation();openExistingApptModal(ap.id);};
+        div.onclick=e=>{e.stopPropagation();openExisting(ap.id)};
         dailyScheduler.appendChild(div);
       });
     });
@@ -413,118 +387,112 @@ async function loadDay(){
   dailyScheduler.onclick=e=>{
     if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c)))return;
     const y=e.clientY-dailyScheduler.getBoundingClientRect().top;
-    const mins=Math.floor(y),h=Math.floor(mins/60)+8,m=String(mins%60).padStart(2,'0');
-    openNewApptModal(`${String(h).padStart(2,'0')}:${m}`,date);
+    const t=round5(minToTime(8*60+Math.max(0,Math.floor(y))));
+    openNew(t,date);
   };
 }
 
-/* ---------- MODAL CRUD ---------- */
-function openNewApptModal(slot,date){
+/* MODAL logic: duration ↔ end-time sync */
+function updateEndFromDuration(){
+  if(!modalStart.value)return;
+  const base=toMin(round5(modalStart.value));
+  const dur=(+modalDurH.value||0)*60+(+modalDurM.value||0);
+  if(dur>0)modalEnd.value=minToTime(base+dur);
+}
+function updateDurationFromEnd(){
+  if(!modalStart.value||!modalEnd.value)return;
+  const diff=toMin(modalEnd.value)-toMin(modalStart.value);
+  if(diff>0){
+    modalDurH.value=Math.floor(diff/60);
+    modalDurM.value=(diff%60);
+  }
+}
+[modalDurH,modalDurM].forEach(i=>i.addEventListener('input',()=>{i.value=Math.max(0,Math.floor(+i.value||0));updateEndFromDuration()}));
+modalStart.addEventListener('change',()=>{modalStart.value=round5(modalStart.value);updateEndFromDuration()});
+modalEnd.addEventListener('change',()=>{modalEnd.value=round5(modalEnd.value);updateDurationFromEnd()});
+
+/* open / fill modal */
+function openNew(t,d){
   currentApptId=null;modalTitle.textContent='New Appointment';
-  modalStart.value=slot;modalEnd.value=slot;modalArtist.value='';
+  modalStart.value=t;modalDurH.value='';modalDurM.value='';modalEnd.value=t;
   [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
-  modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
+  modalArtist.value='';modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
   apptModal.style.display='block';
 }
-async function openExistingApptModal(id){
-  currentApptId=id;
-  const {data,error}=await supabase.from('artist_appointments').select('*').eq('id',id);
-  if(error||!data?.length){alert('Error loading');return;}
-  const ap=data[0];
+async function openExisting(id){
+  currentApptId=id;const ap=(await supabase.from('artist_appointments').select('*').eq('id',id)).data[0];
   modalTitle.textContent='Edit Appointment';
-  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;
+  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;updateDurationFromEnd();
+  modalArtist.value=ap.artist_id;modalType.value=ap.appointment_type;
   modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';
   modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
   modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';
-  modalType.value=ap.appointment_type;deleteBtn.style.display=completeBtn.style.display='inline-block';
+  deleteBtn.style.display=completeBtn.style.display='inline-block';
   apptModal.style.display='block';
 }
 cancelBtn.onclick=()=>apptModal.style.display='none';
 
-function isOverlap(list,s,e,skip){
-  const sN=toMinutes(s),eN=toMinutes(e);
-  return list.some(ap=>ap.id!==skip&&sN<toMinutes(ap.end_time)&&toMinutes(ap.start_time)<eN);
+/* OVERLAP helper */
+async function clash(artist,date,s,e,skip){
+  const rows=(await supabase.from('artist_appointments').select('*').eq('artist_id',artist).eq('date',date)).data||[];
+  return rows.some(r=>r.id!==skip&&overlaps({start_time:s,end_time:e},r));
 }
+
+/* SAVE / DELETE / COMPLETE (same validation) */
 saveBtn.onclick=async()=>{
-  const day=dayInput.value;if(!day){alert('Select date first');return;}
-  if(!modalStart.value||!modalEnd.value){alert('Start/End required');return;}
-  const {data:conflict}=await supabase.from('artist_appointments').select('*')
-        .eq('date',day).eq('artist_id',modalArtist.value);
-  if(conflict && isOverlap(conflict,modalStart.value,modalEnd.value,currentApptId))
-  {alert('Overlap');return;}
-
+  const date=dayInput.value,artist=modalArtist.value,s=modalStart.value,e=modalEnd.value;
+  if(!date||!artist||!s||!e){alert('Fill required fields');return;}
+  if(await onVacation(artist,date)){alert('Artist on vacation');return;}
+  if(await clash(artist,date,s,e,currentApptId)){alert('Time overlap');return;}
   const payload={
-    artist_id:modalArtist.value,date:day,start_time:modalStart.value,end_time:modalEnd.value,
-    appointment_type:modalType.value,client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
+    artist_id:artist,date,start_time:s,end_time:e,appointment_type:modalType.value,
+    client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
     email:modalEmail.value.trim(),notes:modalDesc.value.trim(),
-    deposit:modalDeposit.value?parseFloat(modalDeposit.value):null,
-    price  :modalPrice.value  ?parseFloat(modalPrice.value)  :null,
-    tip    :modalTip.value    ?parseFloat(modalTip.value)    :null
+    deposit:modalDeposit.value?+modalDeposit.value:null,price:modalPrice.value?+modalPrice.value:null,tip:modalTip.value?+modalTip.value:null
   };
-  let err;
-  if(currentApptId)({error:err}=await supabase.from('artist_appointments').update(payload).eq('id',currentApptId));
-  else              ({error:err}=await supabase.from('artist_appointments').insert([payload]));
-  if(err){console.error(err);alert('Error saving');return;}
-  apptModal.style.display='none';loadDay();loadAppointmentsList();
+  const res=currentApptId?await supabase.from('artist_appointments').update(payload).eq('id',currentApptId)
+                         :await supabase.from('artist_appointments').insert([payload]);
+  if(res.error){alert('Save error');return;}apptModal.style.display='none';
 };
-deleteBtn.onclick=async()=>{
-  if(!currentApptId||!confirm('Delete this appointment?'))return;
-  const {error}=await supabase.from('artist_appointments').delete().eq('id',currentApptId);
-  if(error){console.error(error);alert('Error deleting');return;}
-  apptModal.style.display='none';loadDay();loadAppointmentsList();
-};
-completeBtn.onclick=async()=>{
-  if(!currentApptId)return;
-  const {error}=await supabase.from('artist_appointments')
-        .update({appointment_type:'completed'}).eq('id',currentApptId);
-  if(error){console.error(error);alert('Error');return;}
-  apptModal.style.display='none';loadDay();loadAppointmentsList();
-};
+deleteBtn.onclick=async()=>{if(currentApptId&&confirm('Delete?')){await supabase.from('artist_appointments').delete().eq('id',currentApptId);apptModal.style.display='none'}};
+completeBtn.onclick=async()=>{if(currentApptId){await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);apptModal.style.display='none'}};
 
-/* ---------- LIST ---------- */
-function setDefaultRange(){
-  const now=new Date();
-  rangeStart.value=new Date(now-7*86400000).toISOString().split('T')[0];
-  rangeEnd.value  =new Date(now.getTime()+7*86400000).toISOString().split('T')[0];
-}
-[rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
-clientSearch.addEventListener('input',loadAppointmentsList);
+/* LIST  */
+function setDefaultRange(){const n=new Date();rangeStart.value=new Date(n-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(+n+7*864e5).toISOString().split('T')[0];}
+[btnAppt,btnWalk].forEach(b=>b.onclick=()=>{b.classList.toggle('active');renderList()});
+[rangeStart,rangeEnd].forEach(i=>i.addEventListener('change',renderList));clientSearch.addEventListener('input',renderList);
 
-async function loadAppointmentsList(){
+async function renderList(){
   appointmentsList.innerHTML='';
-  const ids=filteredIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
-  if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select a date range.';return;}
-
-  const types=[];
-  if(cbAppt.checked)types.push('appointment','tentative');
-  if(cbWalk.checked)types.push('walk-in');
-  if(!types.length){appointmentsList.textContent='No types selected.';return;}
-
-  let q=supabase.from('artist_appointments')
-        .select('*, artists!inner(location_id,artist_name)')
+  const ids=visibleIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
+  if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select range.';return;}
+  const types=[];if(btnAppt.classList.contains('active'))types.push('appointment','tentative');
+  if(btnWalk.classList.contains('active'))types.push('walk-in');
+  if(!types.length){appointmentsList.textContent='No types.';return;}
+  let q=supabase.from('artist_appointments').select('*, artists!inner(location_id,artist_name)')
         .gte('date',rangeStart.value).lte('date',rangeEnd.value)
         .in('appointment_type',types).in('artist_id',ids);
-
-  if(role!=='gm') q=q.eq('artists.location_id',allowedLocation);
-  else if(locationFilter.value) q=q.eq('artists.location_id',locationFilter.value);
-
-  const term=clientSearch.value.trim();
-  if(term) q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
-
-  const {data,error}=await q;
-  if(error){console.error(error);appointmentsList.textContent='Error.';return;}
-  if(!data?.length){appointmentsList.textContent='No matching records.';return;}
-
-  data.sort((a,b)=>a.date===b.date?toMinutes(a.start_time)-toMinutes(b.start_time):(a.date<b.date?-1:1));
+  if(role!=='gm')q=q.eq('artists.location_id',allowedLocation);else if(locationFilter.value)q=q.eq('artists.location_id',locationFilter.value);
+  if(clientSearch.value.trim())q=q.or(`client_name.ilike.*${clientSearch.value.trim()}*,client_phone.ilike.*${clientSearch.value.trim()}*,email.ilike.*${clientSearch.value.trim()}*`);
+  const {data,error}=await q;if(error){appointmentsList.textContent='Error.';return;}
+  if(!data?.length){appointmentsList.textContent='None.';return;}
+  data.sort((a,b)=>a.date===b.date?toMin(a.start_time)-toMin(b.start_time):a.date<b.date?-1:1);
   data.forEach(ap=>{
     const div=document.createElement('div');div.className='appt-item';
     div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4>
-      <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
-      <p>Client: ${ap.client_name||'N/A'}</p>
-      <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
-    div.onclick=()=>{dayInput.value=ap.date;loadDay();};
+                   <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
+                   <p>Client: ${ap.client_name||'N/A'}</p>
+                   <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
+    div.onclick=()=>{dayInput.value=ap.date;renderDay()};
     appointmentsList.appendChild(div);
   });
+}
+
+/* REALTIME  */
+function realtime(){
+  supabase.from('artist_appointments').on('*',()=>{renderDay();renderList()}).subscribe();
+  supabase.from('artist_vacations' ).on('*',renderDay).subscribe();
+  supabase.from('artists'          ).on('*',()=>loadArtistsForLocation(locationFilter.value).then(renderDay)).subscribe();
 }
 </script>
 </body>
