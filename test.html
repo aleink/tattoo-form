@@ -5,7 +5,7 @@
 <title>Calendar</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<!-- ── CSP ── -->
+<!-- CSP -->
 <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -15,7 +15,7 @@
         object-src 'none';
       ">
 
-<!-- ── VISUAL THEMES (exactly the same tokens used in Manage-Artists) ── -->
+<!-- THEMES (kept identical to Manage-Artists) -->
 <style>
 :root{
   --bg0:#111;--bg1:#222;--bg2:#333;
@@ -31,7 +31,8 @@ body.light{
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
 body{
   background:var(--bg0);color:var(--txt);
-  max-width:820px;margin:32px auto;padding:28px;
+  max-width:1200px;           /* wider desktop-friendly page  */
+  margin:32px auto;padding:28px;
   transition:background .25s,color .25s;
 }
 h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
@@ -57,24 +58,40 @@ button:hover{background:#555}
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
 .hidden{display:none}
 
-/* ---------- controls / scheduler ---------- */
-.top-controls{display:flex;align-items:center;gap:14px;margin:18px 0;flex-wrap:wrap}
-#daily-scheduler{position:relative;height:960px;border:1px solid var(--border);overflow-y:auto;margin-top:10px;background:var(--bg2)}
+/* ---------- custom toggle buttons ---------- */
+.toggle-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg2);color:var(--txt);border:1px solid var(--border);
+  border-radius:4px;padding:6px 12px;margin:4px 6px 4px 0;font-size:.9rem;
+  cursor:pointer;user-select:none;transition:background .15s,border .15s;
+}
+.toggle-btn span.icon{font-weight:bold;font-size:1rem;line-height:1}
+.toggle-btn.active{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+.toggle-btn.active span.icon{content:'✓'}
+.toggle-btn:not(.active) span.icon{content:'✕'}
+
+.top-controls{display:flex;align-items:center;gap:16px;margin:18px 0;flex-wrap:wrap}
+#daily-scheduler{
+  position:relative;height:960px;border:1px solid var(--border);
+  overflow-y:auto;margin-top:10px;background:var(--bg2)
+}
 .hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--txt-dim);font-size:12px;padding-left:5px}
 .schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--txt-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
 .schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
 .schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
 .appointment-block{position:absolute;background:var(--accent);color:#fff;border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box}
 
-/* ---------- modal ---------- */
+/* modal */
 #appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
 #appt-modal h3{margin:0 0 10px}.modal-field{margin-bottom:10px}.modal-buttons{text-align:right;margin-top:10px}.modal-buttons button{margin-left:8px}
 
-/* ---------- filters / list ---------- */
-#artist-filter-container{margin-top:10px}.artist-filter-item{display:inline-block;margin-right:10px}.artist-filter-item label{margin-left:4px}
+/* list */
+#artist-filter-container{margin-top:10px}
 #appointments-list-section{margin-top:24px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:15px}
 #appointments-list-section h2{margin-bottom:10px}
-.filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}
+.filters-row{display:flex;gap:10px;flex-wrap:wrap}
 .appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
 .appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
 .appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
@@ -85,7 +102,7 @@ button:hover{background:#555}
 
 <h1>Calendar</h1>
 
-<!-- LOGIN (identical layout) -->
+<!-- LOGIN -->
 <div id="login-section" class="card">
   <label>Email</label><input id="login-email" type="email" autocomplete="username">
   <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
@@ -93,21 +110,26 @@ button:hover{background:#555}
   <div id="login-msg" class="message"></div>
 </div>
 
-<!-- MAIN SECTION -->
+<!-- MAIN -->
 <div id="main-section" class="hidden">
   <div class="top-controls">
     <button id="theme-btn"  class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
     <button id="today-btn">Today</button>
 
-    <label>Location <select id="location-filter"><option value="">-- Select Location --</option></select></label>
+    <label>Location
+      <select id="location-filter"><option value="">-- Select Location --</option></select>
+    </label>
     <label>Date <input type="date" id="day-input"></label>
   </div>
 
+  <!-- artist toggles -->
   <div id="artist-filter-container"></div>
+
+  <!-- scheduler -->
   <div id="daily-scheduler"></div>
 
-  <!-- APPOINTMENT MODAL -->
+  <!-- MODAL -->
   <div id="appt-modal">
     <h3 id="modal-title">New Appointment</h3>
     <div class="modal-field"><label>Start Time (5-min)</label><input type="time" id="modal-start-time" step="300"></div>
@@ -141,34 +163,38 @@ button:hover{background:#555}
     <div class="filters-row">
       <label>From <input type="date" id="range-start"></label>
       <label>To <input type="date" id="range-end"></label>
-      <label>Client search <input type="text" id="client-search" placeholder="name / phone / email"></label>
-      <div>
-        <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
-        <label><input type="checkbox" id="cb-walkins"      checked> Walk-ins</label>
+
+      <!-- new toggle buttons -->
+      <div id="type-btns">
+        <button id="btn-appt"  class="toggle-btn active"><span class="icon">✓</span>Appointments</button>
+        <button id="btn-walk"  class="toggle-btn active"><span class="icon">✓</span>Walk-ins</button>
       </div>
+
+      <input type="text" id="client-search" placeholder="Search client…" style="flex:1;min-width:180px;background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:8px">
     </div>
+
     <div class="appointments-container" id="appointments-list"></div>
   </div>
-</div><!-- /main-section -->
+</div><!-- /main -->
 
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ---------- INITIALISE SUPABASE ---------- */
+/* ---------- INIT ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ---------- HELPERS ---------- */
-const toMin   = t => {if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
-const round5  = v => {const[h,m]=v.split(':').map(Number);const r=Math.round(m/5)*5%60;const carry=Math.floor((m+2.5)/60);return`${String((h+carry)%24).padStart(2,'0')}:${String(r).padStart(2,'0')}`};
-const overlaps= (a,b)=>toMin(a.start_time)<toMin(b.end_time)&&toMin(b.start_time)<toMin(a.end_time);
-const todayISO=()=>new Date().toISOString().split('T')[0];
-const weekdayIdx=d=>new Date(d+'T00:00:00Z').getUTCDay();
+/* helpers */
+const toMin=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
+const round5=v=>{const[h,m]=v.split(':').map(Number);const r=Math.round(m/5)*5%60;const carry=Math.floor((m+2.5)/60);return`${String((h+carry)%24).padStart(2,'0')}:${String(r).padStart(2,'0')}`};
+const overlaps=(a,b)=>toMin(a.start_time)<toMin(b.end_time)&&toMin(b.start_time)<toMin(a.end_time);
+const localISO=()=>new Date(Date.now() - (new Date()).getTimezoneOffset()*60000).toISOString().split('T')[0];
+const weekdayIdx=d=>new Date(d+'T00:00:00').getDay();
 const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-/* ---------- DOM REFS ---------- */
+/* DOM refs */
 const loginSec=document.getElementById('login-section');
 const loginEmail=document.getElementById('login-email');
 const loginPass=document.getElementById('login-pass');
@@ -181,6 +207,7 @@ const logoutBtn=document.getElementById('logout-btn');
 const todayBtn=document.getElementById('today-btn');
 const locationFilter=document.getElementById('location-filter');
 const dayInput=document.getElementById('day-input');
+
 const artistFilterContainer=document.getElementById('artist-filter-container');
 const dailyScheduler=document.getElementById('daily-scheduler');
 
@@ -192,7 +219,7 @@ const modalArtist=document.getElementById('modal-artist');
 const modalClientName=document.getElementById('modal-client-name');
 const modalClientPhone=document.getElementById('modal-client-phone');
 const modalEmail=document.getElementById('modal-email');
-const modalDesc =document.getElementById('modal-description');
+const modalDesc=document.getElementById('modal-description');
 const modalDeposit=document.getElementById('modal-deposit');
 const modalPrice=document.getElementById('modal-price');
 const modalTip  =document.getElementById('modal-tip');
@@ -204,54 +231,56 @@ const completeBtn=document.getElementById('complete-appt-btn');
 
 const rangeStart=document.getElementById('range-start');
 const rangeEnd  =document.getElementById('range-end');
-const cbAppt=document.getElementById('cb-appointments');
-const cbWalk=document.getElementById('cb-walkins');
+const btnAppt=document.getElementById('btn-appt');
+const btnWalk=document.getElementById('btn-walk');
 const appointmentsList=document.getElementById('appointments-list');
 const clientSearch=document.getElementById('client-search');
 
-/* ---------- STATE ---------- */
+/* state */
 let role='',allowedLocation='',artistMap={},currentApptId=null;
 
-/* ---------- THEME ---------- */
+/* THEME */
 (()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode'}})();
 themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark')};
 
-/* ---------- AUTO-LOGIN ---------- */
+/* AUTO-LOGIN */
 (()=>{const s=JSON.parse(localStorage.getItem('calendarUser')||'null');if(!s)return;role=s.role;allowedLocation=s.allowedLocation;loginSec.classList.add('hidden');mainSec.classList.remove('hidden');initApp();})();
 
-/* ---------- LOGIN FLOW ---------- */
+/* LOGIN */
 loginBtn.onclick=async()=>{
   loginMsg.textContent='';
   if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Email & password required.';return;}
   const{data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
   if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-  role=u.role;allowedLocation=u.location_id||'';if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
+  const u=data[0];
+  if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
+  role=u.role;allowedLocation=u.location_id||'';
+  if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
   localStorage.setItem('calendarUser',JSON.stringify({role,allowedLocation}));
   loginSec.classList.add('hidden');mainSec.classList.remove('hidden');initApp();
 };
 
-/* ---------- LOGOUT ---------- */
+/* LOGOUT */
 logoutBtn.onclick=()=>{localStorage.removeItem('calendarUser');role='';allowedLocation='';artistMap={};currentApptId=null;loginEmail.value=loginPass.value='';loginMsg.textContent='';mainSec.classList.add('hidden');loginSec.classList.remove('hidden')};
 
-/* ---------- INIT AFTER LOGIN ---------- */
+/* init */
 async function initApp(){
   await loadLocations();
-  dayInput.value=todayISO();
+  dayInput.value=localISO();
   await loadArtistsForLocation(locationFilter.value);
   setDefaultRange();
-  loadDay();
-  loadList();
-  realtime();
+  loadDay();loadList();realtime();
 }
 
-/* ---------- LOAD LOCATIONS / ARTISTS ---------- */
+/* locations */
 async function loadLocations(){
   locationFilter.innerHTML='<option value="">-- Select Location --</option>';
   let q=supabase.from('locations').select('*');if(role!=='gm')q=q.eq('id',allowedLocation);
   const{data}=await q;data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
   if(role!=='gm'){locationFilter.value=allowedLocation;locationFilter.disabled=true}else locationFilter.disabled=false;
 }
+
+/* artists */
 async function loadArtistsForLocation(loc){
   artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
   if(!loc)return;
@@ -259,24 +288,26 @@ async function loadArtistsForLocation(loc){
   data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
     artistMap[a.id]=a;
     modalArtist.add(new Option(a.artist_name,a.id));
-    const wrap=document.createElement('div');wrap.className='artist-filter-item';
-    wrap.innerHTML=`<input type="checkbox" value="${a.id}" checked><label>${a.artist_name}</label>`;
-    artistFilterContainer.appendChild(wrap);
+
+    const btn=document.createElement('button');
+    btn.className='toggle-btn active';btn.dataset.id=a.id;
+    btn.innerHTML=`<span class="icon">✓</span>${a.artist_name}`;
+    btn.onclick=()=>{btn.classList.toggle('active');btn.querySelector('.icon').textContent=btn.classList.contains('active')?'✓':'✕';loadDay();loadList()};
+    artistFilterContainer.appendChild(btn);
   });
 }
-const filtIds=()=>[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
+const filtIds=()=>[...artistFilterContainer.querySelectorAll('.toggle-btn.active')].map(b=>b.dataset.id);
 
-/* ---------- VACATION CHECK ---------- */
+/* vacation check */
 async function onVacation(id,date){
   const{data}=await supabase.from('artist_vacations').select('id').eq('artist_id',id).lte('vacation_start',date).gte('vacation_end',date);
   return!!data?.length;
 }
 
-/* ---------- SCHEDULER ---------- */
-todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay()};
+/* scheduler */
+todayBtn.onclick=()=>{dayInput.value=localISO();loadDay()};
 dayInput.onchange=loadDay;
 locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadList()};
-artistFilterContainer.addEventListener('change',()=>{loadDay();loadList()});
 
 async function loadDay(){
   dailyScheduler.innerHTML='';
@@ -293,7 +324,7 @@ async function loadDay(){
   arts.forEach((a,i)=>{
     const st=a[cStart],en=a[cEnd];if(!st||!en)return;
     const blk=document.createElement('div');blk.className='schedule-block';if(vacSet.has(a.id))blk.classList.add('vac');
-    blk.style.cssText=`left:${80+i*120}px;width:110px;top:${toMin(st)-480}px;height:${toMin(en)-toMin(st)}px`;
+    blk.style.cssText=`left:${100+i*140}px;width:130px;top:${toMin(st)-480}px;height:${toMin(en)-toMin(st)}px`;
     blk.style.borderLeftColor=a.color||'#888';
     blk.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
     dailyScheduler.appendChild(blk);
@@ -307,7 +338,7 @@ async function loadDay(){
     lst.forEach(ap=>{let placed=false;for(const r of rows){if(!overlaps(r[r.length-1],ap)){r.push(ap);placed=true;break}}if(!placed)rows.push([ap])});
     rows.forEach((r,ri)=>r.forEach(ap=>{
       const div=document.createElement('div');div.className='appointment-block';
-      div.style.cssText=`left:${80+col*120+ri*(110/rows.length)}px;width:${110/rows.length-2}px;top:${toMin(ap.start_time)-480}px;height:${toMin(ap.end_time)-toMin(ap.start_time)}px;background:${a.color||'#555'}`;
+      div.style.cssText=`left:${100+col*140+ri*(130/rows.length)}px;width:${130/rows.length-2}px;top:${toMin(ap.start_time)-480}px;height:${toMin(ap.end_time)-toMin(ap.start_time)}px;background:${a.color||'#555'}`;
       div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
       div.onclick=e=>{e.stopPropagation();openExisting(ap.id)};
       dailyScheduler.appendChild(div);
@@ -321,7 +352,7 @@ async function loadDay(){
   };
 }
 
-/* ---------- MODAL ---------- */
+/* modal */
 function openNew(t,d){
   currentApptId=null;modalTitle.textContent='New Appointment';
   modalStart.value=t;modalEnd.value=t;modalArtist.value='';
@@ -339,13 +370,12 @@ async function openExisting(id){
   modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';
   modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
   modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';
-  modalType.value=ap.appointment_type;
-  deleteBtn.style.display=completeBtn.style.display='inline-block';
+  modalType.value=ap.appointment_type;deleteBtn.style.display=completeBtn.style.display='inline-block';
   apptModal.style.display='block';
 }
 cancelBtn.onclick=()=>apptModal.style.display='none';
 
-/* ---------- SAVE / DELETE / COMPLETE ---------- */
+/* save / delete */
 async function overlap(artist,date,s,e,idSkip){
   const{data}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist).eq('date',date);
   return data.some(ap=>ap.id!==idSkip&&overlaps({start_time:s,end_time:e},ap));
@@ -353,8 +383,8 @@ async function overlap(artist,date,s,e,idSkip){
 saveBtn.onclick=async()=>{
   const date=dayInput.value,artist=modalArtist.value,s=modalStart.value,e=modalEnd.value;
   if(!date||!artist||!s||!e){alert('Fill all fields');return;}
-  if(await onVacation(artist,date)){alert('Artist is on vacation');return;}
-  if(await overlap(artist,date,s,e,currentApptId)){alert('Time slot overlaps');return;}
+  if(await onVacation(artist,date)){alert('Artist on vacation');return;}
+  if(await overlap(artist,date,s,e,currentApptId)){alert('Overlapping');return;}
   const payload={
     artist_id:artist,date,start_time:s,end_time:e,appointment_type:modalType.value,
     client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
@@ -366,20 +396,25 @@ saveBtn.onclick=async()=>{
   const res=currentApptId
     ? await supabase.from('artist_appointments').update(payload).eq('id',currentApptId)
     : await supabase.from('artist_appointments').insert([payload]);
-  if(res.error){alert('Error saving');console.error(res.error);return;}
+  if(res.error){alert('Save error');console.error(res.error);return;}
   apptModal.style.display='none';
 };
 deleteBtn.onclick=async()=>{if(!currentApptId||!confirm('Delete?'))return;await supabase.from('artist_appointments').delete().eq('id',currentApptId);apptModal.style.display='none'};
 completeBtn.onclick=async()=>{if(!currentApptId)return;await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);apptModal.style.display='none'};
 
-/* ---------- LIST ---------- */
+/* list filters */
 function setDefaultRange(){const n=new Date();rangeStart.value=new Date(n-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(+n+7*864e5).toISOString().split('T')[0]}
-[rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadList));clientSearch.addEventListener('input',loadList);
+
+btnAppt.onclick=()=>{btnAppt.classList.toggle('active');btnAppt.querySelector('.icon').textContent=btnAppt.classList.contains('active')?'✓':'✕';loadList()};
+btnWalk.onclick=()=>{btnWalk.classList.toggle('active');btnWalk.querySelector('.icon').textContent=btnWalk.classList.contains('active')?'✓':'✕';loadList()};
+[rangeStart,rangeEnd].forEach(el=>el.addEventListener('change',loadList));
+clientSearch.addEventListener('input',loadList);
+
 async function loadList(){
   appointmentsList.innerHTML='';
   const ids=filtIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
   if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select range.';return;}
-  const types=[];if(cbAppt.checked)types.push('appointment','tentative');if(cbWalk.checked)types.push('walk-in');
+  const types=[];if(btnAppt.classList.contains('active'))types.push('appointment','tentative');if(btnWalk.classList.contains('active'))types.push('walk-in');
   if(!types.length){appointmentsList.textContent='No types.';return;}
   let q=supabase.from('artist_appointments')
        .select('*, artists!inner(location_id,artist_name)')
@@ -400,12 +435,11 @@ async function loadList(){
   });
 }
 
-/* ---------- REALTIME ---------- */
+/* realtime */
 function realtime(){
   supabase.from('artist_appointments').on('*',()=>{loadDay();loadList()}).subscribe();
   supabase.from('artist_vacations' ).on('*',loadDay).subscribe();
   supabase.from('artists'          ).on('*',()=>loadArtistsForLocation(locationFilter.value).then(loadDay)).subscribe();
 }
 </script>
-</body>
-</html>
+</bo
