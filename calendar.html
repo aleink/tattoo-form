@@ -36,7 +36,8 @@ body{
 }
 h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
 
-/*  (unchanged styles below)  */
+/*  login-card was removed – calendar now relies on central login  */
+/*  remaining styles stay exactly as before                       */
 .card{
   background:var(--bg1);border:1px solid var(--border);
   border-radius:6px;padding:22px;max-width:420px;margin:0 auto 30px;
@@ -203,25 +204,46 @@ button:hover{background:#555}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ------------------------------------------------------------------ */
-/*  CENTRAL-LOGIN ENFORCEMENT – redirect if user not already signed-in */
-/* ------------------------------------------------------------------ */
-const role = localStorage.getItem('currentUserRole');
-const allowedLocation = localStorage.getItem('currentUserLoc') || '';
-const allowedRoles = ['gm','owner','sm','fd'];
-if(!role || !allowedRoles.includes(role)){
-  window.location.href = 'index.html';  // bounce back to landing / login
-}
+/* ───────────────────────────────────────────────────────────────── */
+/*  CENTRAL-LOGIN + ROLE-BASED ACCESS  (runs before calendar logic) */
+/* ───────────────────────────────────────────────────────────────── */
+const PAGE_SLUG = 'calendar';
+const allowedFallback = ['gm','owner','sm','fd'];   // used only if table fetch fails
 
-/* ------------------------------------------------------------------ */
-/*                  ORIGINAL CALENDAR LOGIC (unchanged)               */
-/* ------------------------------------------------------------------ */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ---------- HELPERS (unchanged) ---------- */
+(async()=>{
+  const role = localStorage.getItem('currentUserRole');
+  if(!role){ window.location.href='index.html'; return; }
+
+  const { data, error } = await supabase
+        .from('page_roles')
+        .select('*')
+        .eq('page_slug', PAGE_SLUG)
+        .single();
+
+  if(!error && data){                // table found – enforce DB permission
+    if(!data[role]){ window.location.href='index.html'; return; }
+  }else{                             // fallback to hard-coded list
+    if(!allowedFallback.includes(role)){
+      window.location.href='index.html'; return;
+    }
+  }
+
+  /* once authorised, continue loading the calendar normally */
+  initCalendar(role);
+})();
+
+/* ─────────────────────────────────────────────────────────────── */
+/*                        ORIGINAL CALENDAR                       */
+/* ─────────────────────────────────────────────────────────────── */
+function initCalendar(role){
+const allowedLocation = localStorage.getItem('currentUserLoc') || '';
+
+/* ---------- HELPERS ---------- */
 const toMin=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
 const minToTime=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 const round5=v=>{const m=toMin(v);return minToTime(Math.round(m/5)*5)};
@@ -328,7 +350,7 @@ async function onVacation(id,date){
 todayBtn.onclick=()=>{dayInput.value=todayISO();renderDay()};
 dayInput.onchange=renderDay;
 
-/* ---------- RENDER DAY (unchanged logic) ---------- */
+/* ---------- RENDER DAY ---------- */
 async function renderDay(){
   dailyScheduler.innerHTML='';
   for(let h=8;h<=24;h++){
@@ -399,7 +421,7 @@ async function renderDay(){
   };
 }
 
-/* ---------- MODAL duration sync (unchanged) ---------- */
+/* ---------- MODAL duration sync ---------- */
 function updateEndFromDuration(){
   if(!modalStart.value)return;
   const base=toMin(round5(modalStart.value));
@@ -415,7 +437,7 @@ function updateDurationFromEnd(){
 modalStart.addEventListener('change',()=>{modalStart.value=round5(modalStart.value);updateEndFromDuration()});
 modalEnd.addEventListener('change',()=>{modalEnd.value=round5(modalEnd.value);updateDurationFromEnd()});
 
-/* ---------- OPEN / EDIT / SAVE / DELETE (unchanged) ---------- */
+/* ---------- OPEN / EDIT / SAVE / DELETE ---------- */
 function openNew(t,d){currentApptId=null;modalTitle.textContent='New Appointment';modalStart.value=t;modalDurH.value='';modalDurM.value='';modalEnd.value=t;[modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');modalArtist.value='';modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';apptModal.style.display='block';}
 async function openExisting(id){currentApptId=id;const ap=(await supabase.from('artist_appointments').select('*').eq('id',id)).data[0];modalTitle.textContent='Edit Appointment';modalStart.value=ap.start_time;modalEnd.value=ap.end_time;updateDurationFromEnd();modalArtist.value=ap.artist_id;modalType.value=ap.appointment_type;modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';deleteBtn.style.display=completeBtn.style.display='inline-block';apptModal.style.display='block';}
 cancelBtn.onclick=()=>apptModal.style.display='none';
@@ -442,7 +464,7 @@ saveBtn.onclick=async()=>{
 deleteBtn.onclick=async()=>{if(currentApptId&&confirm('Delete?')){await supabase.from('artist_appointments').delete().eq('id',currentApptId);apptModal.style.display='none'}};
 completeBtn.onclick=async()=>{if(currentApptId){await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);apptModal.style.display='none'}};
 
-/* ---------- LIST (unchanged) ---------- */
+/* ---------- LIST ---------- */
 function setDefaultRange(){const n=new Date();rangeStart.value=new Date(n-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(+n+7*864e5).toISOString().split('T')[0];}
 [btnAppt,btnWalk].forEach(b=>b.onclick=()=>{b.classList.toggle('active');renderList()});
 [rangeStart,rangeEnd].forEach(i=>i.addEventListener('change',renderList));clientSearch.addEventListener('input',renderList);
@@ -472,6 +494,7 @@ function realtime(){
   supabase.from('artist_vacations' ).on('*',renderDay).subscribe();
   supabase.from('artists'          ).on('*',()=>loadArtistsForLocation(locationFilter.value).then(renderDay)).subscribe();
 }
+} /* end initCalendar */
 </script>
 </body>
 </html>
