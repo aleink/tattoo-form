@@ -15,7 +15,7 @@
           object-src 'none';
         ">
 
-  <!-- ─── THEMES (matches Manage-Artists / Schedules) ─── -->
+  <!-- ─── THEMES (shared with other modules) ─── -->
   <style>
     :root{
       --bg-0:#111;--bg-1:#222;--bg-2:#333;
@@ -28,21 +28,17 @@
       --accent:#0d6efd;--danger:#c62828;--info:#0d6efd;
     }
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-
     body{background:var(--bg-0);color:var(--text);max-width:780px;margin:20px auto;padding:20px;transition:.25s background}
 
     h1{text-align:center;margin-bottom:18px}
     h2,h3{margin:12px 0 14px}
-    p{font-size:.88em;color:var(--text-dim)}
 
-    /* generic card */
+    /* card */
     .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:26px}
-    .hidden{display:none}
 
     /* inputs */
     label{font-weight:700;display:block;margin:10px 0 4px}
-    input,select{width:100%;padding:8px;background:var(--bg-2);color:var(--text);
-                 border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
+    input,select{width:100%;padding:8px;background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
     input:focus,select:focus{outline:2px solid var(--accent)}
 
     /* buttons */
@@ -68,20 +64,13 @@
 
   <h1>Manage Vacations</h1>
 
-  <!-- LOGIN -->
-  <div id="login-card" class="card">
-    <label>Email</label><input type="email" id="login-email">
-    <label>Password</label><input type="password" id="login-pass">
-    <button id="login-btn" class="btn-info">Login</button>
-    <div id="login-msg" class="message"></div>
-  </div>
-
   <!-- MAIN -->
-  <div id="main-card" class="card hidden">
+  <div id="main-card" class="card">
 
     <div class="top-bar">
-      <button id="logout-btn" class="btn-danger">Logout</button>
+      <button id="back-btn"   class="btn-light">Back</button>
       <button id="theme-btn"  class="btn-light">Light&nbsp;mode</button>
+      <button id="logout-btn" class="btn-danger">Logout</button>
     </div>
 
     <h2>Vacations</h2>
@@ -117,6 +106,14 @@
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
+  /* ---------- CENTRAL LOGIN ENFORCEMENT ---------- */
+  const role            = localStorage.getItem('currentUserRole');
+  const allowedLocation = localStorage.getItem('currentUserLoc') || '';
+  const allowedRoles    = ['gm','hr','sm'];
+  if(!role || !allowedRoles.includes(role)){
+    window.location.href='index.html';
+  }
+
   /* --- Supabase client --- */
   const supabase = window.supabase.createClient(
     'https://shlvjhipxnslrncczopn.supabase.co',
@@ -124,18 +121,12 @@
   );
 
   /* --- refs --- */
-  const loginCard=document.getElementById('login-card');
-  const emailIn=document.getElementById('login-email');
-  const passIn=document.getElementById('login-pass');
-  const loginBtn=document.getElementById('login-btn');
-  const loginMsg=document.getElementById('login-msg');
+  const backBtn   = document.getElementById('back-btn');
+  const themeBtn  = document.getElementById('theme-btn');
+  const logoutBtn = document.getElementById('logout-btn');
 
-  const mainCard=document.getElementById('main-card');
-  const logoutBtn=document.getElementById('logout-btn');
-  const themeBtn=document.getElementById('theme-btn');
-
-  const locSel=document.getElementById('loc-filter');
-  const artSel=document.getElementById('artist-filter');
+  const locSel    = document.getElementById('loc-filter');
+  const artSel    = document.getElementById('artist-filter');
 
   const vStart=document.getElementById('vac-start');
   const vEnd  =document.getElementById('vac-end');
@@ -145,56 +136,29 @@
   const vacMsg=document.getElementById('vac-msg');
   const tbody=document.querySelector('#vac-table tbody');
 
-  /* --- session --- */
-  let role='', allowedLocation='', currentVacId=null;
+  /* session */
+  let currentVacId=null;
 
-  /* ========== THEME ========== */
-  themeBtn.onclick=()=>{
-    const light=document.body.classList.toggle('light');
-    themeBtn.textContent=light?'Dark mode':'Light mode';
-  };
+  /* ---------- THEME ---------- */
+  (()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
+  themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
 
-  /* ========== LOGIN ========== */
-  loginBtn.onclick=async()=>{
-    loginMsg.textContent='';
-    const e=emailIn.value.trim(), p=passIn.value.trim();
-    if(!e||!p){loginMsg.textContent='Email & password required.';return;}
-    const {data,error}=await supabase.from('users').select('*').eq('email',e);
-    if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-    const u=data[0];
-    if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
+  /* ---------- NAV ---------- */
+  backBtn.onclick   = ()=>window.location.href='index.html';
+  logoutBtn.onclick = ()=>{localStorage.clear();window.location.href='index.html';};
 
-    role=u.role;allowedLocation=u.location_id||'';
-    if(!['gm','hr','sm'].includes(role)){loginMsg.textContent='Access denied for this role.';return;}
-
-    loginCard.classList.add('hidden');
-    mainCard.classList.remove('hidden');
-    await loadLocations();           // also loads artists for SM
-  };
-
-  logoutBtn.onclick=()=>{
-    [role,allowedLocation,currentVacId]=['','',null];
-    loginCard.classList.remove('hidden');mainCard.classList.add('hidden');
-    [emailIn,passIn].forEach(i=>i.value='');loginMsg.textContent='';
-    tbody.innerHTML='';vacMsg.textContent='';
-  };
-
-  /* ========== LOCATIONS & ARTISTS ========== */
+  /* ---------- LOCATIONS & ARTISTS ---------- */
   async function loadLocations(){
     locSel.innerHTML='<option value="">-- Select Location --</option>';
     let q=supabase.from('locations').select('*');
-    if(role==='sm')q=q.eq('id',allowedLocation);
+    if(role==='sm') q=q.eq('id',allowedLocation);
     const {data}=await q;
-    data.forEach(l=>{
-      const opt=document.createElement('option');opt.value=l.id;opt.textContent=l.location_name;locSel.appendChild(opt);
-    });
-
-    // For SM pre-select & lock; for GM/HR user chooses
+    data.forEach(l=>locSel.add(new Option(l.location_name,l.id)));
     if(role==='sm'){
       locSel.value=allowedLocation;
       locSel.disabled=true;
-      await loadArtistsForLocation(allowedLocation);   // auto-populate artist list
     }
+    await loadArtistsForLocation(locSel.value);
   }
 
   locSel.onchange=()=>loadArtistsForLocation(locSel.value);
@@ -204,15 +168,12 @@
     tbody.innerHTML='';currentVacId=null;
     if(!locId)return;
     const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
-    data.forEach(a=>{
-      const opt=document.createElement('option');opt.value=a.id;opt.textContent=a.artist_name;artSel.appendChild(opt);
-    });
-    // for SM auto-select first artist (optional) – here we leave blank so user picks
+    data.forEach(a=>artSel.add(new Option(a.artist_name,a.id)));
   }
 
   artSel.onchange=loadVacations;
 
-  /* ========== VACATION CRUD ========== */
+  /* ---------- VACATION CRUD ---------- */
   async function loadVacations(){
     tbody.innerHTML='';currentVacId=null;
     if(!artSel.value)return;
@@ -272,6 +233,9 @@
 
   clearBtn.onclick=clearForm;
   function clearForm(){currentVacId=null;[vStart,vEnd,vNotes].forEach(i=>i.value='');vacMsg.textContent='';}
+
+  /* ---------- BOOT ---------- */
+  loadLocations();
   </script>
 </body>
 </html>
