@@ -62,22 +62,7 @@ tr:nth-child(even){background:var(--bg0)}
 </head>
 
 <body>
-<!-- ──────────────────────────────────────────────────────────── -->
-<!--  ACCESS-CHECK (runs BEFORE any sensitive markup is shown)  -->
-<!-- ──────────────────────────────────────────────────────────── -->
-<script type="module">
-  import { supabase }      from './js/supabaseClient.js';
-  import { userCanAccess } from './js/permission.js';
 
-  const PAGE_SLUG = 'artists';          // must match page_roles.page_slug
-
-  const ok = await userCanAccess(PAGE_SLUG, supabase, {
-    /* fallback list used only if query fails */
-    fallbackAllowed: ['gm','owner','hr','sr','sm']
-  });
-
-  if (!ok) window.location.href = 'index.html';
-</script>
 
 <h1>Manage Artists</h1>
 
