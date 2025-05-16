@@ -53,7 +53,7 @@ button:hover{background:#555}
 <script type="module">
   import { supabase }      from './js/supabaseClient.js';
   import { userCanAccess } from './js/permission.js';
-  const PAGE_SLUG = 'manage_schedules';
+  const PAGE_SLUG = 'schedules';
   if (!(await userCanAccess(PAGE_SLUG))) window.location.href = 'index.html';
 </script>
 
