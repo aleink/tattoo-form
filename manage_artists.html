@@ -7,15 +7,14 @@
 
 <!-- ─── VISUAL THEMES ─── -->
 <style>
-:root{                            /*  DARK (default)  */
+:root{
   --bg0:#111;--bg1:#222;--bg2:#333;
   --border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745;
 }
-body.light{                       /*  LIGHT override  */
+body.light{
   --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
   --border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;
 }
-
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
 body{
   background:var(--bg0);color:var(--txt);
@@ -25,10 +24,7 @@ body{
 h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
 h2{margin:10px 0 14px;font-size:1.25rem}
 
-.card{
-  background:var(--bg1);border:1px solid var(--border);
-  border-radius:6px;padding:22px;margin-bottom:30px;
-}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:30px}
 
 label{display:block;font-weight:700;margin:10px 0 4px}
 input,select,textarea{
@@ -115,19 +111,45 @@ tr:nth-child(even){background:var(--bg0)}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ----------  CENTRAL-LOGIN ENFORCEMENT  ---------- */
-const role = localStorage.getItem('currentUserRole');
-const scopeLoc = localStorage.getItem('currentUserLoc') || '';
-const allowedRoles = ['gm','owner','hr','sr','sm'];
-if(!role || !allowedRoles.includes(role)){
-  window.location.href = 'index.html';
-}
+/* ----------  PAGE-WIDE CONSTANTS ---------- */
+const PAGE_SLUG = 'artists';                   // must match page_roles.page_slug
 
-/* ----------  INIT SUPABASE ---------- */
+/* ----------  LOGIN CONTEXT FROM LANDING PAGE ---------- */
+const role      = localStorage.getItem('currentUserRole');   // may be null
+const scopeLoc  = localStorage.getItem('currentUserLoc')||'';
+
+/* ----------  Supabase ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
+
+/* ----------  Early ACCESS-CONTROL  ---------- */
+(async()=>{
+  if(!role){ window.location.href='index.html'; return; }
+
+  let allowed = false;
+  /* try dynamic table first */
+  const {data:row,error} = await supabase
+        .from('page_roles')
+        .select('*')
+        .eq('page_slug',PAGE_SLUG)
+        .single();
+
+  if(!error && row && row[role]!==undefined && row[role]!==null){
+    allowed = !!row[role];
+  }else{
+    /* fallback to legacy static list */
+    allowed = ['gm','owner','hr','sr','sm'].includes(role);
+  }
+
+  if(!allowed){
+    window.location.href='index.html';
+    return;
+  }
+  /* If we reach here, show UI */
+  boot();
+})();
 
 /* ----------  DOM ---------- */
 const topBar      = document.getElementById('top-bar');
@@ -151,24 +173,22 @@ const A           = {
 const saveBtn     = document.getElementById('save-btn');
 const clearBtn    = document.getElementById('clear-btn');
 const artistMsg   = document.getElementById('artist-msg');
-
 const filterLoc   = document.getElementById('filter-loc');
 const tbody       = document.querySelector('#art-table tbody');
 
-/* ----------  THEME ---------- */
-(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
-themeBtn.onclick = ()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
+/* ----------  UI BOOT AFTER ACCESS PASS ---------- */
+async function boot(){
+  topBar.classList.remove('hidden');
+  manageSec.classList.remove('hidden');
+  backBtn.onclick  = ()=>location.href='index.html';
+  logoutBtn.onclick= ()=>{localStorage.clear();location.href='index.html';};
 
-/* ----------  NAV ---------- */
-backBtn.onclick = ()=>window.location.href='index.html';
-logoutBtn.onclick = ()=>{localStorage.clear();window.location.href='index.html';};
+  if(localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeBtn.textContent='Dark mode';
+  }
+  themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
 
-/* ----------  PAGE BOOT ---------- */
-topBar.classList.remove('hidden');
-manageSec.classList.remove('hidden');
-init();
-
-async function init(){
   await loadLocations();
   loadArtists();
 }
@@ -177,10 +197,8 @@ async function init(){
 async function loadLocations(){
   A.loc.innerHTML='';
   filterLoc.innerHTML='<option value="">-- All Locations --</option>';
-
   let q=supabase.from('locations').select('*');
   if(['sr','sm'].includes(role)) q=q.eq('id',scopeLoc);
-
   const {data}=await q;
   data.forEach(l=>{
     A.loc.add(new Option(l.location_name,l.id));
@@ -189,23 +207,22 @@ async function loadLocations(){
   if(['sr','sm'].includes(role)){
     filterLoc.value=scopeLoc;
     filterLoc.disabled=true;
-  }else{
-    filterLoc.disabled=false;
   }
 }
-filterLoc.onchange = loadArtists;
+filterLoc.onchange=loadArtists;
 
-/* ----------  ARTISTS ---------- */
+/* ----------  ARTISTS TABLE ---------- */
 async function loadArtists(){
   tbody.innerHTML='';
-  let q=supabase.from('artists').select('*, locations(location_name)').order('artist_name',{ascending:true});
+  let q=supabase.from('artists')
+         .select('*, locations(location_name)')
+         .order('artist_name',{ascending:true});
   if(filterLoc.value) q=q.eq('location_id',filterLoc.value);
-
   const {data}=await q;
   data.forEach(a=>{
     const tr=document.createElement('tr');
     tr.dataset.artist = JSON.stringify(a);
-    tr.innerHTML = `
+    tr.innerHTML=`
       <td>${a.artist_name}</td>
       <td>${a.phone||''}</td>
       <td>${a.email||''}</td>
@@ -219,57 +236,59 @@ async function loadArtists(){
   });
 }
 
-/* ----------  CRUD ---------- */
-window.editArtist = id=>{
+/* ---------- CRUD ---------- */
+window.editArtist=id=>{
   const row=[...tbody.children].find(r=>JSON.parse(r.dataset.artist).id===id);
   if(!row)return;
   const a=JSON.parse(row.dataset.artist);
   A.id=a.id;
-  A.name.value=a.artist_name||''; A.phone.value=a.phone||''; A.email.value=a.email||'';
-  A.cal.value=a.calendar_id||'';  A.split.value=a.percentage_split||'';
-  A.color.value=a.color||'';      A.loc.value=a.location_id||'';
-  A.port.value=a.portfolio||'';   A.bio.value=a.bio||'';
+  A.name.value=a.artist_name||'';A.phone.value=a.phone||'';A.email.value=a.email||'';
+  A.cal.value=a.calendar_id||'';A.split.value=a.percentage_split||'';
+  A.color.value=a.color||'';A.loc.value=a.location_id||'';
+  A.port.value=a.portfolio||'';A.bio.value=a.bio||'';
   artistMsg.textContent='Editing — remember to save.';
 };
 
-window.deleteArtist = async id =>{
-  if(!confirm('Delete artist?')) return;
+window.deleteArtist=async id=>{
+  if(!confirm('Delete artist?'))return;
   const {error}=await supabase.from('artists').delete().eq('id',id);
-  artistMsg.textContent = error ? 'Error deleting.' : 'Deleted.';
-  if(!error){ loadArtists(); clearForm(); }
+  artistMsg.textContent=error?'Error deleting.':'Deleted.';
+  if(!error){loadArtists();clearForm();}
 };
 
-saveBtn.onclick = async ()=>{
+saveBtn.onclick=async()=>{
   artistMsg.textContent='';
   if(!A.name.value.trim()){artistMsg.textContent='Name required.';return;}
 
   const payload={
-    artist_name: A.name.value.trim(),
-    phone       : A.phone.value.trim()||null,
-    email       : A.email.value.trim()||null,
-    calendar_id : A.cal.value.trim()||null,
-    percentage_split: A.split.value?parseFloat(A.split.value):null,
-    color       : A.color.value||null,
-    location_id : A.loc.value||null,
-    portfolio   : A.port.value.trim()||null,
-    bio         : A.bio.value.trim()||null
+    artist_name:A.name.value.trim(),
+    phone:A.phone.value.trim()||null,
+    email:A.email.value.trim()||null,
+    calendar_id:A.cal.value.trim()||null,
+    percentage_split:A.split.value?parseFloat(A.split.value):null,
+    color:A.color.value||null,
+    location_id:A.loc.value||null,
+    portfolio:A.port.value.trim()||null,
+    bio:A.bio.value.trim()||null
   };
-
-  const res = A.id
+  const res=A.id
     ? await supabase.from('artists').update(payload).eq('id',A.id)
     : await supabase.from('artists').insert([payload]);
-
-  artistMsg.textContent = res.error ? 'Error saving.' : 'Saved!';
-  if(!res.error){ loadArtists(); clearForm(); }
+  artistMsg.textContent=res.error?'Error saving.':'Saved!';
+  if(!res.error){loadArtists();clearForm();}
 };
 
-clearBtn.onclick = clearForm;
+clearBtn.onclick=clearForm;
 function clearForm(){
   A.id=null;
   [A.name,A.phone,A.email,A.cal,A.split,A.port,A.bio].forEach(i=>i.value='');
   A.color.value=''; if(!['sr','sm'].includes(role))A.loc.value='';
   artistMsg.textContent='';
 }
+
+/* expose helpers */
+window.editArtist   = window.editArtist;
+window.deleteArtist = window.deleteArtist;
 </script>
 </body>
 </html>
