@@ -146,8 +146,9 @@ loginBtn.onclick = async ()=>{
     loginMsg.textContent='Invalid credentials.'; return;
   }
 
-  /* store role & location for other pages */
+  /* store role, id & location for other pages */
   localStorage.setItem('currentUserRole', data.role);
+  localStorage.setItem('currentUserId',   data.id);          /* ← NEW */
   if(data.location_id) localStorage.setItem('currentUserLoc', data.location_id);
   else localStorage.removeItem('currentUserLoc');
 
