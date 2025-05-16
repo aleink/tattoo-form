@@ -41,7 +41,7 @@ main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:cen
 #login-msg{color:#ff6161;font-size:.9rem;margin-top:6px;text-align:center}
 </style>
 
-<!-- Supabase (same project key) -->
+<!-- Supabase client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 </head>
 <body>
@@ -127,45 +127,95 @@ if(!/index\.html$/.test(location.pathname) && location.pathname !== '/' ){
   backBtn.onclick=()=>location.href='index.html';
 }
 
-/* Auto-login if role is stored */
-const storedRole = localStorage.getItem('currentUserRole');
-if(storedRole){ showApp(storedRole); } else { loginSec.style.display='block'; }
+/* ---------- permission map (slug → cardId) ---------- */
+const CARD_MAP = {
+  calendar : 'card-calendar',
+  artists  : 'card-artists',
+  schedules: 'card-schedules',
+  vacations: 'card-vacations',
+  payroll  : 'card-payroll',
+  locations: 'card-locations'
+};
 
-/* Login handler */
+/* ---------- Fetch role-page matrix once ---------- */
+let PAGE_MATRIX = null;       // { slug : { role:true/false … } }
+async function loadPageMatrix(){
+  if(PAGE_MATRIX) return PAGE_MATRIX;   // cache
+  const { data, error } = await supabase.from('page_roles').select('*');
+  if(error){ console.error(error); return null; }
+  PAGE_MATRIX = {};
+  data.forEach(r=>{
+    PAGE_MATRIX[r.page_slug] = r;       // each row keyed by slug
+  });
+  return PAGE_MATRIX;
+}
+
+/* ---------- Auto-login if role stored ---------- */
+(async ()=>{
+  const role = localStorage.getItem('currentUserRole');
+  if(role){
+    await showApp(role);           // show immediately if token exists
+  }else{
+    loginSec.style.display='block';
+  }
+})();
+
+/* ---------- Login handler ---------- */
 loginBtn.onclick = async () =>{
   loginMsg.textContent='';
-  if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Enter e-mail & password.';return;}
-
+  if(!loginEmail.value||!loginPass.value){
+    loginMsg.textContent='Enter e-mail & password.';return;
+  }
   const {data:user,error}=await supabase.from('users')
       .select('*').eq('email',loginEmail.value.trim()).single();
   if(error||!user||user.password_hash!==loginPass.value.trim()){
     loginMsg.textContent='Invalid credentials.';return;
   }
-
   localStorage.setItem('currentUserId',user.id);
   localStorage.setItem('currentUserRole',user.role);
-  if(user.location_id) localStorage.setItem('currentUserLoc',user.location_id); else localStorage.removeItem('currentUserLoc');
+  if(user.location_id) localStorage.setItem('currentUserLoc',user.location_id);
+  else                 localStorage.removeItem('currentUserLoc');
 
-  showApp(user.role);
+  await showApp(user.role);
 };
 
-/* Logout */
+/* ---------- Logout ---------- */
 logoutBtn.onclick = ()=>{ localStorage.clear(); location.reload(); };
 
-/* Show dashboard & filter cards */
-function showApp(role){
+/* ---------- Show dashboard & filter ---------- */
+async function showApp(role){
   loginSec.style.display='none';
   topBar.style.display='flex';
   mainCont.style.display='flex';
-  filterCards(role);
+
+  const matrix = await loadPageMatrix();
+  if(matrix){
+    applyDynamicPermissions(role,matrix);
+  }else{
+    /* fallback to old static rules if matrix couldn't load */
+    applyStaticPermissions(role);
+  }
 }
 
-/* Card visibility per role */
-function filterCards(role){
+/* ---------- Apply dynamic permissions ---------- */
+function applyDynamicPermissions(role, matrix){
+  // hide all first
+  Object.values(CARD_MAP).forEach(id=>document.getElementById(id).style.display='none');
+
+  Object.entries(CARD_MAP).forEach(([slug, cardId])=>{
+    const row = matrix[slug];
+    if(row && row[role]){        // column true means allowed
+      document.getElementById(cardId).style.display='block';
+    }
+  });
+}
+
+/* ---------- Static fallback ---------- */
+function applyStaticPermissions(role){
   const hideAll=ids=>ids.forEach(id=>document.getElementById(id).style.display='none');
   const show=ids=>ids.forEach(id=>document.getElementById(id).style.display='block');
 
-  const all=['card-calendar','card-artists','card-schedules','card-vacations','card-payroll','card-locations'];
+  const all=Object.values(CARD_MAP);
   hideAll(all);
 
   switch(role){
