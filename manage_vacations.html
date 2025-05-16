@@ -33,15 +33,12 @@
     h1{text-align:center;margin-bottom:18px}
     h2,h3{margin:12px 0 14px}
 
-    /* card */
     .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:26px}
 
-    /* inputs */
     label{font-weight:700;display:block;margin:10px 0 4px}
     input,select{width:100%;padding:8px;background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
     input:focus,select:focus{outline:2px solid var(--accent)}
 
-    /* buttons */
     button{border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:filter .2s}
     button:hover{filter:brightness(1.08)}
     .btn-accent{background:var(--accent);color:#fff}
@@ -53,7 +50,6 @@
 
     .message{color:var(--danger);margin-top:8px;font-size:.88em}
 
-    /* table */
     .table-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
     table{width:100%;border-collapse:collapse;font-size:.9em}
     th,td{border:1px solid var(--border);padding:8px;text-align:left}
@@ -106,136 +102,158 @@
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
   <script>
-  /* ---------- CENTRAL LOGIN ENFORCEMENT ---------- */
-  const role            = localStorage.getItem('currentUserRole');
-  const allowedLocation = localStorage.getItem('currentUserLoc') || '';
-  const allowedRoles    = ['gm','hr','sm'];
-  if(!role || !allowedRoles.includes(role)){
+/* ---------- Supabase client ---------- */
+const supabase = window.supabase.createClient(
+  'https://shlvjhipxnslrncczopn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
+);
+
+/* ---------- Access check (dynamic) ---------- */
+const PAGE_SLUG = 'vacations';
+const localRole = localStorage.getItem('currentUserRole');
+const allowedLoc= localStorage.getItem('currentUserLoc') || '';
+
+(async()=>{
+  if(!localRole){ window.location.href='index.html'; return; }
+
+  let ok=false;
+  try{
+    const {data}=await supabase.from('page_roles').select('*').eq('page_slug',PAGE_SLUG).single();
+    if(data && data[localRole]===true) ok=true;
+  }catch(e){ console.warn('page_roles lookup failed, using fallback'); }
+
+  if(!ok){
+    /* fallback to original hard-coded list */
+    const staticAllow=['gm','hr','sm'];
+    ok=staticAllow.includes(localRole);
+  }
+  if(!ok){
     window.location.href='index.html';
+  }else{
+    boot();          // start normal page logic
   }
+})();
 
-  /* --- Supabase client --- */
-  const supabase = window.supabase.createClient(
-    'https://shlvjhipxnslrncczopn.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
-  );
+/* ---------- All page logic lives in boot() ---------- */
+function boot(){
 
-  /* --- refs --- */
-  const backBtn   = document.getElementById('back-btn');
-  const themeBtn  = document.getElementById('theme-btn');
-  const logoutBtn = document.getElementById('logout-btn');
+/* --- refs --- */
+const backBtn   = document.getElementById('back-btn');
+const themeBtn  = document.getElementById('theme-btn');
+const logoutBtn = document.getElementById('logout-btn');
 
-  const locSel    = document.getElementById('loc-filter');
-  const artSel    = document.getElementById('artist-filter');
+const locSel    = document.getElementById('loc-filter');
+const artSel    = document.getElementById('artist-filter');
 
-  const vStart=document.getElementById('vac-start');
-  const vEnd  =document.getElementById('vac-end');
-  const vNotes=document.getElementById('vac-notes');
-  const saveBtn=document.getElementById('save-btn');
-  const clearBtn=document.getElementById('clear-btn');
-  const vacMsg=document.getElementById('vac-msg');
-  const tbody=document.querySelector('#vac-table tbody');
+const vStart=document.getElementById('vac-start');
+const vEnd  =document.getElementById('vac-end');
+const vNotes=document.getElementById('vac-notes');
+const saveBtn=document.getElementById('save-btn');
+const clearBtn=document.getElementById('clear-btn');
+const vacMsg=document.getElementById('vac-msg');
+const tbody=document.querySelector('#vac-table tbody');
 
-  /* session */
-  let currentVacId=null;
+/* session */
+let currentVacId=null;
 
-  /* ---------- THEME ---------- */
-  (()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
-  themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
+/* ---------- THEME ---------- */
+(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
+themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
 
-  /* ---------- NAV ---------- */
-  backBtn.onclick   = ()=>window.location.href='index.html';
-  logoutBtn.onclick = ()=>{localStorage.clear();window.location.href='index.html';};
+/* ---------- NAV ---------- */
+backBtn.onclick   = ()=>window.location.href='index.html';
+logoutBtn.onclick = ()=>{localStorage.clear();window.location.href='index.html';};
 
-  /* ---------- LOCATIONS & ARTISTS ---------- */
-  async function loadLocations(){
-    locSel.innerHTML='<option value="">-- Select Location --</option>';
-    let q=supabase.from('locations').select('*');
-    if(role==='sm') q=q.eq('id',allowedLocation);
-    const {data}=await q;
-    data.forEach(l=>locSel.add(new Option(l.location_name,l.id)));
-    if(role==='sm'){
-      locSel.value=allowedLocation;
-      locSel.disabled=true;
-    }
-    await loadArtistsForLocation(locSel.value);
+/* ---------- LOCATIONS & ARTISTS ---------- */
+async function loadLocations(){
+  locSel.innerHTML='<option value="">-- Select Location --</option>';
+  let q=supabase.from('locations').select('*');
+  if(localRole==='sm') q=q.eq('id',allowedLoc);
+  const {data}=await q;
+  data.forEach(l=>locSel.add(new Option(l.location_name,l.id)));
+  if(localRole==='sm'){
+    locSel.value=allowedLoc;
+    locSel.disabled=true;
   }
+  await loadArtistsForLocation(locSel.value);
+}
 
-  locSel.onchange=()=>loadArtistsForLocation(locSel.value);
+locSel.onchange=()=>loadArtistsForLocation(locSel.value);
 
-  async function loadArtistsForLocation(locId){
-    artSel.innerHTML='<option value="">-- Select Artist --</option>';
-    tbody.innerHTML='';currentVacId=null;
-    if(!locId)return;
-    const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
-    data.forEach(a=>artSel.add(new Option(a.artist_name,a.id)));
-  }
+async function loadArtistsForLocation(locId){
+  artSel.innerHTML='<option value="">-- Select Artist --</option>';
+  tbody.innerHTML='';currentVacId=null;
+  if(!locId)return;
+  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locId);
+  data.forEach(a=>artSel.add(new Option(a.artist_name,a.id)));
+}
 
-  artSel.onchange=loadVacations;
+artSel.onchange=loadVacations;
 
-  /* ---------- VACATION CRUD ---------- */
-  async function loadVacations(){
-    tbody.innerHTML='';currentVacId=null;
-    if(!artSel.value)return;
-    const {data}=await supabase.from('artist_vacations')
-                    .select('*')
-                    .eq('artist_id',artSel.value)
-                    .order('vacation_start',{ascending:true});
-    data.forEach(v=>{
-      const tr=document.createElement('tr');
-      tr.dataset.vac=JSON.stringify(v);
-      tr.innerHTML=`
-        <td>${v.vacation_start}</td>
-        <td>${v.vacation_end||v.vacation_start}</td>
-        <td>${v.notes||''}</td>
-        <td>
-          <button class="btn-light"  onclick="editVac('${v.id}')">Edit</button>
-          <button class="btn-danger" onclick="delVac('${v.id}')">Del</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }
+/* ---------- VACATION CRUD ---------- */
+async function loadVacations(){
+  tbody.innerHTML='';currentVacId=null;
+  if(!artSel.value)return;
+  const {data}=await supabase.from('artist_vacations')
+                  .select('*')
+                  .eq('artist_id',artSel.value)
+                  .order('vacation_start',{ascending:true});
+  data.forEach(v=>{
+    const tr=document.createElement('tr');
+    tr.dataset.vac=JSON.stringify(v);
+    tr.innerHTML=`
+      <td>${v.vacation_start}</td>
+      <td>${v.vacation_end||v.vacation_start}</td>
+      <td>${v.notes||''}</td>
+      <td>
+        <button class="btn-light"  onclick="editVac('${v.id}')">Edit</button>
+        <button class="btn-danger" onclick="delVac('${v.id}')">Del</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
 
-  window.editVac=id=>{
-    const row=[...tbody.children].find(r=>JSON.parse(r.dataset.vac).id===id);
-    if(!row)return;
-    const v=JSON.parse(row.dataset.vac);
-    currentVacId=v.id;
-    vStart.value=v.vacation_start||'';vEnd.value=v.vacation_end||v.vacation_start||'';vNotes.value=v.notes||'';
-    vacMsg.textContent='Editing – Save to update.';
+window.editVac=id=>{
+  const row=[...tbody.children].find(r=>JSON.parse(r.dataset.vac).id===id);
+  if(!row)return;
+  const v=JSON.parse(row.dataset.vac);
+  currentVacId=v.id;
+  vStart.value=v.vacation_start||'';vEnd.value=v.vacation_end||v.vacation_start||'';vNotes.value=v.notes||'';
+  vacMsg.textContent='Editing – Save to update.';
+};
+
+window.delVac=async id=>{
+  if(!confirm('Delete this vacation?'))return;
+  const {error}=await supabase.from('artist_vacations').delete().eq('id',id);
+  vacMsg.textContent=error?'Error deleting.' : 'Deleted.';
+  loadVacations();clearForm();
+};
+
+saveBtn.onclick=async()=>{
+  vacMsg.textContent='';
+  if(!artSel.value){vacMsg.textContent='Select an artist.';return;}
+  if(!vStart.value){vacMsg.textContent='Start date required.';return;}
+  const payload={
+    artist_id:artSel.value,
+    vacation_start:vStart.value,
+    vacation_end:vEnd.value||vStart.value,
+    notes:vNotes.value.trim()||null
   };
+  let err;
+  if(currentVacId)
+    ({error:err}=await supabase.from('artist_vacations').update(payload).eq('id',currentVacId));
+  else
+    ({error:err}=await supabase.from('artist_vacations').insert([payload]));
+  vacMsg.textContent=err?'Error saving.' : 'Saved!';
+  loadVacations();clearForm();
+};
 
-  window.delVac=async id=>{
-    if(!confirm('Delete this vacation?'))return;
-    const {error}=await supabase.from('artist_vacations').delete().eq('id',id);
-    vacMsg.textContent=error?'Error deleting.' : 'Deleted.';
-    loadVacations();clearForm();
-  };
+clearBtn.onclick=clearForm;
+function clearForm(){currentVacId=null;[vStart,vEnd,vNotes].forEach(i=>i.value='');vacMsg.textContent='';}
 
-  saveBtn.onclick=async()=>{
-    vacMsg.textContent='';
-    if(!artSel.value){vacMsg.textContent='Select an artist.';return;}
-    if(!vStart.value){vacMsg.textContent='Start date required.';return;}
-    const payload={
-      artist_id:artSel.value,
-      vacation_start:vStart.value,
-      vacation_end:vEnd.value||vStart.value,
-      notes:vNotes.value.trim()||null
-    };
-    let err;
-    if(currentVacId)
-      ({error:err}=await supabase.from('artist_vacations').update(payload).eq('id',currentVacId));
-    else
-      ({error:err}=await supabase.from('artist_vacations').insert([payload]));
-    vacMsg.textContent=err?'Error saving.' : 'Saved!';
-    loadVacations();clearForm();
-  };
-
-  clearBtn.onclick=clearForm;
-  function clearForm(){currentVacId=null;[vStart,vEnd,vNotes].forEach(i=>i.value='');vacMsg.textContent='';}
-
-  /* ---------- BOOT ---------- */
-  loadLocations();
+/* ---------- BOOT ---------- */
+loadLocations();
+} // end boot()
   </script>
 </body>
 </html>
