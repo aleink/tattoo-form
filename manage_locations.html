@@ -5,7 +5,6 @@
 <title>Manage Locations</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<!-- ─── CSP ─── -->
 <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -15,42 +14,28 @@
         object-src 'none';
       ">
 
-<!-- ─── THEME ─── -->
 <style>
 :root{ --bg0:#111;--bg1:#222;--bg2:#333;--border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745 }
 body.light{
   --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
   --border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;
 }
-
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-body{
-  background:var(--bg0);color:var(--txt);
-  max-width:820px;margin:32px auto;padding:28px;
-  transition:background .25s,color .25s;
-}
-h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
+body{background:var(--bg0);color:var(--txt);max-width:820px;margin:32px auto;padding:28px;transition:background .25s,color .25s}
+h1{text-align:center;font-size:1.8rem;margin-bottom:24px}
 h2{font-size:1.25rem;margin:10px 0 14px}
 
-.card{
-  background:var(--bg1);border:1px solid var(--border);
-  border-radius:6px;padding:22px;margin-bottom:30px;
-}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:30px}
 
 label{display:block;font-weight:700;margin:10px 0 4px}
-input,textarea{
+input,select,textarea{
   width:100%;padding:8px;background:var(--bg0);color:var(--txt);
   border:1px solid var(--border);border-radius:4px;margin-bottom:12px;resize:vertical
 }
-input:focus,textarea:focus{outline:2px solid var(--accent)}
-
-button{
-  background:var(--bg2);color:var(--txt);border:none;border-radius:4px;
-  padding:8px 16px;cursor:pointer;transition:background .2s
-}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
+button{background:var(--bg2);color:var(--txt);border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:background .2s}
 button:hover{background:#555}
 .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
-
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
 .hidden{display:none}
 
@@ -60,11 +45,16 @@ button:hover{background:#555}
 #theme-btn{min-width:110px}
 
 /* table */
-.table-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--border);margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:.9em}
+.table-wrap{max-height:340px;overflow-y:auto;overflow-x:auto;border:1px solid var(--border);margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.9em;white-space:pre-line}
 th{position:sticky;top:0;background:var(--bg1);color:var(--txt);border-bottom:2px solid var(--border);padding:10px}
 td{padding:8px;border-bottom:1px solid var(--border);color:var(--txt-dim)}
 tr:nth-child(even){background:var(--bg0)}
+
+/* hours editor rows */
+.hours-row{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.hours-row select,.hours-row input{margin-bottom:0}
+.hours-row button{padding:4px 8px}
 </style>
 </head>
 <body>
@@ -94,11 +84,15 @@ tr:nth-child(even){background:var(--bg0)}
   <label>Name</label><input id="l-name">
   <label>Address</label><input id="l-address">
   <label>Phone</label><input id="l-phone">
-  <label>Business Hours</label><textarea id="l-hours" rows="3" placeholder="Mon - Thu 10 AM-11 PM&#10;Fri - Sun 10 AM-12 AM"></textarea>
-  <label>Email</label><input id="l-email" type="email">
+
+  <label>Business Hours</label>
+  <div id="hours-container"></div>
+  <button id="add-hours-btn" class="btn-mini" type="button">Add more hours</button>
+
+  <label style="margin-top:12px">Email</label><input id="l-email" type="email">
   <label>Timezone Offset (e.g. -8, 0, +2)</label><input id="l-tz">
 
-  <div style="margin-top:8px">
+  <div style="margin-top:10px">
     <button id="save-btn">Save Location</button>
     <button id="clear-btn">Clear</button>
     <div id="loc-msg" class="message"></div>
@@ -109,7 +103,7 @@ tr:nth-child(even){background:var(--bg0)}
   <div class="table-wrap">
     <table id="loc-table">
       <thead><tr>
-        <th>Name</th><th>Address</th><th>Phone</th><th>Email</th><th>Timezone</th><th>Actions</th>
+        <th>Name</th><th>Address</th><th>Phone</th><th>Hours</th><th>Email</th><th>Timezone</th><th>Actions</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -126,30 +120,32 @@ const supabase = window.supabase.createClient(
 );
 
 /* ---------- DOM ---------- */
-const topBar     = document.getElementById('top-bar');
-const themeBtn   = document.getElementById('theme-btn');
-const logoutBtn  = document.getElementById('logout-btn');
+const topBar  = document.getElementById('top-bar');
+const themeBtn= document.getElementById('theme-btn');
+const logoutBtn=document.getElementById('logout-btn');
 
-const loginSec   = document.getElementById('login-section');
-const loginEmail = document.getElementById('login-email');
-const loginPass  = document.getElementById('login-pass');
-const loginBtn   = document.getElementById('login-btn');
-const loginMsg   = document.getElementById('login-msg');
+const loginSec=document.getElementById('login-section');
+const loginEmail=document.getElementById('login-email');
+const loginPass=document.getElementById('login-pass');
+const loginBtn =document.getElementById('login-btn');
+const loginMsg =document.getElementById('login-msg');
 
-const locSec     = document.getElementById('loc-section');
-const fields     = {
-  id   : null,
-  name : document.getElementById('l-name'),
-  addr : document.getElementById('l-address'),
-  phone: document.getElementById('l-phone'),
-  hours: document.getElementById('l-hours'),
-  email: document.getElementById('l-email'),
-  tz   : document.getElementById('l-tz')
+const locSec  =document.getElementById('loc-section');
+const hoursWrap=document.getElementById('hours-container');
+const addHoursBtn=document.getElementById('add-hours-btn');
+
+const fields={
+  id   :null,
+  name :document.getElementById('l-name'),
+  addr :document.getElementById('l-address'),
+  phone:document.getElementById('l-phone'),
+  email:document.getElementById('l-email'),
+  tz   :document.getElementById('l-tz')
 };
-const saveBtn    = document.getElementById('save-btn');
-const clearBtn   = document.getElementById('clear-btn');
-const locMsg     = document.getElementById('loc-msg');
-const tbody      = document.querySelector('#loc-table tbody');
+const saveBtn =document.getElementById('save-btn');
+const clearBtn=document.getElementById('clear-btn');
+const locMsg  =document.getElementById('loc-msg');
+const tbody   =document.querySelector('#loc-table tbody');
 
 /* ---------- THEME ---------- */
 (function(){
@@ -192,11 +188,74 @@ logoutBtn.onclick=()=>{
   clearForm();
 };
 
+/* ---------- BUSINESS HOURS HELPERS ---------- */
+const daysFull=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const daysShort=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function addHoursRow(set={startDay:'Monday',endDay:'Monday',startTime:'',endTime:''}){
+  const row=document.createElement('div');row.className='hours-row';
+  const sDay=document.createElement('select'),eDay=document.createElement('select');
+  daysFull.forEach(d=>{
+    sDay.add(new Option(d,d));eDay.add(new Option(d,d));
+  });
+  sDay.value=set.startDay; eDay.value=set.endDay;
+
+  const sTime=document.createElement('input');sTime.type='time';sTime.value=set.startTime||'';
+  const eTime=document.createElement('input');eTime.type='time';eTime.value=set.endTime||'';
+  const del=document.createElement('button');del.type='button';del.textContent='×';del.onclick=()=>row.remove();
+
+  [sDay,eDay,sTime,eTime,del].forEach(el=>row.appendChild(el));
+  hoursWrap.appendChild(row);
+}
+addHoursBtn.onclick=()=>addHoursRow();
+
+/* format array → multiline string */
+function formatHours(arr){
+  return arr.map(o=>{
+    const aIdx=daysFull.indexOf(o.startDay);
+    const bIdx=daysFull.indexOf(o.endDay);
+    const dayPart=aIdx===bIdx?daysShort[aIdx]:`${daysShort[aIdx]} - ${daysShort[bIdx]}`;
+    const tPart=`${to12(o.startTime)} - ${to12(o.endTime)}`;
+    return `${dayPart}: ${tPart}`;
+  }).join('\n');
+}
+function to12(t){
+  if(!t)return '';
+  let [h,m]=t.split(':').map(Number),amp='AM';
+  if(h===0){h=12;}
+  else if(h===12){amp='PM';}
+  else if(h>12){h-=12;amp='PM';}
+  return `${h}${m===0?'':':'+String(m).padStart(2,'0')}${amp}`;
+}
+/* parse stored string → array of sets (best-effort) */
+function parseHours(txt){
+  const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const out=[];
+  lines.forEach(l=>{
+    const m=l.match(/^([A-Za-z]{3})(?:\s*-\s*([A-Za-z]{3}))?:\s*(\d{1,2})(?::(\d{2}))?(AM|PM)\s*-\s*(\d{1,2})(?::(\d{2}))?(AM|PM)$/i);
+    if(!m)return;
+    const [,sd,ed,sh,shm,sa,eh,ehm,ea]=m;
+    out.push({
+      startDay:daysFull[daysShort.indexOf(sd)],
+      endDay  :ed?daysFull[daysShort.indexOf(ed)]:daysFull[daysShort.indexOf(sd)],
+      startTime:to24(sh,shm,sa),
+      endTime  :to24(eh,ehm,ea)
+    });
+  });
+  return out;
+}
+function to24(h,m,amp){
+  h=Number(h);m=Number(m||0);
+  if(amp.toUpperCase()==='PM' && h!==12)h+=12;
+  if(amp.toUpperCase()==='AM' && h===12)h=0;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
 /* ---------- LOAD TABLE ---------- */
 async function loadLocations(){
   tbody.innerHTML='';
   const {data,error}=await supabase.from('locations').select('*').order('location_name',{ascending:true});
-  if(error){console.error(error);locMsg.textContent='Error loading locations.';return;}
+  if(error){locMsg.textContent='Error loading locations.';return;}
   data.forEach(l=>{
     const tr=document.createElement('tr');
     tr.dataset.location=JSON.stringify(l);
@@ -204,6 +263,7 @@ async function loadLocations(){
       <td>${l.location_name}</td>
       <td>${l.address||''}</td>
       <td>${l.phone||''}</td>
+      <td>${(l.business_hours||'').replace(/\n/g,'\u200B\n')}</td>
       <td>${l.email||''}</td>
       <td>${l.timezone||''}</td>
       <td>
@@ -219,13 +279,19 @@ window.editLoc=id=>{
   const row=[...tbody.children].find(r=>JSON.parse(r.dataset.location).id===id);
   if(!row)return;
   const l=JSON.parse(row.dataset.location);
-  fields.id   = l.id;
-  fields.name.value = l.location_name||'';
-  fields.addr.value = l.address||'';
-  fields.phone.value= l.phone||'';
-  fields.hours.value= l.business_hours||'';
-  fields.email.value= l.email||'';
-  fields.tz.value   = l.timezone||'';
+  fields.id=l.id;
+  fields.name.value=l.location_name||'';
+  fields.addr.value=l.address||'';
+  fields.phone.value=l.phone||'';
+  fields.email.value=l.email||'';
+  fields.tz.value=l.timezone||'';
+
+  /* hours */
+  hoursWrap.innerHTML='';
+  const sets=parseHours(l.business_hours||'');
+  if(sets.length){
+    sets.forEach(s=>addHoursRow(s));
+  }else addHoursRow();      // at least one row
   locMsg.textContent='Editing – remember to Save.';
 };
 
@@ -238,23 +304,27 @@ window.delLoc=async id=>{
 
 saveBtn.onclick=async()=>{
   locMsg.textContent='';
-  if(!fields.name.value.trim()){
-    locMsg.textContent='Name required.';return;
-  }
+  if(!fields.name.value.trim()){locMsg.textContent='Name required.';return;}
+
+  /* collect hours rows */
+  const sets=[...hoursWrap.querySelectorAll('.hours-row')].map(r=>{
+    const [sd,ed,st,et]=r.querySelectorAll('select,input');
+    return {startDay:sd.value,endDay:ed.value,startTime:st.value,endTime:et.value};
+  }).filter(s=>s.startTime&&s.endTime);
+  if(!sets.length){locMsg.textContent='At least one business-hours row required.';return;}
+  const hoursStr=formatHours(sets);
+
   const payload={
-    location_name : fields.name.value.trim(),
-    address       : fields.addr.value.trim()||null,
-    phone         : fields.phone.value.trim()||null,
-    business_hours: fields.hours.value.trim()||null,
-    email         : fields.email.value.trim()||null,
-    timezone      : fields.tz.value.trim()||null
+    location_name:fields.name.value.trim(),
+    address      :fields.addr.value.trim()||null,
+    phone        :fields.phone.value.trim()||null,
+    business_hours:hoursStr,
+    email        :fields.email.value.trim()||null,
+    timezone     :fields.tz.value.trim()||null
   };
-  let res;
-  if(fields.id){
-    res=await supabase.from('locations').update(payload).eq('id',fields.id);
-  }else{
-    res=await supabase.from('locations').insert([payload]);
-  }
+  const res=fields.id
+      ? await supabase.from('locations').update(payload).eq('id',fields.id)
+      : await supabase.from('locations').insert([payload]);
   locMsg.textContent=res.error?'Error saving.':'Saved!';
   if(!res.error){loadLocations();clearForm();}
 };
@@ -262,7 +332,8 @@ saveBtn.onclick=async()=>{
 clearBtn.onclick=clearForm;
 function clearForm(){
   fields.id=null;
-  [fields.name,fields.addr,fields.phone,fields.hours,fields.email,fields.tz].forEach(f=>f.value='');
+  [fields.name,fields.addr,fields.phone,fields.email,fields.tz].forEach(f=>f.value='');
+  hoursWrap.innerHTML='';addHoursRow();
   locMsg.textContent='';
 }
 
