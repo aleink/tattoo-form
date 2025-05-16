@@ -2,363 +2,202 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Calendar – Club Tattoo</title>
+<title>Club Tattoo Management Tool</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<!-- ─── THEME ─── -->
 <style>
-:root{--bg0:#111;--bg1:#000;--bg2:#222;--border:#444;--txt:#fff;--txt-dim:#bbb;--accent:#28a745;--danger:#f44336;--info:#1976d2}
-body.light{
-  --bg0:#f7f7f7;--bg1:#ffffff;--bg2:#e6e6e6;
-  --border:#bbb;--txt:#000;--txt-dim:#444;--accent:#0d6efd;--danger:#d32f2f;--info:#0d6efd;
-}
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-body{background:var(--bg0);color:var(--txt);min-height:100vh;display:flex;flex-direction:column;transition:background .25s,color .25s}
+:root{--bg0:#111;--bg1:#222;--border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745}
+body{margin:0;font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg0);color:var(--txt);min-height:100vh;display:flex;flex-direction:column}
+h1,h2{margin:0}
+header,footer{background:#000;padding:20px;text-align:center;border-bottom:2px solid var(--border)}
+footer{border-top:2px solid var(--border);border-bottom:none}
+header h1{font-size:2rem;margin-bottom:10px}
+header p{font-size:1rem;color:#bbb}
+main{flex:1;padding:40px 20px;display:flex;flex-direction:column;align-items:center;max-width:1200px;margin:0 auto}
+.links-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:40px;width:100%;max-width:900px}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:20px;text-align:center;transition:background .2s}
+.card:hover{background:#333}
+.card h2{font-size:1.25rem;margin:0 0 8px}
+.card p{font-size:.9rem;color:var(--txt-dim);height:42px;margin:0 0 18px}
+.card a{display:inline-block;background:#777;color:#fff;text-decoration:none;padding:8px 16px;border-radius:4px;transition:background .2s}
+.card a:hover{background:#999}
 
-/* ── top bar ── */
-#top-bar{display:flex;align-items:center;justify-content:space-between;background:#000;border-bottom:2px solid var(--border);padding:12px 20px}
-#top-left{display:flex;align-items:center;gap:10px;font-weight:600}
-.top-btn{background:var(--bg2);color:var(--txt);border:none;border-radius:4px;padding:6px 14px;cursor:pointer}
-.top-btn:hover{background:#444}
+/* Top bar (after login) */
+#top-bar{display:none;background:#000;border-bottom:2px solid var(--border);padding:12px 20px;align-items:center;justify-content:space-between}
+#logout-btn{background:var(--bg1);color:var(--txt);border:none;border-radius:4px;padding:6px 14px;cursor:pointer}
+#logout-btn:hover{background:#444}
 
-/* header */
-header{text-align:center;padding:20px;border-bottom:2px solid var(--border);background:var(--bg1)}
-header h1{font-size:1.8rem}
-
-/* controls */
-.controls{display:flex;align-items:center;gap:14px;margin:15px 0;flex-wrap:wrap}
-select,input[type=date]{background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:6px}
-label{font-weight:700;font-size:.9rem}
-
-#artist-filter-container{margin-top:10px}
-.artist-filter-item{display:inline-block;margin-right:10px}
-.artist-filter-item label{margin-left:4px}
-
-/* scheduler grid */
-#daily-scheduler{position:relative;height:960px;border:1px solid var(--border);overflow-y:auto;margin-top:10px;background:var(--bg2)}
-.hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--txt-dim);font-size:12px;padding-left:5px}
-.schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--txt-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
-.schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
-.schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
-
-.appointment-block{position:absolute;background:var(--accent);color:#fff;border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box}
-
-/* modal */
-#appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--border);padding:20px;width:330px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
-#appt-modal h3{margin-top:0;margin-bottom:10px}
-.modal-field{margin-bottom:10px;font-size:.9rem}
-.modal-field input, .modal-field select, .modal-field textarea{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:6px}
-.modal-buttons{text-align:right;margin-top:10px}
-.modal-buttons button{margin-left:8px;background:var(--bg2);color:var(--txt);border:none;border-radius:4px;padding:6px 10px;cursor:pointer}
-.modal-buttons button:hover{background:#555}
-
-/* appointments list */
-#appointments-list-section{margin:25px 0;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:15px;max-width:1200px}
-#appointments-list-section h2{margin-bottom:10px}
-.filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}
-.appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
-.appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
-.appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
-.appt-item p{margin-bottom:2px;font-size:.85rem;color:var(--txt-dim)}
+/* Login box */
+#login-section{max-width:420px;margin:60px auto;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:28px;display:none}
+#login-section label{font-weight:700;display:block;margin:10px 0 4px}
+#login-section input{width:100%;padding:8px;background:var(--bg0);color:var(--txt);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
+#login-section button{width:100%;background:var(--accent);border:none;color:#fff;padding:10px;border-radius:4px;cursor:pointer}
+#login-section button:hover{opacity:.85}
+#login-msg{color:#ff6161;font-size:.9rem;margin-top:6px;text-align:center}
 </style>
 
-<!-- Supabase -->
+<!-- Supabase (same key / URL) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
-<!-- Top bar -->
+<!-- top bar -->
 <div id="top-bar">
-  <div id="top-left">
-    <button id="back-btn" class="top-btn">← Back</button>
-    <span>Calendar</span>
-  </div>
-  <div>
-    <button id="theme-btn" class="top-btn">Light mode</button>
-    <button id="logout-btn" class="top-btn">Logout</button>
-  </div>
+  <div style="font-weight:600">Club Tattoo Dashboard</div>
+  <button id="logout-btn">Logout</button>
 </div>
 
-<header><h1 id="page-title">Calendar</h1></header>
+<header>
+  <h1>Club Tattoo Management Tool</h1>
+  <p>Single portal for booking, scheduling, artist management, payroll, and more.</p>
+</header>
 
-<!-- MAIN UI -->
-<main style="padding:20px;flex:1;display:flex;flex-direction:column;align-items:center">
+<!-- login -->
+<section id="login-section">
+  <label>Email</label><input id="login-email" type="email" autocomplete="username">
+  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
+  <button id="login-btn">Login</button>
+  <div id="login-msg"></div>
+</section>
 
-  <!-- controls -->
-  <div class="controls" id="controls-bar">
-    <label>Location:
-      <select id="location-filter"><option value="">-- Select Location --</option></select>
-    </label>
+<main id="main-content" style="display:none">
+  <h2 style="font-size:1.35rem;margin-bottom:22px">Choose a Section</h2>
 
-    <label>Date:
-      <input type="date" id="day-input">
-    </label>
-
-    <button id="today-btn" class="top-btn" style="background:var(--info)">Today</button>
-  </div>
-
-  <!-- artist checkboxes -->
-  <div id="artist-filter-container"></div>
-
-  <!-- daily grid -->
-  <div id="daily-scheduler"></div>
-
-  <!-- APPT MODAL -->
-  <div id="appt-modal">
-    <h3 id="modal-title">New Appointment</h3>
-    <div class="modal-field"><label>Start Time (5-min)</label><input type="time" id="modal-start" step="300"></div>
-    <div class="modal-field"><label>End Time (5-min)</label><input type="time" id="modal-end" step="300"></div>
-    <div class="modal-field"><label>Artist</label><select id="modal-artist"></select></div>
-    <div class="modal-field"><label>Client Name</label><input id="modal-client-name"></div>
-    <div class="modal-field"><label>Client Phone</label><input id="modal-client-phone"></div>
-    <div class="modal-field"><label>Client Email</label><input id="modal-email" type="email"></div>
-    <div class="modal-field"><label>Description</label><textarea id="modal-desc"></textarea></div>
-    <div class="modal-field"><label>Deposit</label><input id="modal-deposit" type="number"></div>
-    <div class="modal-field"><label>Price</label><input id="modal-price" type="number"></div>
-    <div class="modal-field"><label>Tip</label><input id="modal-tip" type="number"></div>
-    <div class="modal-field"><label>Appointment Type</label>
-      <select id="modal-type">
-        <option value="walk-in">Walk-in</option>
-        <option value="appointment">Appointment</option>
-        <option value="tentative">Tentative</option>
-      </select>
+  <div class="links-grid">
+    <!-- Calendar -->
+    <div class="card" id="card-calendar">
+      <h2>Calendar</h2><p>View &amp; manage all appointments and schedules.</p>
+      <a href="calendar.html">Open Calendar</a>
     </div>
-    <div class="modal-buttons">
-      <button id="save-appt-btn">Save</button>
-      <button id="cancel-appt-btn">Cancel</button>
-      <button id="delete-appt-btn"   style="display:none">Delete</button>
-      <button id="complete-appt-btn" style="display:none">Mark Completed</button>
+    <!-- Artists -->
+    <div class="card" id="card-artists">
+      <h2>Artists</h2><p>Add, edit, or remove tattoo artists.</p>
+      <a href="manage_artists.html">Manage Artists</a>
+    </div>
+    <!-- Schedules -->
+    <div class="card" id="card-schedules">
+      <h2>Schedules</h2><p>Assign working days / hours to each artist.</p>
+      <a href="manage_schedules.html">Manage Schedules</a>
+    </div>
+    <!-- Vacations -->
+    <div class="card" id="card-vacations">
+      <h2>Vacations</h2><p>Block out dates for artist vacations.</p>
+      <a href="manage_vacations.html">Manage Vacations</a>
+    </div>
+    <!-- Payroll -->
+    <div class="card" id="card-payroll">
+      <h2>Payroll</h2><p>Calculate earnings and run accounting reports.</p>
+      <a href="artists_payroll.html">Open Payroll</a>
+    </div>
+    <!-- Locations -->
+    <div class="card" id="card-locations">
+      <h2>Locations</h2><p>Create or edit shop locations &amp; hours.</p>
+      <a href="manage_locations.html">Manage Locations</a>
     </div>
   </div>
-
-  <!-- LIST SECTION -->
-  <section id="appointments-list-section" style="width:100%">
-    <h2>Appointments / Walk-ins</h2>
-    <div class="filters-row">
-      <label>From: <input type="date" id="range-start"></label>
-      <label>To:   <input type="date" id="range-end"></label>
-      <label>Client search: <input id="client-search" placeholder="name / phone / email"></label>
-      <div>
-        <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
-        <label><input type="checkbox" id="cb-walkins" checked> Walk-ins</label>
-      </div>
-    </div>
-    <div id="appointments-list" class="appointments-container"></div>
-  </section>
 </main>
 
+<footer><p>&copy; <span id="year"></span> Club Tattoo — All rights reserved.</p></footer>
+
 <script>
-/* ========== AUTH CHECK (must come from index) ========== */
-const allowedRoles=['gm','owner','sm','fd'];
-const role = localStorage.getItem('currentUserRole');
-const locScope = localStorage.getItem('currentUserLoc');
-
-if(!role || !allowedRoles.includes(role)){
-  window.location.href='index.html';
-}
-
-/* ========== Supabase ========== */
+/* ========== Supabase init (reuse token) ========== */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ========== DOM REFS ========== */
-const backBtn=document.getElementById('back-btn');
-const logoutBtn=document.getElementById('logout-btn');
-const themeBtn=document.getElementById('theme-btn');
-const todayBtn=document.getElementById('today-btn');
+/* ========== DOM refs ========== */
+const loginSec   = document.getElementById('login-section');
+const loginEmail = document.getElementById('login-email');
+const loginPass  = document.getElementById('login-pass');
+const loginBtn   = document.getElementById('login-btn');
+const loginMsg   = document.getElementById('login-msg');
 
-const locationFilter=document.getElementById('location-filter');
-const dayInput=document.getElementById('day-input');
-const artistFilterContainer=document.getElementById('artist-filter-container');
-const dailyScheduler=document.getElementById('daily-scheduler');
+const topBar     = document.getElementById('top-bar');
+const logoutBtn  = document.getElementById('logout-btn');
+const mainCont   = document.getElementById('main-content');
 
-const modal=document.getElementById('appt-modal');
-const modalTitle=document.getElementById('modal-title');
-const modalStart=document.getElementById('modal-start');
-const modalEnd=document.getElementById('modal-end');
-const modalArtist=document.getElementById('modal-artist');
-const modalClientName=document.getElementById('modal-client-name');
-const modalClientPhone=document.getElementById('modal-client-phone');
-const modalEmail=document.getElementById('modal-email');
-const modalDesc=document.getElementById('modal-desc');
-const modalDeposit=document.getElementById('modal-deposit');
-const modalPrice=document.getElementById('modal-price');
-const modalTip=document.getElementById('modal-tip');
-const modalType=document.getElementById('modal-type');
-const saveBtn=document.getElementById('save-appt-btn');
-const cancelBtn=document.getElementById('cancel-appt-btn');
-const deleteBtn=document.getElementById('delete-appt-btn');
-const completeBtn=document.getElementById('complete-appt-btn');
+/* current year */
+document.getElementById('year').textContent = new Date().getFullYear();
 
-const rangeStart=document.getElementById('range-start');
-const rangeEnd=document.getElementById('range-end');
-const cbAppt=document.getElementById('cb-appointments');
-const cbWalk=document.getElementById('cb-walkins');
-const appointmentsList=document.getElementById('appointments-list');
-const clientSearch=document.getElementById('client-search');
+/* ========== auto-login if role already saved ========== */
+(function(){
+  const r = localStorage.getItem('currentUserRole');
+  if(r){
+    showApp(r);
+  }else{
+    loginSec.style.display = 'block';
+  }
+})();
 
-/* ========= UTILITIES ========= */
-const toMin=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
-const anyToMin=t=>t.includes(' ') ? toMin(convert12to24(t)) : toMin(t);
-const convert12to24=t=>{let [time,ampm]=t.split(' ');let [h,m]=time.split(':').map(Number);ampm=ampm.toLowerCase();if(ampm==='pm'&&h!==12)h+=12;if(ampm==='am'&&h===12)h=0;return `${String(h).padStart(2,'0')}:${m}`};
-const minsTo12=m=>{let h=Math.floor(m/60),mm=m%60,am='AM';if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM'}return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`};
-const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-const todayISO=()=>new Date().toISOString().split('T')[0];
-const weekdayIndex=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
-const buildFree=(dayStart,dayEnd,apps)=>{
-  const BUFFER=15;
-  const busy=apps.map(a=>({s:Math.max(dayStart,toMin(a.start_time)-BUFFER),e:Math.min(dayEnd,toMin(a.end_time)+BUFFER)})).sort((a,b)=>a.s-b.s);
-  const free=[];let cur=dayStart;busy.forEach(b=>{if(b.s>cur)free.push({s:cur,e:b.s});if(b.e>cur)cur=b.e});if(cur<dayEnd)free.push({s:cur,e:dayEnd});return free;
+/* ========== login flow ========== */
+loginBtn.onclick = async ()=>{
+  loginMsg.textContent='';
+  if(!loginEmail.value || !loginPass.value){
+    loginMsg.textContent = 'Please enter e-mail & password.'; return;
+  }
+  const {data,error} = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', loginEmail.value.trim())
+        .single();
+  if(error || !data){ loginMsg.textContent='Invalid credentials.'; return; }
+  if(data.password_hash !== loginPass.value.trim()){
+    loginMsg.textContent='Invalid credentials.'; return;
+  }
+
+  /* store role & location for other pages */
+  localStorage.setItem('currentUserRole', data.role);
+  if(data.location_id) localStorage.setItem('currentUserLoc', data.location_id);
+  else localStorage.removeItem('currentUserLoc');
+
+  showApp(data.role);
 };
 
-/* ========= THEME ========= */
-if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}
-themeBtn.onclick=()=>{const light=document.body.classList.toggle('light');themeBtn.textContent=light?'Dark mode':'Light mode';localStorage.setItem('ui-theme',light?'light':'dark')};
-
-/* ========= BACK / LOGOUT ========= */
-backBtn.onclick=()=>{window.location.href='index.html'};
-logoutBtn.onclick=()=>{localStorage.clear();window.location.href='index.html'};
-
-/* ========= INITIALISE ========= */
-let artistMap={},currentApptId=null;
-(async ()=>{await loadLocations();dayInput.value=todayISO();await loadArtists(locationFilter.value);setDefaultRange();loadDay();loadAppointmentsList();})();
-
-/* ========= LOAD LOCATIONS ========= */
-async function loadLocations(){
-  locationFilter.innerHTML='<option value="">-- Select Location --</option>';
-  let q=supabase.from('locations').select('*').order('location_name',{ascending:true});
-  if(role==='sm'||role==='fd') q=q.eq('id',locScope);
-  const {data}=await q;
-  data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
-  if(role==='sm'||role==='fd'){locationFilter.value=locScope;locationFilter.disabled=true;}
-}
-locationFilter.onchange=async()=>{await loadArtists(locationFilter.value);loadDay();loadAppointmentsList()};
-
-/* ========= LOAD ARTISTS FOR LOCATION ========= */
-async function loadArtists(locId){
-  artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
-  if(!locId)return;
-  const {data}=await supabase.from('artists').select('*').eq('location_id',locId).order('artist_name',{ascending:true});
-  data.forEach(a=>{
-    artistMap[a.id]=a;
-    modalArtist.add(new Option(a.artist_name,a.id));
-    const wrap=document.createElement('div');wrap.className='artist-filter-item';
-    const cb=document.createElement('input');cb.type='checkbox';cb.value=a.id;cb.checked=true;
-    wrap.append(cb,document.createElement('label'));wrap.lastChild.textContent=a.artist_name;
-    artistFilterContainer.appendChild(wrap);
-  });
-}
-artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList()});
-
-/* ========= DAY GRID ========= */
-todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay()};
-dayInput.onchange=loadDay;
-
-async function loadDay(){
-  dailyScheduler.innerHTML='';
-  const date=dayInput.value;if(!date)return;
-  for(let h=8;h<=24;h++){const div=document.createElement('div');div.className='hour-line';div.style.top=(h-8)*60+'px';const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;dailyScheduler.appendChild(div);}
-  const ids=[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
-  if(!ids.length)return;
-  const idx=weekdayIndex(date), cStart=cols[idx]+'_start', cEnd=cols[idx]+'_end';
-  const {data:vac}=await supabase.from('artist_vacations').select('artist_id').in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
-  const vacSet=new Set(vac?.map(v=>v.artist_id)||[]);
-  const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-
-  /* schedule blocks */
-  artists.forEach((a,col)=>{
-    const st=a[cStart],en=a[cEnd];if(!st||!en)return;
-    const block=document.createElement('div');block.className='schedule-block';if(vacSet.has(a.id))block.classList.add('vac');
-    const top=toMin(st)-480, ht=toMin(en)-toMin(st);block.style.cssText=`left:${80+col*120}px;width:110px;top:${top}px;height:${ht}px`;
-    block.style.borderLeftColor=a.color||'#888';block.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
-    dailyScheduler.appendChild(block);
-  });
-
-  /* appointments */
-  const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
-  const byA={};artists.forEach(a=>byA[a.id]=[]);
-  appts?.forEach(ap=>byA[ap.artist_id]?.push(ap));
-  artists.forEach((a,col)=>{
-    const list=byA[a.id].sort((x,y)=>toMin(x.start_time)-toMin(y.start_time));
-    const subs=[];list.forEach(ap=>{let placed=false;for(const s of subs){if(!overlap(s[s.length-1],ap)){s.push(ap);placed=true;break}};if(!placed)subs.push([ap])});
-    subs.forEach((sub,subIdx)=>{
-      sub.forEach(ap=>{
-        const t0=toMin(ap.start_time)-480, ht=toMin(ap.end_time)-toMin(ap.start_time);
-        const w=110/subs.length,left=80+col*120+subIdx*w;
-        const div=document.createElement('div');div.className='appointment-block';
-        div.style.cssText=`left:${left}px;top:${t0}px;width:${w-2}px;height:${ht}px;background:${a.color||'#555'}`;
-        div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
-        div.onclick=e=>{e.stopPropagation();openExistingAppt(ap.id)};
-        dailyScheduler.appendChild(div);
-      });
-    });
-  });
-  function overlap(a,b){return toMin(a.start_time)<toMin(b.end_time)&&toMin(b.start_time)<toMin(a.end_time);}
-  dailyScheduler.onclick=e=>{if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c)))return;const y=e.clientY-dailyScheduler.getBoundingClientRect().top;const mins=Math.floor(y);const h=Math.floor(mins/60)+8;const m=String(mins%60).padStart(2,'0');openNewAppt(`${String(h).padStart(2,'0')}:${m}`,date)};
+/* ========== show app & filter cards ========== */
+function showApp(role){
+  loginSec.style.display = 'none';
+  topBar.style.display   = 'flex';
+  mainCont.style.display = 'flex';
+  filterCards(role);
 }
 
-/* ========= MODAL ========= */
-function openNewAppt(slot,date){
-  currentApptId=null;modalTitle.textContent='New Appointment';
-  modalStart.value=slot;modalEnd.value=slot;modalArtist.value='';
-  [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
-  modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
-  modal.style.display='block';
-}
-async function openExistingAppt(id){
-  currentApptId=id;
-  const {data,error}=await supabase.from('artist_appointments').select('*').eq('id',id).single();
-  if(error||!data)return;const ap=data;
-  modalTitle.textContent='Edit Appointment';
-  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;
-  modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
-  modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';modalType.value=ap.appointment_type;
-  deleteBtn.style.display=completeBtn.style.display='inline-block';modal.style.display='block';
-}
-cancelBtn.onclick=()=>modal.style.display='none';
+/* access rules */
+function filterCards(role){
+  const show = id => document.getElementById(id).style.display='block';
+  const hide = id => document.getElementById(id).style.display='none';
 
-saveBtn.onclick=async()=>{
-  const date=dayInput.value;if(!date){alert('Select date.');return;}
-  if(!modalStart.value||!modalEnd.value){alert('Start & End required');return;}
-  /* conflict check */
-  const {data:conflict}=await supabase.from('artist_appointments').select('*').eq('date',date).eq('artist_id',modalArtist.value);
-  if(conflict&&over(conflict,modalStart.value,modalEnd.value,currentApptId)){alert('Time overlap');return;}
-  const payload={
-    artist_id:modalArtist.value,date,start_time:modalStart.value,end_time:modalEnd.value,
-    appointment_type:modalType.value,client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
-    email:modalEmail.value.trim(),notes:modalDesc.value.trim(),
-    deposit:modalDeposit.value?parseFloat(modalDeposit.value):null,
-    price:modalPrice.value?parseFloat(modalPrice.value):null,
-    tip:modalTip.value?parseFloat(modalTip.value):null
-  };
-  let err; if(currentApptId)({error:err}=await supabase.from('artist_appointments').update(payload).eq('id',currentApptId));
-  else ({error:err}=await supabase.from('artist_appointments').insert([payload]));
-  if(err){alert('Save error');return;} modal.style.display='none';loadDay();loadAppointmentsList();
+  /* default hide all */
+  ['card-calendar','card-artists','card-schedules','card-vacations','card-payroll','card-locations']
+  .forEach(hide);
+
+  switch(role){
+    case 'gm':
+    case 'owner':
+      ['card-calendar','card-artists','card-schedules','card-vacations','card-payroll','card-locations']
+        .forEach(show);
+      break;
+    case 'sm':
+      ['card-calendar','card-artists','card-schedules','card-vacations']
+        .forEach(show);
+      break;
+    case 'fd':
+      show('card-calendar');
+      break;
+    case 'ad':
+      show('card-payroll');
+      break;
+    default:
+      // any other role sees nothing
+      break;
+  }
+}
+
+/* ========== logout ========== */
+logoutBtn.onclick = ()=>{
+  localStorage.clear();
+  location.reload();
 };
-function over(list,s,e,skip){const sN=toMin(s),eN=toMin(e);return list.some(a=>a.id!==skip&&sN<toMin(a.end_time)&&toMin(a.start_time)<eN)}
-deleteBtn.onclick=async()=>{if(!currentApptId||!confirm('Delete?'))return;await supabase.from('artist_appointments').delete().eq('id',currentApptId);modal.style.display='none';loadDay();loadAppointmentsList()};
-completeBtn.onclick=async()=>{if(!currentApptId)return;await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);modal.style.display='none';loadDay();loadAppointmentsList()};
-
-/* ========= LIST ========= */
-function setDefaultRange(){const now=new Date();rangeStart.value=new Date(now-7*86400000).toISOString().split('T')[0];rangeEnd.value=new Date(now.getTime()+7*86400000).toISOString().split('T')[0]}
-[rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
-clientSearch.addEventListener('input',loadAppointmentsList);
-
-async function loadAppointmentsList(){
-  appointmentsList.innerHTML='';
-  const ids=[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
-  if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
-  if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select a date range.';return;}
-  const types=[];if(cbAppt.checked)types.push('appointment','tentative');if(cbWalk.checked)types.push('walk-in');if(!types.length){appointmentsList.textContent='No types selected.';return;}
-  let q=supabase.from('artist_appointments').select('*, artists!inner(location_id,artist_name)').gte('date',rangeStart.value).lte('date',rangeEnd.value).in('appointment_type',types).in('artist_id',ids);
-  if(role==='sm'||role==='fd')q=q.eq('artists.location_id',locScope);else if(locationFilter.value)q=q.eq('artists.location_id',locationFilter.value);
-  const term=clientSearch.value.trim();if(term)q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
-  const {data,error}=await q;if(error){appointmentsList.textContent='Error.';return;}if(!data?.length){appointmentsList.textContent='No records.';return;}
-  data.sort((a,b)=>a.date===b.date?toMin(a.start_time)-toMin(b.start_time):(a.date<b.date?-1:1));
-  data.forEach(ap=>{const div=document.createElement('div');div.className='appt-item';div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4><p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p><p>Client: ${ap.client_name||'N/A'}</p><p>Price: ${ap.price||0}  Tip: ${ap.tip||0}</p>`;div.onclick=()=>{dayInput.value=ap.date;loadDay()};appointmentsList.appendChild(div);});
-}
 </script>
 </body>
 </html>
