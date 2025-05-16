@@ -73,12 +73,12 @@ button:hover{background:#555}
 </head>
 <body>
 
-<!-- ❶  Central access-guard (runs before anything else renders) -->
+<!-- ❶  Central access-guard (unchanged) -->
 <script type="module">
   import { supabase }      from './js/supabaseClient.js';
   import { userCanAccess } from './js/permission.js';
 
-  const PAGE_SLUG = 'schedules';          // must match page_roles.page_slug
+  const PAGE_SLUG = 'schedules';
   if (!(await userCanAccess(PAGE_SLUG))) {
     window.location.href = 'index.html';
   }
@@ -113,13 +113,13 @@ button:hover{background:#555}
     Enter start &amp; end time for each day (leave blank for a day off). Use the “Reset” button to clear a day quickly.
   </p>
 
-  <div id="days-wrap" class="days-container"><!-- populated by JS --></div>
+  <div id="days-wrap" class="days-container"></div>
 
   <button id="save-btn" style="margin-top:14px">Save Schedule</button>
   <div id="sched-msg" class="message"></div>
 </div>
 
-<!-- Logic -->
+<!-- ────────────────────────── UPDATED LOGIC ────────────────────────── -->
 <script type="module">
 /* ---------- Shared Supabase ---------- */
 import { supabase } from './js/supabaseClient.js';
@@ -142,27 +142,27 @@ const saveBtn     = document.getElementById('save-btn');
 const schedMsg    = document.getElementById('sched-msg');
 
 /* ---------- Theme toggle ---------- */
-(()=>{
-  if (localStorage.getItem('ui-theme')==='light'){
+(() => {
+  if (localStorage.getItem('ui-theme') === 'light') {
     document.body.classList.add('light');
-    themeBtn.textContent='Dark mode';
+    themeBtn.textContent = 'Dark mode';
   }
 })();
-themeBtn.onclick=()=>{
-  const l=document.body.classList.toggle('light');
-  themeBtn.textContent=l?'Dark mode':'Light mode';
-  localStorage.setItem('ui-theme',l?'light':'dark');
+themeBtn.onclick = () => {
+  const l = document.body.classList.toggle('light');
+  themeBtn.textContent = l ? 'Dark mode' : 'Light mode';
+  localStorage.setItem('ui-theme', l ? 'light' : 'dark');
 };
 
 /* ---------- Navigation ---------- */
 topBar.classList.remove('hidden');
 schedSec.classList.remove('hidden');
 
-backBtn.onclick  = ()=>window.location.href='index.html';
-logoutBtn.onclick= ()=>{ localStorage.clear(); window.location.href='index.html'; };
+backBtn.onclick   = () => window.location.href = 'index.html';
+logoutBtn.onclick = () => { localStorage.clear(); window.location.href = 'index.html'; };
 
 /* ---------- Day grid ---------- */
-const dayIdx=[
+const dayIdx = [
   {k:'sunday',    label:'Sunday'},
   {k:'monday',    label:'Monday'},
   {k:'tuesday',   label:'Tuesday'},
@@ -171,71 +171,105 @@ const dayIdx=[
   {k:'friday',    label:'Friday'},
   {k:'saturday',  label:'Saturday'}
 ];
-const dayInputs={};
-function buildDayBlocks(){
-  daysWrap.innerHTML='';
-  dayIdx.forEach(d=>{
-    const block=document.createElement('div');block.className='day-block';
-    block.innerHTML=`
+const dayInputs = {};
+function buildDayBlocks () {
+  daysWrap.innerHTML = '';
+  dayIdx.forEach(d => {
+    const block = document.createElement('div');
+    block.className = 'day-block';
+    block.innerHTML = `
       <h4>${d.label}</h4>
       <label style="font-size:.8em">Start</label><input type="time">
       <label style="font-size:.8em">End</label><input  type="time">
       <button class="btn-mini day-reset" type="button">Reset</button>`;
-    const [st,ed]=block.querySelectorAll('input');
-    block.querySelector('.day-reset').onclick=()=>{st.value='';ed.value='';};
-    dayInputs[d.k]={start:st,end:ed};
+    const [st, ed] = block.querySelectorAll('input');
+    block.querySelector('.day-reset').onclick = () => { st.value = ''; ed.value = ''; };
+    dayInputs[d.k] = { start: st, end: ed };
     daysWrap.appendChild(block);
   });
 }
 buildDayBlocks();
 
 /* ---------- Locations ---------- */
-async function loadLocations(){
-  locFilter.innerHTML='<option value="">-- Select Location --</option>';
-  let q=supabase.from('locations').select('*');
-  if (role==='sm') q=q.eq('id',scopeLoc);
-  (await q).data.forEach(l=>locFilter.add(new Option(l.location_name,l.id)));
-  if (role==='sm'){
-    locFilter.value=scopeLoc;
-    locFilter.disabled=true;
+async function loadLocations () {
+  locFilter.innerHTML = '<option value="">-- Select Location --</option>';
+  let q = supabase.from('locations').select('*');
+  if (['sm', 'sr'].includes(role)) q = q.eq('id', scopeLoc);
+
+  const { data } = await q;
+  data.forEach(l => locFilter.add(new Option(l.location_name, l.id)));
+
+  if (['sm', 'sr'].includes(role)) {
+    locFilter.value = scopeLoc;
+    locFilter.disabled = true;
   }
+
+  // Make sure artists are shown even when the dropdown is disabled
+  await loadArtists();
 }
-locFilter.onchange=loadArtists;
+locFilter.onchange = loadArtists;
 
 /* ---------- Artists ---------- */
-async function loadArtists(){
-  artistFilter.innerHTML='<option value="">-- Select Artist --</option>';
-  buildDayBlocks();schedMsg.textContent='';
-  if(!locFilter.value) return;
-  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locFilter.value);
-  data?.forEach(a=>artistFilter.add(new Option(a.artist_name,a.id)));
+async function loadArtists () {
+  artistFilter.innerHTML = '<option value="">-- Select Artist --</option>';
+  buildDayBlocks();
+  schedMsg.textContent = '';
+
+  if (!locFilter.value) return;
+
+  const { data } = await supabase
+    .from('artists')
+    .select('id,artist_name')
+    .eq('location_id', locFilter.value);
+
+  data?.forEach(a => artistFilter.add(new Option(a.artist_name, a.id)));
+
+  // Auto-select first artist for single-location roles to reduce clicks
+  if (['sm', 'sr'].includes(role) && data?.length === 1) {
+    artistFilter.value = data[0].id;
+    await loadArtistSchedule();
+  }
 }
-artistFilter.onchange=loadArtistSchedule;
+artistFilter.onchange = loadArtistSchedule;
 
 /* ---------- Load existing schedule ---------- */
-async function loadArtistSchedule(){
-  buildDayBlocks();schedMsg.textContent='';
-  if(!artistFilter.value) return;
-  const {data,error}=await supabase.from('artists').select('*').eq('id',artistFilter.value).single();
-  if(error||!data){schedMsg.textContent='Error loading artist.';return;}
-  dayIdx.forEach(d=>{
-    const s=d.k+'_start',e=d.k+'_end';
-    if(data[s]) dayInputs[d.k].start.value=data[s];
-    if(data[e]) dayInputs[d.k].end.value  =data[e];
+async function loadArtistSchedule () {
+  buildDayBlocks();
+  schedMsg.textContent = '';
+  if (!artistFilter.value) return;
+
+  const { data, error } = await supabase
+    .from('artists')
+    .select('*')
+    .eq('id', artistFilter.value)
+    .single();
+
+  if (error || !data) { schedMsg.textContent = 'Error loading artist.'; return; }
+
+  dayIdx.forEach(d => {
+    const s = d.k + '_start', e = d.k + '_end';
+    if (data[s]) dayInputs[d.k].start.value = data[s];
+    if (data[e]) dayInputs[d.k].end.value   = data[e];
   });
 }
 
 /* ---------- Save ---------- */
-saveBtn.onclick=async()=>{
-  schedMsg.textContent='';
-  if(!artistFilter.value){schedMsg.textContent='Pick an artist first.';return;}
-  const payload={};
-  dayIdx.forEach(d=>{
-    payload[d.k+'_start']=dayInputs[d.k].start.value||null;
-    payload[d.k+'_end'  ]=dayInputs[d.k].end.value  ||null;
+saveBtn.onclick = async () => {
+  schedMsg.textContent = '';
+  if (!artistFilter.value) { schedMsg.textContent = 'Pick an artist first.'; return; }
+
+  const payload = {};
+  dayIdx.forEach(d => {
+    payload[d.k + '_start'] = dayInputs[d.k].start.value || null;
+    payload[d.k + '_end']   = dayInputs[d.k].end.value   || null;
   });
-  const {error}=await supabase.from('artists').update(payload).eq('id',artistFilter.value);
-  schedMsg.textContent=error?'Error saving schedule.':'Schedule saved!';
+
+  const { error } = await supabase
+    .from('artists')
+    .update(payload)
+    .eq('id', artistFilter.value);
+
+  schedMsg.textContent = error ? 'Error saving schedule.' : 'Schedule saved!';
 };
 
 /* ---------- Boot ---------- */
