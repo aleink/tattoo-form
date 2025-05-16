@@ -9,200 +9,198 @@
           default-src 'self';
           script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
           connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
-          style-src  'self' 'unsafe-inline';
+          style-src 'self' 'unsafe-inline';
           object-src 'none';
         ">
 
-  <!-- ───── THEME (matches the other modules) ───── -->
+  <!-- ✦ same dark / light palette used everywhere else ✦ -->
   <style>
     :root{
-      --bg-0:#111;--bg-1:#222;--bg-2:#333;
-      --border:#444;--text:#fff;--text-dim:#ccc;
-      --accent:#28a745;--info:#1976d2;--danger:#f44336;
+      --bg0:#111; --bg1:#222; --bg2:#333;
+      --border:#444; --txt:#fff; --txt-dim:#ccc;
+      --accent:#28a745; --info:#1976d2; --danger:#f44336;
     }
     body.light{
-      --bg-0:#f7f7f7;--bg-1:#fff;--bg-2:#e4e4e4;
-      --border:#bbb;--text:#000;--text-dim:#555;
-      --accent:#0d6efd;--info:#0d6efd;--danger:#c62828;
+      --bg0:#f7f7f7; --bg1:#fff; --bg2:#e4e4e4;
+      --border:#bbb; --txt:#000; --txt-dim:#555;
+      --accent:#0d6efd; --info:#0d6efd; --danger:#c62828;
     }
 
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-    body{background:var(--bg-0);color:var(--text);max-width:900px;margin:24px auto;padding:24px;transition:background .25s}
+    body{background:var(--bg0);color:var(--txt);max-width:900px;margin:32px auto;padding:28px;transition:.25s background}
 
-    h1{text-align:center;margin-bottom:22px}
-    h2{margin:10px 0 16px}
+    h1{text-align:center;margin-bottom:24px;font-size:1.8rem}
+    h2{margin:10px 0 14px}
 
     label{display:block;font-weight:700;margin:10px 0 4px}
     input,select{
-      width:100%;padding:8px;background:var(--bg-2);color:var(--text);
+      width:100%;padding:8px;background:var(--bg2);color:var(--txt);
       border:1px solid var(--border);border-radius:4px;margin-bottom:12px
     }
     input:focus,select:focus{outline:2px solid var(--accent)}
 
     button{
-      width:100%;padding:8px;background:var(--bg-2);color:var(--text);
-      border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:filter .2s
+      padding:8px 16px;border:none;border-radius:4px;
+      background:var(--bg2);color:var(--txt);cursor:pointer;
+      transition:filter .2s
     }
-    button:hover{filter:brightness(1.08)}
-    .btn-accent{background:var(--accent);color:#fff;border:none}
-    .btn-light {background:var(--bg-2);color:var(--text);border:1px solid var(--border)}
-
+    button:hover{filter:brightness(1.1)}
+    .btn-green {background:var(--accent);color:#fff}
+    .btn-grey  {background:var(--bg2);color:var(--txt)}
+    .card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:30px}
     .hidden{display:none}
-    .message{color:var(--danger);font-size:.9em;margin-top:4px}
+    .message{color:var(--danger);font-size:.9em;margin-top:6px}
 
-    .card{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:26px}
-
-    /* top-bar */
-    .top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-    .top-bar button{width:auto;margin:0}
-
-    /* table */
-    .table-wrap{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
+    .top-bar{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+    .table-wrap{max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:4px}
     table{width:100%;border-collapse:collapse;font-size:.9em}
     th,td{border:1px solid var(--border);padding:8px;text-align:left}
-    th{background:var(--bg-2)}
+    th{background:var(--bg2)}
   </style>
 </head>
 <body>
 
-  <h1>Artists Payroll</h1>
+<h1>Artists Payroll</h1>
 
-  <!-- ─── PAYROLL (main UI) ─── -->
-  <div id="payroll-card" class="card hidden">
-    <div class="top-bar">
-      <button id="back-btn"   class="btn-light">Back</button>
-      <button id="theme-btn"  class="btn-light">Light&nbsp;mode</button>
-      <button id="logout-btn" class="btn-light">Logout</button>
-    </div>
-
-    <h2>Generate Payroll</h2>
-
-    <label>Location</label>
-    <select id="loc-select"><option value="">-- All Locations --</option></select>
-
-    <label>Start Date</label><input id="start-date" type="date">
-    <label>End Date</label><input id="end-date"   type="date">
-
-    <button id="gen-btn" class="btn-accent">Generate Payroll</button>
-    <div id="pay-msg" class="message"></div>
-
-    <div class="table-wrap" style="margin-top:14px">
-      <table>
-        <thead><tr><th>Artist</th><th>Total Price</th><th>Total Tip</th><th>Split&nbsp;%</th><th>Earnings</th></tr></thead>
-        <tbody id="pay-body"></tbody>
-      </table>
-    </div>
+<!-- ── MAIN UI (shown only if role is authorised) ── -->
+<div id="payroll-card" class="card hidden">
+  <div class="top-bar">
+    <button id="back-btn"   class="btn-grey">← Back</button>
+    <button id="theme-btn"  class="btn-grey">Light mode</button>
+    <button id="logout-btn" class="btn-grey">Logout</button>
   </div>
 
-  <!-- NO ACCESS -->
-  <div id="no-access" class="card hidden" style="border-color:var(--danger);text-align:center;color:var(--danger)">
-    You do not have access to the Payroll page.
-  </div>
+  <h2>Generate Payroll</h2>
 
-  <!-- ─── Supabase ─── -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
-  <script>
-/* ---------- Supabase init ---------- */
+  <label>Location</label>
+  <select id="loc-select"><option value="">-- All Locations --</option></select>
+
+  <label>Start Date</label><input id="start-date" type="date">
+  <label>End Date</label><input id="end-date"   type="date">
+
+  <button id="gen-btn" class="btn-green">Generate Payroll</button>
+  <div id="pay-msg" class="message"></div>
+
+  <div class="table-wrap" style="margin-top:14px">
+    <table>
+      <thead><tr><th>Artist</th><th>Total Price</th><th>Total Tip</th><th>Split %</th><th>Earnings</th></tr></thead>
+      <tbody id="pay-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── NO-ACCESS notice ── -->
+<div id="no-access" class="card hidden" style="border-color:var(--danger);text-align:center;color:var(--danger)">
+  You do not have access to the Payroll page.
+</div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
+<script>
+/* ---------- Supabase ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ---------- Access control ---------- */
-const allowedRoles = ['gm','owner','hr','ad'];
-const role = localStorage.getItem('currentUserRole');
-
-if(!role || !allowedRoles.includes(role)){
-  // not logged-in or no permission
-  window.location.href = 'index.html';
-}
-
 /* ---------- DOM ---------- */
 const payrollCard = document.getElementById('payroll-card');
 const noAccess    = document.getElementById('no-access');
+const locSelect   = document.getElementById('loc-select');
+const sDate       = document.getElementById('start-date');
+const eDate       = document.getElementById('end-date');
+const genBtn      = document.getElementById('gen-btn');
+const payMsg      = document.getElementById('pay-msg');
+const tbody       = document.getElementById('pay-body');
 const themeBtn    = document.getElementById('theme-btn');
 const logoutBtn   = document.getElementById('logout-btn');
 const backBtn     = document.getElementById('back-btn');
 
-const locSel  = document.getElementById('loc-select');
-const sDate   = document.getElementById('start-date');
-const eDate   = document.getElementById('end-date');
-const genBtn  = document.getElementById('gen-btn');
-const payMsg  = document.getElementById('pay-msg');
-const tbody   = document.getElementById('pay-body');
+/* ---------- Roles ---------- */
+const allowedRoles = ['gm','owner','hr','ad'];   // payroll only
 
-/* ---------- Show / hide based on role ---------- */
-if(role === 'ad' || role === 'gm' || role === 'owner' || role === 'hr'){
-  payrollCard.classList.remove('hidden');
-  loadLocations();
-}else{
-  noAccess.classList.remove('hidden');
+/* ---------- Auth inherited from index ---------- */
+const role = localStorage.getItem('currentUserRole');
+if (!allowedRoles.includes(role)) {
+  // not authorised → kick back to index
+  window.location.href = 'index.html';
 }
 
-/* ---------- Theme ---------- */
-(function(){
-  if(localStorage.getItem('ui-theme') === 'light'){
+/* ---------- UI set-up ---------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  // theme
+  if (localStorage.getItem('ui-theme') === 'light') {
     document.body.classList.add('light');
     themeBtn.textContent = 'Dark mode';
   }
-})();
+
+  // show the correct section
+  payrollCard.classList.remove('hidden');
+
+  await loadLocations();
+});
+
+/* ---------- Theme toggle ---------- */
 themeBtn.onclick = () => {
   const light = document.body.classList.toggle('light');
   themeBtn.textContent = light ? 'Dark mode' : 'Light mode';
   localStorage.setItem('ui-theme', light ? 'light' : 'dark');
 };
 
-/* ---------- Navigation / logout ---------- */
-backBtn.onclick   = () => location.href = 'index.html';
-logoutBtn.onclick = () => { localStorage.clear(); location.href = 'index.html'; };
+/* ---------- Back & Logout ---------- */
+backBtn.onclick   = () => window.location.href = 'index.html';
+logoutBtn.onclick = () => { localStorage.clear(); window.location.href = 'index.html'; };
 
-/* ---------- Load Locations ---------- */
+/* ---------- Load locations ---------- */
 async function loadLocations(){
-  locSel.innerHTML = '<option value="">-- All Locations --</option>';
-  const {data, error} = await supabase.from('locations').select('*');
-  if(error) return;
-  data.forEach(l=>{
+  locSelect.innerHTML = '<option value="">-- All Locations --</option>';
+  const { data } = await supabase.from('locations').select('*');
+  data?.forEach(l => {
     const o = document.createElement('option');
     o.value = l.id; o.textContent = l.location_name;
-    locSel.appendChild(o);
+    locSelect.appendChild(o);
   });
 }
 
-/* ---------- Payroll generation ---------- */
+/* ---------- Generate payroll ---------- */
 genBtn.onclick = async () => {
   payMsg.textContent = ''; tbody.innerHTML = '';
-  if(!sDate.value || !eDate.value){ payMsg.textContent = 'Start and End dates required.'; return; }
-  if(eDate.value < sDate.value){ payMsg.textContent = 'End date cannot be before Start date.'; return; }
 
-  /* walk-in (always) + completed appointments */
-  let q = supabase
-          .from('artist_appointments')
-          .select('price,tip,artist_id,appointment_type, artists!inner(artist_name,percentage_split,location_id)')
-          .gte('date', sDate.value).lte('date', eDate.value)
-          .in('appointment_type', ['walk-in','completed']);
+  if (!sDate.value || !eDate.value) {
+    payMsg.textContent = 'Start & End dates are required.'; return;
+  }
+  if (eDate.value < sDate.value) {
+    payMsg.textContent = 'End date cannot be before Start date.'; return;
+  }
 
-  if(locSel.value) q = q.eq('artists.location_id', locSel.value);
+  /* completed appointments + all walk-ins */
+  let q = supabase.from('artist_appointments')
+      .select('price,tip,artist_id,appointment_type, artists!inner(artist_name,percentage_split,location_id)')
+      .gte('date', sDate.value).lte('date', eDate.value)
+      .in('appointment_type', ['walk-in','completed']);
 
-  const {data, error} = await q;
-  if(error){ console.error(error); payMsg.textContent = 'Error fetching data.'; return; }
-  if(!data.length){ payMsg.textContent = 'No qualifying appointments found.'; return; }
+  if (locSelect.value) q = q.eq('artists.location_id', locSelect.value);
 
-  const sums = {};   // artist-wise accumulator
-  data.forEach(ap=>{
-    if(!sums[ap.artist_id]){
-      sums[ap.artist_id] = {
-        name : ap.artists.artist_name,
+  const { data, error } = await q;
+  if (error) { payMsg.textContent = 'Fetch error.'; console.error(error); return; }
+  if (!data.length) { payMsg.textContent = 'No qualifying appointments found.'; return; }
+
+  const bucket = {};
+  data.forEach(ap => {
+    if (!bucket[ap.artist_id]) {
+      bucket[ap.artist_id] = {
+        name:  ap.artists.artist_name,
         split: ap.artists.percentage_split || 0,
         price: 0,
-        tip  : 0
+        tip:   0
       };
     }
-    sums[ap.artist_id].price += ap.price || 0;
-    sums[ap.artist_id].tip   += ap.tip   || 0;
+    bucket[ap.artist_id].price += ap.price || 0;
+    bucket[ap.artist_id].tip   += ap.tip   || 0;
   });
 
-  Object.values(sums).forEach(r=>{
-    const earnings = (r.price * (r.split/100)) + r.tip;
+  Object.values(bucket).forEach(r => {
+    const earnings = (r.price * r.split / 100) + r.tip;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${r.name}</td>
@@ -213,4 +211,6 @@ genBtn.onclick = async () => {
     tbody.appendChild(tr);
   });
 };
-  <
+</script>
+</body>
+</html>
