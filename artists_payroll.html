@@ -60,6 +60,20 @@
 </head>
 <body>
 
+<!--  put this BEFORE any sensitive UI renders  -->
+<script type="module">
+  import { supabase }       from './js/supabaseClient.js';
+  import { userCanAccess }  from './js/permission.js';
+
+  /* slug must MATCH the page_roles.page_slug you inserted in Supabase */
+  const PAGE_SLUG = 'manage_locations';
+
+  // 👉 redirect if not allowed
+  if (!(await userCanAccess(PAGE_SLUG))) {
+    window.location.href = 'index.html';
+  }
+</script>
+
 <h1>Artists Payroll</h1>
 
 <!-- ── MAIN UI (shown only if role is authorised) ── -->
