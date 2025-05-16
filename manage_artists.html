@@ -45,7 +45,6 @@ button:hover{background:#555}
 .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
 
 #top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-#top-bar.hidden{display:none}
 #theme-btn{min-width:110px}
 
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
@@ -62,21 +61,14 @@ tr:nth-child(even){background:var(--bg0)}
 <body>
 <h1>Manage Artists</h1>
 
-<!--  TOP BAR (after login) -->
+<!--  TOP BAR  -->
 <div id="top-bar" class="hidden">
   <div style="font-weight:600">Artist Manager</div>
   <div>
+    <button id="back-btn"  class="btn-mini">Back</button>
     <button id="theme-btn" class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
   </div>
-</div>
-
-<!-- LOGIN -->
-<div id="login-section" class="card">
-  <label>Email</label><input id="login-email" type="email" autocomplete="username">
-  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
-  <button id="login-btn">Login</button>
-  <div id="login-msg" class="message"></div>
 </div>
 
 <!-- MANAGEMENT -->
@@ -123,7 +115,15 @@ tr:nth-child(even){background:var(--bg0)}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
-/* ----------  INIT ---------- */
+/* ----------  CENTRAL-LOGIN ENFORCEMENT  ---------- */
+const role = localStorage.getItem('currentUserRole');
+const scopeLoc = localStorage.getItem('currentUserLoc') || '';
+const allowedRoles = ['gm','owner','hr','sr','sm'];
+if(!role || !allowedRoles.includes(role)){
+  window.location.href = 'index.html';
+}
+
+/* ----------  INIT SUPABASE ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
@@ -131,18 +131,13 @@ const supabase = window.supabase.createClient(
 
 /* ----------  DOM ---------- */
 const topBar      = document.getElementById('top-bar');
+const backBtn     = document.getElementById('back-btn');
 const themeBtn    = document.getElementById('theme-btn');
 const logoutBtn   = document.getElementById('logout-btn');
 
-const loginSec    = document.getElementById('login-section');
-const loginEmail  = document.getElementById('login-email');
-const loginPass   = document.getElementById('login-pass');
-const loginBtn    = document.getElementById('login-btn');
-const loginMsg    = document.getElementById('login-msg');
-
 const manageSec   = document.getElementById('manage-section');
-const A           = {                         /* quick ref map             */
-  id : null,                                  /* current editing row id    */
+const A           = {
+  id : null,
   name : document.getElementById('a-name'),
   phone: document.getElementById('a-phone'),
   email: document.getElementById('a-email'),
@@ -161,52 +156,22 @@ const filterLoc   = document.getElementById('filter-loc');
 const tbody       = document.querySelector('#art-table tbody');
 
 /* ----------  THEME ---------- */
-(function (){
-  if(localStorage.getItem('ui-theme')==='light'){
-    document.body.classList.add('light');
-    themeBtn.textContent='Dark mode';
-  }
-})();
-themeBtn.onclick = ()=>{
-  const light = document.body.classList.toggle('light');
-  themeBtn.textContent = light ? 'Dark mode' : 'Light mode';
-  localStorage.setItem('ui-theme',light?'light':'dark');
-};
+(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
+themeBtn.onclick = ()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
 
-/* ----------  STATE ---------- */
-let role='', scopeLoc='';          // sr/sm limited to one location
+/* ----------  NAV ---------- */
+backBtn.onclick = ()=>window.location.href='index.html';
+logoutBtn.onclick = ()=>{localStorage.clear();window.location.href='index.html';};
 
-/* ----------  LOGIN ---------- */
-loginBtn.onclick = async ()=>{
-  loginMsg.textContent='';
-  if(!loginEmail.value || !loginPass.value){
-    loginMsg.textContent='Email & password required.'; return;
-  }
+/* ----------  PAGE BOOT ---------- */
+topBar.classList.remove('hidden');
+manageSec.classList.remove('hidden');
+init();
 
-  const {data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
-  if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];
-  if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-
-  role=u.role; scopeLoc=u.location_id||'';
-  if(!['gm','hr','sr','sm'].includes(role)){loginMsg.textContent='Access denied.';return;}
-
-  loginSec.classList.add('hidden');
-  manageSec.classList.remove('hidden');
-  topBar.classList.remove('hidden');
-  await loadLocations(); loadArtists();
-};
-
-/* ----------  LOGOUT ---------- */
-logoutBtn.onclick = ()=>{
-  role=''; scopeLoc=''; A.id=null;
-  loginEmail.value=loginPass.value='';
-  loginSec.classList.remove('hidden');
-  manageSec.classList.add('hidden');
-  topBar.classList.add('hidden');
-  tbody.innerHTML='';
-  loginMsg.textContent='';
-};
+async function init(){
+  await loadLocations();
+  loadArtists();
+}
 
 /* ----------  LOCATIONS ---------- */
 async function loadLocations(){
@@ -305,10 +270,6 @@ function clearForm(){
   A.color.value=''; if(!['sr','sm'].includes(role))A.loc.value='';
   artistMsg.textContent='';
 }
-
-/* expose helpers for inline buttons */
-window.editArtist   = window.editArtist;
-window.deleteArtist = window.deleteArtist;
 </script>
 </body>
 </html>
