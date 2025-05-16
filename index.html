@@ -7,109 +7,48 @@
 
   <style>
     /* Basic reset / body styling */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Helvetica Neue',Arial,sans-serif;
+      background:#111;color:#fff;line-height:1.5;
+      min-height:100vh;display:flex;flex-direction:column
     }
 
-    header {
-      background: #000;
-      padding: 20px;
-      text-align: center;
-      border-bottom: 2px solid #444;
+    header{
+      background:#000;padding:20px;text-align:center;
+      border-bottom:2px solid #444
     }
-    header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    header p {
-      font-size: 1rem;
-      color: #bbb;
-      max-width: 600px;
-      margin: 0 auto;
-    }
+    header h1{font-size:2rem;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:1px}
+    header p{font-size:1rem;color:#bbb;max-width:600px;margin:0 auto}
 
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+    main{
+      flex:1;display:flex;flex-direction:column;align-items:center;
+      padding:40px 20px;max-width:1200px;margin:0 auto
     }
-    .links-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-top: 40px;
-      width: 100%;
-      max-width: 900px;
+    .links-grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:20px;margin-top:40px;width:100%;max-width:900px
     }
-    .link-card {
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 6px;
-      text-align: center;
-      padding: 20px;
-      transition: background 0.2s;
+    .link-card{
+      background:#222;border:1px solid #444;border-radius:6px;
+      text-align:center;padding:20px;transition:background .2s
     }
-    .link-card:hover {
-      background: #333;
+    .link-card:hover{background:#333}
+    .link-card h2{font-size:1.2rem;margin-bottom:10px;color:#fff}
+    .link-card p {font-size:.9rem;color:#aaa;margin-bottom:20px;height:40px}
+    .link-card a{
+      display:inline-block;background:#777;color:#fff;text-decoration:none;
+      padding:8px 16px;border-radius:4px;transition:background .2s
     }
-    .link-card h2 {
-      font-size: 1.2rem;
-      margin-bottom: 10px;
-      color: #fff;
-    }
-    .link-card p {
-      font-size: 0.9rem;
-      color: #aaa;
-      margin-bottom: 20px;
-      height: 40px;
-    }
-    .link-card a {
-      display: inline-block;
-      background: #777;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-    .link-card a:hover {
-      background: #999;
-    }
+    .link-card a:hover{background:#999}
 
-    footer {
-      background: #000;
-      color: #666;
-      text-align: center;
-      padding: 15px;
-      border-top: 2px solid #444;
+    footer{
+      background:#000;color:#666;text-align:center;padding:15px;border-top:2px solid #444
     }
-    footer p {
-      font-size: 0.85rem;
-    }
+    footer p{font-size:.85rem}
 
-    @media (max-width: 600px) {
-      .link-card p {
-        height: auto;
-        margin-bottom: 10px;
-      }
+    @media(max-width:600px){
+      .link-card p{height:auto;margin-bottom:10px}
     }
   </style>
 </head>
@@ -117,48 +56,56 @@
 
   <header>
     <h1>Club Tattoo Management Tool</h1>
-    <p>Welcome to your one-stop portal for booking, scheduling, artist management, and more!</p>
+    <p>Your single destination to manage calendars, artists, schedules, vacations, locations, payroll and more!</p>
   </header>
 
   <main>
-    <h2 style="font-size:1.3rem; margin-bottom:20px;">Choose a Section:</h2>
+    <h2 style="font-size:1.3rem;margin-bottom:20px;">Choose a Section:</h2>
+
     <div class="links-grid">
-      <!-- Tattoo Booking Form -->
-      <div class="link-card">
-        <h2>Booking Form</h2>
-        <p>Client-facing form for tattoo appointments.</p>
-        <a href="tattoo_booking_form.html" target="_blank">Open Form</a>
-      </div>
+
       <!-- Calendar -->
       <div class="link-card">
         <h2>Calendar</h2>
         <p>View and manage schedules, appointments, and more.</p>
         <a href="calendar.html" target="_blank">Open Calendar</a>
       </div>
+
       <!-- Manage Artists -->
       <div class="link-card">
         <h2>Artists</h2>
         <p>Add, edit, or remove tattoo artists.</p>
         <a href="manage_artists.html" target="_blank">Manage Artists</a>
       </div>
+
       <!-- Manage Schedules -->
       <div class="link-card">
         <h2>Schedules</h2>
         <p>Assign working days/hours to each artist.</p>
         <a href="manage_schedules.html" target="_blank">Manage Schedules</a>
       </div>
+
       <!-- Manage Vacations -->
       <div class="link-card">
         <h2>Vacations</h2>
         <p>Block out dates for artist vacations.</p>
         <a href="manage_vacations.html" target="_blank">Manage Vacations</a>
       </div>
-      <!-- Payroll -->
+
+      <!-- Manage Locations -->
+      <div class="link-card">
+        <h2>Locations</h2>
+        <p>Add, edit, or remove shop locations &amp; hours.</p>
+        <a href="manage_locations.html" target="_blank">Manage Locations</a>
+      </div>
+
+      <!-- Payroll (role-restricted) -->
       <div class="link-card" id="payroll-card" style="display:none;">
         <h2>Payroll</h2>
         <p>Calculate earnings and manage accounting tasks.</p>
         <a href="artists_payroll.html" target="_blank">Open Payroll</a>
       </div>
+
     </div>
   </main>
 
@@ -167,15 +114,13 @@
   </footer>
 
   <script>
-    // Show current year in footer
+    /* footer year */
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Role-based link display
-    // Suppose we stored currentUserRole in localStorage at login
+    /* role-based visibility */
     const role = localStorage.getItem('currentUserRole');
-    // If 'ad' (accounting) or 'gm', show payroll card
-    if (role === 'ad' || role === 'gm') {
-      document.getElementById('payroll-card').style.display = 'block';
+    if(role==='ad'||role==='gm'){
+      document.getElementById('payroll-card').style.display='block';
     }
   </script>
 </body>
