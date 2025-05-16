@@ -70,6 +70,7 @@ button:hover{background:#555}
   padding:12px
 }
 .day-block h4{text-align:center;margin-bottom:10px;font-size:1em;color:var(--accent)}
+.day-reset{margin-top:4px;width:100%}
 </style>
 </head>
 <body>
@@ -106,7 +107,7 @@ button:hover{background:#555}
 
   <h3>Weekly schedule</h3>
   <p style="font-size:.9em;color:var(--txt-dim)">
-    Enter start &amp; end time for each day (leave blank for a day off).
+    Enter start &amp; end time for each day (leave blank for a day off). Use the “Reset” button to clear a day quickly.
   </p>
 
   <div id="days-wrap" class="days-container"><!-- populated by JS --></div>
@@ -168,15 +169,18 @@ const dayIdx=[
 ];
 const dayInputs={};  // { monday:{start:el,end:el}, ... }
 
-/* ---------- BUILD DAY BLOCKS ---------- */
+/* ---------- BUILD DAY BLOCKS WITH RESET BUTTON ---------- */
 function buildDayBlocks(){
   daysWrap.innerHTML='';
   dayIdx.forEach(d=>{
     const block=document.createElement('div');block.className='day-block';
     block.innerHTML=`<h4>${d.label}</h4>
       <label style="font-size:.8em">Start</label><input type="time">
-      <label style="font-size:.8em">End</label><input type="time">`;
+      <label style="font-size:.8em">End</label><input type="time">
+      <button class="btn-mini day-reset">Reset</button>`;
     const [st,ed]=block.querySelectorAll('input');
+    const resetBtn=block.querySelector('.day-reset');
+    resetBtn.onclick=()=>{st.value='';ed.value='';};
     dayInputs[d.k]={start:st,end:ed};
     daysWrap.appendChild(block);
   });
