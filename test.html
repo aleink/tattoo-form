@@ -5,7 +5,7 @@
 <title>Calendar</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<!-- CSP -->
+<!--  CSP  -->
 <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
@@ -15,24 +15,33 @@
         object-src 'none';
       ">
 
-<!-- ─── SHARED THEME ─── -->
+<!-- ─── VISUAL THEMES (match Manage-Artists) ─── -->
 <style>
-:root{--bg0:#111;--bg1:#222;--bg2:#333;--border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745;--info:#1976d2;--danger:#f44336}
-body.light{--bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;--border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;--info:#0d6efd;--danger:#d32f2f}
+:root{
+  --bg0:#111;--bg1:#222;--bg2:#333;
+  --border:#444;--txt:#fff;--txt-dim:#ccc;
+  --accent:#28a745;--info:#1976d2;--danger:#f44336;
+}
+body.light{
+  --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
+  --border:#b7b7b7;--txt:#000;--txt-dim:#444;
+  --accent:#0d6efd;--info:#0d6efd;--danger:#d32f2f;
+}
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
 body{
   background:var(--bg0);color:var(--txt);
-  max-width:1200px;margin:32px auto;padding:28px;
-  transition:background .25s,color .25s
+  max-width:1200px;
+  margin:32px auto;padding:28px;
+  transition:background .25s,color .25s;
 }
 h1{font-size:1.8rem;text-align:center;margin-bottom:24px}
 
-/* identical login card from Manage-Artists */
+/*  login card (copied verbatim from Manage-Artists)  */
 .card{
   background:var(--bg1);border:1px solid var(--border);
   border-radius:6px;padding:22px;margin:0 auto 30px;
-  max-width:420px;width:100%
+  max-width:420px;width:100%;
 }
 label{display:block;font-weight:700;margin:10px 0 4px}
 input,select,textarea{
@@ -49,36 +58,63 @@ button:hover{background:#555}
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
 .hidden{display:none}
 
-/* toggle buttons (artist & type filters) */
+/*  toggle buttons for artists / types  */
 .toggle-btn{
   display:inline-flex;align-items:center;gap:6px;
   background:var(--bg2);color:var(--txt);border:1px solid var(--border);
   border-radius:4px;padding:6px 12px;margin:4px 6px 4px 0;font-size:.9rem;
-  cursor:pointer;user-select:none;transition:background .15s,border .15s;
+  cursor:pointer;transition:background .15s,border .15s;
 }
-.toggle-btn span.icon{font-weight:bold;font-size:1rem}
-.toggle-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.toggle-btn span.icon{font-weight:bold;font-size:1rem;line-height:1}
+.toggle-btn.active{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+}
+.toggle-btn.active span.icon{content:'✓'}
+.toggle-btn:not(.active) span.icon{content:'✕'}
 
-/* layout */
-.top-controls{display:flex;align-items:center;gap:16px;margin:18px 0;flex-wrap:wrap}
+/*  top bar  */
+.top-controls{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:20px}
+
+/*  scheduler  */
 #daily-scheduler{
-  position:relative;height:960px;border:1px solid var(--border);
-  overflow-y:auto;margin-top:10px;background:var(--bg2)
+  position:relative;
+  height:960px;                              /* 16 hrs × 60 px  */
+  border:1px solid var(--border);
+  overflow:auto;                             /* both axes  */
+  background:var(--bg2)
 }
-.hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--txt-dim);font-size:12px;padding-left:5px}
-.schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--txt-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
+.hour-line{
+  position:absolute;left:0;right:0;
+  border-top:1px dashed var(--border);
+  color:var(--txt-dim);font-size:12px;padding-left:5px
+}
+.schedule-block{
+  position:absolute;background:rgba(255,255,255,.05);
+  color:var(--txt-dim);padding:2px;font-size:.75em;
+  border-left:4px solid var(--accent);pointer-events:none
+}
 .schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
 .schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
-.appointment-block{position:absolute;background:var(--accent);color:#fff;border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box}
+.appointment-block{
+  position:absolute;background:var(--accent);color:#fff;
+  border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box
+}
 
-/* modal */
-#appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
+/*  modal  */
+#appt-modal{
+  display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);
+  background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999
+}
 #appt-modal h3{margin:0 0 10px}.modal-field{margin-bottom:10px}.modal-buttons{text-align:right;margin-top:10px}.modal-buttons button{margin-left:8px}
 
-/* list */
-#appointments-list-section{margin-top:24px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:15px}
+/*  list  */
+#appointments-list-section{
+  margin-top:24px;background:var(--bg1);border:1px solid var(--border);
+  border-radius:6px;padding:15px
+}
 #appointments-list-section h2{margin-bottom:10px}
-.filters-row{display:flex;gap:10px;flex-wrap:wrap}
+.filters-row{display:flex;flex-wrap:wrap;gap:10px}
 .appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
 .appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
 .appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
@@ -89,7 +125,7 @@ button:hover{background:#555}
 
 <h1>Calendar</h1>
 
-<!-- LOGIN -->
+<!--  LOGIN  -->
 <div id="login-section" class="card">
   <label>Email</label><input id="login-email" type="email" autocomplete="username">
   <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
@@ -97,8 +133,9 @@ button:hover{background:#555}
   <div id="login-msg" class="message"></div>
 </div>
 
-<!-- MAIN -->
+<!--  MAIN  -->
 <div id="main-section" class="hidden">
+
   <div class="top-controls">
     <button id="theme-btn"  class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
@@ -107,7 +144,10 @@ button:hover{background:#555}
     <label>Location
       <select id="location-filter"><option value="">-- Select Location --</option></select>
     </label>
-    <label>Date <input type="date" id="day-input"></label>
+
+    <label>Date
+      <input type="date" id="day-input">
+    </label>
   </div>
 
   <!-- artist toggles -->
@@ -119,6 +159,7 @@ button:hover{background:#555}
   <!-- MODAL -->
   <div id="appt-modal">
     <h3 id="modal-title">New Appointment</h3>
+
     <div class="modal-field"><label>Start Time (5-min)</label><input type="time" id="modal-start-time" step="300"></div>
     <div class="modal-field"><label>End Time (5-min)</label><input  type="time" id="modal-end-time"   step="300"></div>
     <div class="modal-field"><label>Artist</label><select id="modal-artist"></select></div>
@@ -151,20 +192,20 @@ button:hover{background:#555}
       <label>From <input type="date" id="range-start"></label>
       <label>To <input type="date" id="range-end"></label>
 
-      <!-- type buttons -->
+      <!-- type toggles -->
       <div id="type-btns">
         <button id="btn-appt" class="toggle-btn active"><span class="icon">✓</span>Appointments</button>
         <button id="btn-walk" class="toggle-btn active"><span class="icon">✓</span>Walk-ins</button>
       </div>
 
-      <input id="client-search" type="text" placeholder="Search client…" style="flex:1;min-width:180px;background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:8px">
+      <input id="client-search" placeholder="Search client…" style="flex:1;min-width:180px;background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:8px">
     </div>
 
-    <div id="appointments-list" class="appointments-container"></div>
+    <div class="appointments-container" id="appointments-list"></div>
   </div>
-</div><!-- /main -->
+</div><!-- /MAIN -->
 
-<!-- SUPABASE -->
+<!--  SUPABASE  -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
 /* ---------- INIT ---------- */
@@ -177,25 +218,22 @@ const supabase = window.supabase.createClient(
 const toMin=t=>{if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m};
 const round5=v=>{const[h,m]=v.split(':').map(Number);const r=Math.round(m/5)*5%60;const carry=Math.floor((m+2.5)/60);return`${String((h+carry)%24).padStart(2,'0')}:${String(r).padStart(2,'0')}`};
 const overlaps=(a,b)=>toMin(a.start_time)<toMin(b.end_time)&&toMin(b.start_time)<toMin(a.end_time);
-const todayISO=()=>new Date(Date.now()-(new Date()).getTimezoneOffset()*60000).toISOString().split('T')[0];
-const weekdayIdx=d=>new Date(d+'T00:00:00').getDay();
-const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const todayISO=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().split('T')[0];
+const dayIdx=d=>new Date(d+'T00:00').getDay();
+const dow=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-/* DOM refs (abbreviated) */
+/* DOM refs */
 const loginSec=document.getElementById('login-section'),loginEmail=document.getElementById('login-email'),loginPass=document.getElementById('login-pass'),loginBtn=document.getElementById('login-btn'),loginMsg=document.getElementById('login-msg');
 const mainSec=document.getElementById('main-section'),themeBtn=document.getElementById('theme-btn'),logoutBtn=document.getElementById('logout-btn'),todayBtn=document.getElementById('today-btn');
 const locationFilter=document.getElementById('location-filter'),dayInput=document.getElementById('day-input');
 const artistFilterContainer=document.getElementById('artist-filter-container'),dailyScheduler=document.getElementById('daily-scheduler');
-const apptModal=document.getElementById('appt-modal'),modalTitle=document.getElementById('modal-title'),modalStart=document.getElementById('modal-start-time'),modalEnd=document.getElementById('modal-end-time'),modalArtist=document.getElementById('modal-artist');
-const modalClientName=document.getElementById('modal-client-name'),modalClientPhone=document.getElementById('modal-client-phone'),modalEmail=document.getElementById('modal-email'),modalDesc=document.getElementById('modal-description');
-const modalDeposit=document.getElementById('modal-deposit'),modalPrice=document.getElementById('modal-price'),modalTip=document.getElementById('modal-tip'),modalType=document.getElementById('modal-appt-type');
-const saveBtn=document.getElementById('save-appt-btn'),cancelBtn=document.getElementById('cancel-appt-btn'),deleteBtn=document.getElementById('delete-appt-btn'),completeBtn=document.getElementById('complete-appt-btn');
+const apptModal=document.getElementById('appt-modal'),modalTitle=document.getElementById('modal-title'),modalStart=document.getElementById('modal-start-time'),modalEnd=document.getElementById('modal-end-time'),modalArtist=document.getElementById('modal-artist'),modalClientName=document.getElementById('modal-client-name'),modalClientPhone=document.getElementById('modal-client-phone'),modalEmail=document.getElementById('modal-email'),modalDesc=document.getElementById('modal-description'),modalDeposit=document.getElementById('modal-deposit'),modalPrice=document.getElementById('modal-price'),modalTip=document.getElementById('modal-tip'),modalType=document.getElementById('modal-appt-type'),saveBtn=document.getElementById('save-appt-btn'),cancelBtn=document.getElementById('cancel-appt-btn'),deleteBtn=document.getElementById('delete-appt-btn'),completeBtn=document.getElementById('complete-appt-btn');
 const rangeStart=document.getElementById('range-start'),rangeEnd=document.getElementById('range-end'),btnAppt=document.getElementById('btn-appt'),btnWalk=document.getElementById('btn-walk'),appointmentsList=document.getElementById('appointments-list'),clientSearch=document.getElementById('client-search');
 
 /* state */
 let role='',allowedLocation='',artistMap={},currentApptId=null;
 
-/* THEME toggle */
+/* THEME */
 (()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode'}})();
 themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark')};
 
@@ -208,8 +246,9 @@ loginBtn.onclick=async()=>{
   if(!loginEmail.value||!loginPass.value){loginMsg.textContent='Email & password required.';return;}
   const{data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
   if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-  role=u.role;allowedLocation=u.location_id||'';if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
+  if(data[0].password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
+  role=data[0].role;allowedLocation=data[0].location_id||'';
+  if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
   localStorage.setItem('calendarUser',JSON.stringify({role,allowedLocation}));
   loginSec.classList.add('hidden');mainSec.classList.remove('hidden');initApp();
 };
@@ -217,91 +256,134 @@ loginBtn.onclick=async()=>{
 /* LOGOUT */
 logoutBtn.onclick=()=>{localStorage.removeItem('calendarUser');role='';allowedLocation='';artistMap={};currentApptId=null;loginEmail.value=loginPass.value='';loginMsg.textContent='';mainSec.classList.add('hidden');loginSec.classList.remove('hidden')};
 
-/* init after login */
+/* INIT after login */
 async function initApp(){
   await loadLocations();
   dayInput.value=todayISO();
   await loadArtistsForLocation(locationFilter.value);
   setDefaultRange();
-  loadDay();loadList();realtime();
+  renderDay();renderList();
+  realtime();
 }
 
-/* locations */
+/* LOCATIONS */
 async function loadLocations(){
   locationFilter.innerHTML='<option value="">-- Select Location --</option>';
   let q=supabase.from('locations').select('*');if(role!=='gm')q=q.eq('id',allowedLocation);
-  const{data}=await q;data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
+  (await q).data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
   if(role!=='gm'){locationFilter.value=allowedLocation;locationFilter.disabled=true}else locationFilter.disabled=false;
 }
 
-/* artists */
+/* ARTISTS */
 async function loadArtistsForLocation(loc){
   artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
   if(!loc)return;
-  const{data}=await supabase.from('artists').select('*').eq('location_id',loc);
-  data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
-    artistMap[a.id]=a;modalArtist.add(new Option(a.artist_name,a.id));
-    const btn=document.createElement('button');btn.className='toggle-btn active';btn.dataset.id=a.id;
+  const arts=(await supabase.from('artists').select('*').eq('location_id',loc)).data||[];
+  arts.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
+    artistMap[a.id]=a;
+    modalArtist.add(new Option(a.artist_name,a.id));
+
+    const btn=document.createElement('button');
+    btn.className='toggle-btn active';btn.dataset.id=a.id;
     btn.innerHTML=`<span class="icon">✓</span>${a.artist_name}`;
-    btn.onclick=()=>{btn.classList.toggle('active');btn.querySelector('.icon').textContent=btn.classList.contains('active')?'✓':'✕';loadDay();loadList()};
+    btn.onclick=()=>{btn.classList.toggle('active');btn.querySelector('.icon').textContent=btn.classList.contains('active')?'✓':'✕';renderDay();renderList()};
     artistFilterContainer.appendChild(btn);
   });
 }
-const filtIds=()=>[...artistFilterContainer.querySelectorAll('.toggle-btn.active')].map(b=>b.dataset.id);
+const visibleIds=()=>[...artistFilterContainer.querySelectorAll('.toggle-btn.active')].map(b=>b.dataset.id);
 
-/* vacation */
+/* VACATION helper */
 async function onVacation(id,date){
   const{data}=await supabase.from('artist_vacations').select('id').eq('artist_id',id).lte('vacation_start',date).gte('vacation_end',date);
-  return!!data?.length;
+  return !!data?.length;
 }
 
-/* scheduler */
-todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay()};
-dayInput.onchange=loadDay;
-locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadList()};
+/* TODAY */
+todayBtn.onclick=()=>{dayInput.value=todayISO();renderDay()};
 
-async function loadDay(){
+/* RENDER DAY (smart columns) */
+dayInput.onchange=renderDay;
+locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);renderDay();renderList()};
+
+async function renderDay(){
   dailyScheduler.innerHTML='';
-  const date=dayInput.value;if(!date)return;
+
+  /* hour grid */
   for(let h=8;h<=24;h++){
-    const l=document.createElement('div');l.className='hour-line';l.style.top=(h-8)*60+'px';
-    l.textContent=`${((h+11)%12)+1}:00 ${h<12?'AM':'PM'}`;dailyScheduler.appendChild(l);
+    const y=(h-8)*60;
+    const l=document.createElement('div');
+    l.className='hour-line';l.style.top=y+'px';
+    l.textContent=`${((h+11)%12)+1}:00 ${h<12?'AM':'PM'}`;
+    dailyScheduler.appendChild(l);
   }
 
-  /* visible artists — dynamically fill width */
-  const ids=filtIds();if(!ids.length)return;
-  const arts=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
-  const colWidthPct=100/arts.length;
+  const date=dayInput.value;if(!date)return;
+  const ids=visibleIds();if(!ids.length)return;
 
-  const cIdx=weekdayIdx(date),cStart=cols[cIdx]+'_start',cEnd=cols[cIdx]+'_end';
-  const{data:vac}=await supabase.from('artist_vacations').select('artist_id').in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
-  const vacSet=new Set(vac?.map(v=>v.artist_id)||[]);
+  /* map visible artists */
+  const idx=dayIdx(date),kStart=dow[idx]+'_start',kEnd=dow[idx]+'_end';
+  const arts=ids.map(id=>artistMap[id]).filter(Boolean);
 
-  /** schedule background blocks **/
-  arts.forEach((a,i)=>{
-    const st=a[cStart],en=a[cEnd];if(!st||!en)return;
-    const blk=document.createElement('div');
-    blk.className='schedule-block';if(vacSet.has(a.id))blk.classList.add('vac');
-    blk.style.cssText=`left:${i*colWidthPct}%;width:${colWidthPct}%;top:${toMin(st)-480}px;height:${toMin(en)-toMin(st)}px;border-left-color:${a.color||'#888'}`;
+  /* build non-overlapping columns */
+  const COL_W=140, COL_START=100;
+  const columns=[];            // each col is array of artists
+  const artCol={};             // artist id -> column index
+
+  arts.forEach(a=>{
+    const st=a[kStart],en=a[kEnd];
+    if(!st||!en){return;}     /* off day */
+    const s=toMin(st),e=toMin(en);
+    let placed=false;
+    for(let c=0;c<columns.length;c++){
+      if(columns[c].every(ax=>{
+        const ss=toMin(ax[kStart]),ee=toMin(ax[kEnd]);
+        return e<=ss || s>=ee;         // no overlap
+      })){
+        columns[c].push(a);artCol[a.id]=c;placed=true;break;
+      }
+    }
+    if(!placed){columns.push([a]);artCol[a.id]=columns.length-1;}
+  });
+
+  /* widen container so hour-lines & blocks fill width */
+  dailyScheduler.style.minWidth=(COL_START+columns.length*COL_W)+'px';
+
+  /* draw schedule blocks */
+  const {data:vacData}=await supabase.from('artist_vacations').select('artist_id').in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
+  const vacSet=new Set(vacData?.map(v=>v.artist_id)||[]);
+
+  arts.forEach(a=>{
+    const st=a[kStart],en=a[kEnd];if(!st||!en)return;
+    const left=COL_START+artCol[a.id]*COL_W;
+    const blk=document.createElement('div');blk.className='schedule-block';
+    if(vacSet.has(a.id))blk.classList.add('vac');
+    blk.style.cssText=`left:${left}px;width:${COL_W-10}px;top:${toMin(st)-480}px;height:${toMin(en)-toMin(st)}px;border-left-color:${a.color||'#888'}`;
     blk.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
     dailyScheduler.appendChild(blk);
   });
 
-  /** appointments **/
-  const{data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
-  const by={};arts.forEach(a=>by[a.id]=[]);
-  appts?.forEach(ap=>by[ap.artist_id].push(ap));
+  /* appointments */
+  const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
+  const byArt={};ids.forEach(id=>byArt[id]=[]);
+  appts?.forEach(ap=>byArt[ap.artist_id].push(ap));
 
-  arts.forEach((a,i)=>{
-    const list=by[a.id].sort((x,y)=>toMin(x.start_time)-toMin(y.start_time));
-    /* build rows – overlap => extra column inside this artist slot */
-    const rows=[];
-    list.forEach(ap=>{let placed=false;for(const r of rows){if(!overlaps(r[r.length-1],ap)){r.push(ap);placed=true;break}}if(!placed)rows.push([ap])});
-    rows.forEach((r,rowIdx)=>{
-      const wPct=colWidthPct/rows.length;
-      r.forEach(ap=>{
+  arts.forEach(a=>{
+    const col=artCol[a.id],leftBase=COL_START+col*COL_W;
+    const list=byArt[a.id].sort((x,y)=>toMin(x.start_time)-toMin(y.start_time));
+    /* divide into sub-rows if same artist overlap */
+    const subRows=[];
+    list.forEach(ap=>{
+      let placed=false;
+      for(const sr of subRows){
+        if(!overlaps(sr[sr.length-1],ap)){sr.push(ap);placed=true;break}
+      }
+      if(!placed)subRows.push([ap]);
+    });
+    subRows.forEach((sr,i)=>{
+      sr.forEach(ap=>{
         const div=document.createElement('div');div.className='appointment-block';
-        div.style.cssText=`left:${i*colWidthPct+rowIdx*wPct}%;width:${wPct}%;top:${toMin(ap.start_time)-480}px;height:${toMin(ap.end_time)-toMin(ap.start_time)}px;background:${a.color||'#555'}`;
+        const subW=(COL_W-10)/subRows.length;
+        div.style.cssText=`left:${leftBase+i*subW}px;width:${subW-2}px;top:${toMin(ap.start_time)-480}px;height:${toMin(ap.end_time)-toMin(ap.start_time)}px;background:${a.color||'#555'}`;
         div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;
         div.onclick=e=>{e.stopPropagation();openExisting(ap.id)};
         dailyScheduler.appendChild(div);
@@ -309,59 +391,97 @@ async function loadDay(){
     });
   });
 
-  /* click empty grid to create */
+  /* click on empty space to add */
   dailyScheduler.onclick=e=>{
     if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c)))return;
-    const y=e.clientY-dailyScheduler.getBoundingClientRect().top;const h=Math.floor(y/60)+8,m=y%60;
+    const y=e.clientY-dailyScheduler.getBoundingClientRect().top;
+    const h=Math.floor(y/60)+8,m=y%60;
     openNew(round5(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`),date);
   };
 }
 
-/* modal helpers (open/save/etc.) remain unchanged from previous version */
-/* … ── identical JS from previous answer (no logic touched) ── */
-
-/* openNew / openExisting / overlap / saveBtn / deleteBtn / completeBtn stay exactly the same */
-function openNew(t,d){currentApptId=null;modalTitle.textContent='New Appointment';modalStart.value=t;modalEnd.value=t;modalArtist.value='';[modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';apptModal.style.display='block'}
-async function openExisting(id){currentApptId=id;const{data}=await supabase.from('artist_appointments').select('*').eq('id',id);if(!data?.length)return;const ap=data[0];modalTitle.textContent='Edit Appointment';modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';modalType.value=ap.appointment_type;deleteBtn.style.display=completeBtn.style.display='inline-block';apptModal.style.display='block'}
+/* MODAL helpers (unchanged logic) */
+function openNew(t,d){
+  currentApptId=null;modalTitle.textContent='New Appointment';
+  modalStart.value=t;modalEnd.value=t;modalArtist.value='';
+  [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
+  modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';
+  apptModal.style.display='block';
+}
+async function openExisting(id){
+  currentApptId=id;
+  const{data}=await supabase.from('artist_appointments').select('*').eq('id',id);
+  if(!data?.length)return;
+  const ap=data[0];
+  modalTitle.textContent='Edit Appointment';
+  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;
+  modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';
+  modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
+  modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';
+  modalType.value=ap.appointment_type;deleteBtn.style.display=completeBtn.style.display='inline-block';
+  apptModal.style.display='block';
+}
 cancelBtn.onclick=()=>apptModal.style.display='none';
-async function overlap(artist,date,s,e,idSkip){const{data}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist).eq('date',date);return data.some(ap=>ap.id!==idSkip&&overlaps({start_time:s,end_time:e},ap))}
+
+async function overlap(artist,date,s,e,skip){
+  const{data}=await supabase.from('artist_appointments').select('*').eq('artist_id',artist).eq('date',date);
+  return data.some(ap=>ap.id!==skip&&overlaps({start_time:s,end_time:e},ap));
+}
 saveBtn.onclick=async()=>{
-  const date=dayInput.value,artist=modalArtist.value,s=modalStart.value,e=modalEnd.value;if(!date||!artist||!s||!e){alert('Fill all fields');return;}
+  const date=dayInput.value,artist=modalArtist.value,s=modalStart.value,e=modalEnd.value;
+  if(!date||!artist||!s||!e){alert('Fill all fields');return;}
   if(await onVacation(artist,date)){alert('Artist on vacation');return;}
   if(await overlap(artist,date,s,e,currentApptId)){alert('Overlapping');return;}
-  const payload={artist_id:artist,date,start_time:s,end_time:e,appointment_type:modalType.value,client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),email:modalEmail.value.trim(),notes:modalDesc.value.trim(),deposit:modalDeposit.value?+modalDeposit.value:null,price:modalPrice.value?+modalPrice.value:null,tip:modalTip.value?+modalTip.value:null};
-  const res=currentApptId?await supabase.from('artist_appointments').update(payload).eq('id',currentApptId):await supabase.from('artist_appointments').insert([payload]);
-  if(res.error){alert('Save error');console.error(res.error);return;}apptModal.style.display='none';
+  const payload={
+    artist_id:artist,date,start_time:s,end_time:e,appointment_type:modalType.value,
+    client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),
+    email:modalEmail.value.trim(),notes:modalDesc.value.trim(),
+    deposit:modalDeposit.value?+modalDeposit.value:null,price:modalPrice.value?+modalPrice.value:null,tip:modalTip.value?+modalTip.value:null
+  };
+  const res=currentApptId
+    ? await supabase.from('artist_appointments').update(payload).eq('id',currentApptId)
+    : await supabase.from('artist_appointments').insert([payload]);
+  if(res.error){alert('Save error');return;}
+  apptModal.style.display='none';
 };
 deleteBtn.onclick=async()=>{if(!currentApptId||!confirm('Delete?'))return;await supabase.from('artist_appointments').delete().eq('id',currentApptId);apptModal.style.display='none'};
 completeBtn.onclick=async()=>{if(!currentApptId)return;await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);apptModal.style.display='none'};
 
-/* LIST section identical except type buttons replaced by toggle logic */
-function setDefaultRange(){const n=new Date();rangeStart.value=new Date(n-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(+n+7*864e5).toISOString().split('T')[0]}
-btnAppt.onclick=()=>{btnAppt.classList.toggle('active');btnAppt.querySelector('.icon').textContent=btnAppt.classList.contains('active')?'✓':'✕';loadList()};
-btnWalk.onclick=()=>{btnWalk.classList.toggle('active');btnWalk.querySelector('.icon').textContent=btnWalk.classList.contains('active')?'✓':'✕';loadList()};
-[rangeStart,rangeEnd].forEach(el=>el.addEventListener('change',loadList));
-clientSearch.addEventListener('input',loadList);
+/* LIST  */
+function setDefaultRange(){const now=new Date();rangeStart.value=new Date(now-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(+now+7*864e5).toISOString().split('T')[0];}
+btnAppt.onclick=()=>{btnAppt.classList.toggle('active');btnAppt.querySelector('.icon').textContent=btnAppt.classList.contains('active')?'✓':'✕';renderList()};
+btnWalk.onclick=()=>{btnWalk.classList.toggle('active');btnWalk.querySelector('.icon').textContent=btnWalk.classList.contains('active')?'✓':'✕';renderList()};
+[rangeStart,rangeEnd].forEach(el=>el.addEventListener('change',renderList));
+clientSearch.addEventListener('input',renderList);
 
-async function loadList(){
+async function renderList(){
   appointmentsList.innerHTML='';
-  const ids=filtIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
+  const ids=visibleIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
   if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select range.';return;}
   const types=[];if(btnAppt.classList.contains('active'))types.push('appointment','tentative');if(btnWalk.classList.contains('active'))types.push('walk-in');
   if(!types.length){appointmentsList.textContent='No types.';return;}
   let q=supabase.from('artist_appointments').select('*, artists!inner(location_id,artist_name)').gte('date',rangeStart.value).lte('date',rangeEnd.value).in('appointment_type',types).in('artist_id',ids);
   if(role!=='gm')q=q.eq('artists.location_id',allowedLocation);else if(locationFilter.value)q=q.eq('artists.location_id',locationFilter.value);
   if(clientSearch.value.trim())q=q.or(`client_name.ilike.*${clientSearch.value.trim()}*,client_phone.ilike.*${clientSearch.value.trim()}*,email.ilike.*${clientSearch.value.trim()}*`);
-  const{data,error}=await q;if(error){appointmentsList.textContent='Error';console.error(error);return;}if(!data?.length){appointmentsList.textContent='None.';return;}
+  const{data,error}=await q;if(error){appointmentsList.textContent='Error.';return;}
+  if(!data?.length){appointmentsList.textContent='None.';return;}
   data.sort((a,b)=>a.date===b.date?toMin(a.start_time)-toMin(b.start_time):a.date<b.date?-1:1);
-  data.forEach(ap=>{const div=document.createElement('div');div.className='appt-item';div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4><p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p><p>Client: ${ap.client_name||'N/A'}</p><p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;div.onclick=()=>{dayInput.value=ap.date;loadDay()};appointmentsList.appendChild(div)});
+  data.forEach(ap=>{
+    const div=document.createElement('div');div.className='appt-item';
+    div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4>
+                   <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p>
+                   <p>Client: ${ap.client_name||'N/A'}</p>
+                   <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
+    div.onclick=()=>{dayInput.value=ap.date;renderDay()};
+    appointmentsList.appendChild(div);
+  });
 }
 
-/* realtime */
+/* REALTIME  */
 function realtime(){
-  supabase.from('artist_appointments').on('*',()=>{loadDay();loadList()}).subscribe();
-  supabase.from('artist_vacations').on('*',loadDay).subscribe();
-  supabase.from('artists').on('*',()=>loadArtistsForLocation(locationFilter.value).then(loadDay)).subscribe();
+  supabase.from('artist_appointments').on('*',()=>{renderDay();renderList()}).subscribe();
+  supabase.from('artist_vacations' ).on('*',renderDay).subscribe();
+  supabase.from('artists'          ).on('*',()=>loadArtistsForLocation(locationFilter.value).then(renderDay)).subscribe();
 }
 </script>
 </body>
