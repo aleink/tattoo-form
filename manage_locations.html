@@ -41,7 +41,6 @@ button:hover{background:#555}
 
 /* top bar */
 #top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-#top-bar.hidden{display:none}
 #theme-btn{min-width:110px}
 
 /* table */
@@ -64,17 +63,10 @@ tr:nth-child(even){background:var(--bg0)}
 <div id="top-bar" class="hidden">
   <div style="font-weight:600">Location Manager</div>
   <div>
+    <button id="back-btn"  class="btn-mini">← Back</button>
     <button id="theme-btn" class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
   </div>
-</div>
-
-<!-- LOGIN -->
-<div id="login-section" class="card">
-  <label>Email</label><input id="login-email" type="email" autocomplete="username">
-  <label>Password</label><input id="login-pass" type="password" autocomplete="current-password">
-  <button id="login-btn">Login</button>
-  <div id="login-msg" class="message"></div>
 </div>
 
 <!-- LOCATION MANAGEMENT -->
@@ -90,7 +82,7 @@ tr:nth-child(even){background:var(--bg0)}
   <button id="add-hours-btn" class="btn-mini" type="button">Add more hours</button>
 
   <label style="margin-top:12px">Email</label><input id="l-email" type="email">
-  <label>Timezone Offset (e.g. -8, 0, +2)</label><input id="l-tz">
+  <label>Timezone Offset&nbsp;(e.g.&nbsp;-8, 0, +2)</label><input id="l-tz">
 
   <div style="margin-top:10px">
     <button id="save-btn">Save Location</button>
@@ -113,6 +105,13 @@ tr:nth-child(even){background:var(--bg0)}
 <!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
+/* ---------- ACCESS CONTROL ---------- */
+const role = localStorage.getItem('currentUserRole');
+if (role !== 'owner') {
+  // anyone else → kick back to dashboard
+  window.location.href = 'index.html';
+}
+
 /* ---------- INIT ---------- */
 const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
@@ -122,15 +121,9 @@ const supabase = window.supabase.createClient(
 /* ---------- DOM ---------- */
 const topBar  = document.getElementById('top-bar');
 const themeBtn= document.getElementById('theme-btn');
+const backBtn = document.getElementById('back-btn');
 const logoutBtn=document.getElementById('logout-btn');
-
-const loginSec=document.getElementById('login-section');
-const loginEmail=document.getElementById('login-email');
-const loginPass=document.getElementById('login-pass');
-const loginBtn =document.getElementById('login-btn');
-const loginMsg =document.getElementById('login-msg');
-
-const locSec  =document.getElementById('loc-section');
+const locSec  = document.getElementById('loc-section');
 const hoursWrap=document.getElementById('hours-container');
 const addHoursBtn=document.getElementById('add-hours-btn');
 
@@ -148,45 +141,19 @@ const locMsg  =document.getElementById('loc-msg');
 const tbody   =document.querySelector('#loc-table tbody');
 
 /* ---------- THEME ---------- */
-(function(){
-  if(localStorage.getItem('ui-theme')==='light'){
-    document.body.classList.add('light');
-    themeBtn.textContent='Dark mode';
-  }
-})();
+if(localStorage.getItem('ui-theme')==='light'){
+  document.body.classList.add('light');
+  themeBtn.textContent='Dark mode';
+}
 themeBtn.onclick=()=>{
   const light=document.body.classList.toggle('light');
   themeBtn.textContent=light?'Dark mode':'Light mode';
   localStorage.setItem('ui-theme',light?'light':'dark');
 };
 
-/* ---------- LOGIN ---------- */
-loginBtn.onclick=async()=>{
-  loginMsg.textContent='';
-  if(!loginEmail.value||!loginPass.value){
-    loginMsg.textContent='Email & password required.';return;
-  }
-  const {data,error}=await supabase.from('users').select('*').eq('email',loginEmail.value.trim());
-  if(error||!data?.length){loginMsg.textContent='Invalid credentials.';return;}
-  const u=data[0];
-  if(u.password_hash!==loginPass.value.trim()){loginMsg.textContent='Invalid credentials.';return;}
-  if(u.role!=='gm'){loginMsg.textContent='Access restricted to GM only.';return;}
-
-  loginSec.classList.add('hidden');
-  locSec.classList.remove('hidden');
-  topBar.classList.remove('hidden');
-  loadLocations();
-};
-
-/* ---------- LOGOUT ---------- */
-logoutBtn.onclick=()=>{
-  loginEmail.value=loginPass.value='';
-  loginSec.classList.remove('hidden');
-  locSec.classList.add('hidden');
-  topBar.classList.add('hidden');
-  tbody.innerHTML='';
-  clearForm();
-};
+/* ---------- NAV ---------- */
+backBtn.onclick  = () => window.location.href = 'index.html';
+logoutBtn.onclick= () => { localStorage.clear(); window.location.href = 'index.html'; };
 
 /* ---------- BUSINESS HOURS HELPERS ---------- */
 const daysFull=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -227,7 +194,6 @@ function to12(t){
   else if(h>12){h-=12;amp='PM';}
   return `${h}${m===0?'':':'+String(m).padStart(2,'0')}${amp}`;
 }
-/* parse stored string → array of sets (best-effort) */
 function parseHours(txt){
   const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean);
   const out=[];
@@ -251,7 +217,7 @@ function to24(h,m,amp){
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
-/* ---------- LOAD TABLE ---------- */
+/* ---------- LOAD / CRUD ---------- */
 async function loadLocations(){
   tbody.innerHTML='';
   const {data,error}=await supabase.from('locations').select('*').order('location_name',{ascending:true});
@@ -274,7 +240,6 @@ async function loadLocations(){
   });
 }
 
-/* ---------- CRUD ---------- */
 window.editLoc=id=>{
   const row=[...tbody.children].find(r=>JSON.parse(r.dataset.location).id===id);
   if(!row)return;
@@ -285,13 +250,9 @@ window.editLoc=id=>{
   fields.phone.value=l.phone||'';
   fields.email.value=l.email||'';
   fields.tz.value=l.timezone||'';
-
-  /* hours */
   hoursWrap.innerHTML='';
   const sets=parseHours(l.business_hours||'');
-  if(sets.length){
-    sets.forEach(s=>addHoursRow(s));
-  }else addHoursRow();      // at least one row
+  (sets.length?sets:[{}]).forEach(s=>addHoursRow(s));
   locMsg.textContent='Editing – remember to Save.';
 };
 
@@ -312,6 +273,7 @@ saveBtn.onclick=async()=>{
     return {startDay:sd.value,endDay:ed.value,startTime:st.value,endTime:et.value};
   }).filter(s=>s.startTime&&s.endTime);
   if(!sets.length){locMsg.textContent='At least one business-hours row required.';return;}
+
   const hoursStr=formatHours(sets);
 
   const payload={
@@ -337,7 +299,14 @@ function clearForm(){
   locMsg.textContent='';
 }
 
-/* expose for inline buttons */
+/* ---------- DOM READY ---------- */
+document.addEventListener('DOMContentLoaded',()=>{
+  topBar.classList.remove('hidden');
+  locSec.classList.remove('hidden');
+  loadLocations();
+});
+
+/* expose helpers */
 window.editLoc=window.editLoc;
 window.delLoc =window.delLoc;
 </script>
