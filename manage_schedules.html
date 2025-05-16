@@ -17,44 +17,71 @@
 
 <!-- ───  THEME  ─── -->
 <style>
-:root{ --bg0:#111;--bg1:#222;--bg2:#333;--border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745}
+:root{
+  --bg0:#111;--bg1:#222;--bg2:#333;
+  --border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745
+}
 body.light{
   --bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;
   --border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;
 }
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
-body{background:var(--bg0);color:var(--txt);max-width:820px;margin:32px auto;padding:28px;transition:background .25s,color .25s}
+body{
+  background:var(--bg0);color:var(--txt);
+  max-width:820px;margin:32px auto;padding:28px;
+  transition:background .25s,color .25s
+}
 h1{text-align:center;font-size:1.8rem;margin-bottom:24px}
 h2{font-size:1.25rem;margin:10px 0 14px}
 h3{font-size:1.1rem;margin:6px 0 10px;color:var(--accent)}
 
-.card{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:22px;margin-bottom:30px}
+.card{
+  background:var(--bg1);border:1px solid var(--border);
+  border-radius:6px;padding:22px;margin-bottom:30px
+}
 label{display:block;font-weight:700;margin:10px 0 4px}
-input,select{width:100%;padding:8px;background:var(--bg0);color:var(--txt);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
+input,select{
+  width:100%;padding:8px;background:var(--bg0);color:var(--txt);
+  border:1px solid var(--border);border-radius:4px;margin-bottom:12px
+}
 input:focus,select:focus{outline:2px solid var(--accent)}
-button{background:var(--bg2);color:var(--txt);border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:background .2s}
+button{
+  background:var(--bg2);color:var(--txt);border:none;border-radius:4px;
+  padding:8px 16px;cursor:pointer;transition:background .2s
+}
 button:hover{background:#555}
 .btn-mini{padding:4px 10px;font-size:.85em;margin-right:6px}
 .message{color:#ff6262;font-size:.9em;margin-top:8px}
+.hidden{display:none}
 
+/* top bar */
 #top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 #theme-btn{min-width:110px}
 
 /* day grid */
-.days-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:14px}
-.day-block{background:var(--bg0);border:1px solid var(--border);border-radius:6px;padding:12px}
+.days-container{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:16px;margin-top:14px
+}
+.day-block{
+  background:var(--bg0);border:1px solid var(--border);border-radius:6px;
+  padding:12px
+}
 .day-block h4{text-align:center;margin-bottom:10px;font-size:1em;color:var(--accent)}
 .day-reset{margin-top:4px;width:100%}
 </style>
 </head>
 <body>
 
-<!-- ❶  CENTRAL ACCESS-CHECK (runs before anything else) -->
+<!-- ❶  Central access-guard (runs before anything else renders) -->
 <script type="module">
   import { supabase }      from './js/supabaseClient.js';
   import { userCanAccess } from './js/permission.js';
-  const PAGE_SLUG = 'schedules';
-  if (!(await userCanAccess(PAGE_SLUG))) window.location.href = 'index.html';
+
+  const PAGE_SLUG = 'schedules';          // must match page_roles.page_slug
+  if (!(await userCanAccess(PAGE_SLUG))) {
+    window.location.href = 'index.html';
+  }
 </script>
 
 <h1>Manage Artist Schedules</h1>
@@ -63,8 +90,8 @@ button:hover{background:#555}
 <div id="top-bar" class="hidden">
   <div style="font-weight:600">Schedule Manager</div>
   <div>
-    <button id="back-btn"  class="btn-mini">Back</button>
-    <button id="theme-btn" class="btn-mini">Light mode</button>
+    <button id="back-btn"   class="btn-mini">Back</button>
+    <button id="theme-btn"  class="btn-mini">Light mode</button>
     <button id="logout-btn" class="btn-mini">Logout</button>
   </div>
 </div>
@@ -92,58 +119,68 @@ button:hover{background:#555}
   <div id="sched-msg" class="message"></div>
 </div>
 
-<!-- global Supabase (already loaded in supabaseClient.js) -->
+<!-- Logic -->
 <script type="module">
-/* ---------- IMPORT SHARED SUPABASE ---------- */
+/* ---------- Shared Supabase ---------- */
 import { supabase } from './js/supabaseClient.js';
 
-/* ---------- BASIC STATE ---------- */
+/* ---------- Session ---------- */
 const role     = localStorage.getItem('currentUserRole') || '';
 const scopeLoc = localStorage.getItem('currentUserLoc') || '';
 
 /* ---------- DOM ---------- */
-const topBar     = document.getElementById('top-bar');
-const backBtn    = document.getElementById('back-btn');
-const themeBtn   = document.getElementById('theme-btn');
-const logoutBtn  = document.getElementById('logout-btn');
+const topBar      = document.getElementById('top-bar');
+const backBtn     = document.getElementById('back-btn');
+const themeBtn    = document.getElementById('theme-btn');
+const logoutBtn   = document.getElementById('logout-btn');
 
-const schedSec   = document.getElementById('sched-section');
-const locFilter  = document.getElementById('loc-filter');
-const artistFilter = document.getElementById('artist-filter');
-const daysWrap   = document.getElementById('days-wrap');
-const saveBtn    = document.getElementById('save-btn');
-const schedMsg   = document.getElementById('sched-msg');
+const schedSec    = document.getElementById('sched-section');
+const locFilter   = document.getElementById('loc-filter');
+const artistFilter= document.getElementById('artist-filter');
+const daysWrap    = document.getElementById('days-wrap');
+const saveBtn     = document.getElementById('save-btn');
+const schedMsg    = document.getElementById('sched-msg');
 
-/* ---------- THEME ---------- */
-(()=>{if(localStorage.getItem('ui-theme')==='light'){document.body.classList.add('light');themeBtn.textContent='Dark mode';}})();
-themeBtn.onclick=()=>{const l=document.body.classList.toggle('light');themeBtn.textContent=l?'Dark mode':'Light mode';localStorage.setItem('ui-theme',l?'light':'dark');};
+/* ---------- Theme toggle ---------- */
+(()=>{
+  if (localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeBtn.textContent='Dark mode';
+  }
+})();
+themeBtn.onclick=()=>{
+  const l=document.body.classList.toggle('light');
+  themeBtn.textContent=l?'Dark mode':'Light mode';
+  localStorage.setItem('ui-theme',l?'light':'dark');
+};
 
-/* ---------- NAV ---------- */
+/* ---------- Navigation ---------- */
 topBar.classList.remove('hidden');
 schedSec.classList.remove('hidden');
 
-backBtn.onclick = ()=>window.location.href='index.html';
-logoutBtn.onclick=()=>{localStorage.clear();window.location.href='index.html';};
+backBtn.onclick  = ()=>window.location.href='index.html';
+logoutBtn.onclick= ()=>{ localStorage.clear(); window.location.href='index.html'; };
 
-/* ---------- DAY GRID ---------- */
+/* ---------- Day grid ---------- */
 const dayIdx=[
-  {k:'sunday',label:'Sunday'},
-  {k:'monday',label:'Monday'},
-  {k:'tuesday',label:'Tuesday'},
-  {k:'wednesday',label:'Wednesday'},
-  {k:'thursday',label:'Thursday'},
-  {k:'friday',label:'Friday'},
-  {k:'saturday',label:'Saturday'}
+  {k:'sunday',    label:'Sunday'},
+  {k:'monday',    label:'Monday'},
+  {k:'tuesday',   label:'Tuesday'},
+  {k:'wednesday', label:'Wednesday'},
+  {k:'thursday',  label:'Thursday'},
+  {k:'friday',    label:'Friday'},
+  {k:'saturday',  label:'Saturday'}
 ];
 const dayInputs={};
 function buildDayBlocks(){
   daysWrap.innerHTML='';
   dayIdx.forEach(d=>{
     const block=document.createElement('div');block.className='day-block';
-    block.innerHTML=`<h4>${d.label}</h4>
+    block.innerHTML=`
+      <h4>${d.label}</h4>
       <label style="font-size:.8em">Start</label><input type="time">
-      <label style="font-size:.8em">End</label><input type="time">
-      <button class="btn-mini day-reset">Reset</button>`;
+      <label style="font-size:.8em">End</label><input  type="time">
+      <button class="btn-mini day-reset" type="button">Reset</button>`;
     const [st,ed]=block.querySelectorAll('input');
     block.querySelector('.day-reset').onclick=()=>{st.value='';ed.value='';};
     dayInputs[d.k]={start:st,end:ed};
@@ -152,45 +189,44 @@ function buildDayBlocks(){
 }
 buildDayBlocks();
 
-/* ---------- LOCATIONS ---------- */
+/* ---------- Locations ---------- */
 async function loadLocations(){
   locFilter.innerHTML='<option value="">-- Select Location --</option>';
   let q=supabase.from('locations').select('*');
-  if(role==='sm') q=q.eq('id',scopeLoc);
-  const {data}=await q;
-  data.forEach(l=> locFilter.add(new Option(l.location_name,l.id)));
-  if(role==='sm'){
+  if (role==='sm') q=q.eq('id',scopeLoc);
+  (await q).data.forEach(l=>locFilter.add(new Option(l.location_name,l.id)));
+  if (role==='sm'){
     locFilter.value=scopeLoc;
     locFilter.disabled=true;
-  }else locFilter.disabled=false;
+  }
 }
 locFilter.onchange=loadArtists;
 
-/* ---------- ARTISTS ---------- */
+/* ---------- Artists ---------- */
 async function loadArtists(){
   artistFilter.innerHTML='<option value="">-- Select Artist --</option>';
   buildDayBlocks();schedMsg.textContent='';
-  if(!locFilter.value)return;
+  if(!locFilter.value) return;
   const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locFilter.value);
   data?.forEach(a=>artistFilter.add(new Option(a.artist_name,a.id)));
 }
 artistFilter.onchange=loadArtistSchedule;
 
-/* ---------- LOAD SCHEDULE ---------- */
+/* ---------- Load existing schedule ---------- */
 async function loadArtistSchedule(){
   buildDayBlocks();schedMsg.textContent='';
-  if(!artistFilter.value)return;
+  if(!artistFilter.value) return;
   const {data,error}=await supabase.from('artists').select('*').eq('id',artistFilter.value).single();
   if(error||!data){schedMsg.textContent='Error loading artist.';return;}
   dayIdx.forEach(d=>{
     const s=d.k+'_start',e=d.k+'_end';
-    if(data[s])dayInputs[d.k].start.value=data[s];
-    if(data[e])dayInputs[d.k].end.value  =data[e];
+    if(data[s]) dayInputs[d.k].start.value=data[s];
+    if(data[e]) dayInputs[d.k].end.value  =data[e];
   });
 }
 
-/* ---------- SAVE ---------- */
-saveBtn.onclick = async()=>{
+/* ---------- Save ---------- */
+saveBtn.onclick=async()=>{
   schedMsg.textContent='';
   if(!artistFilter.value){schedMsg.textContent='Pick an artist first.';return;}
   const payload={};
@@ -202,7 +238,7 @@ saveBtn.onclick = async()=>{
   schedMsg.textContent=error?'Error saving schedule.':'Schedule saved!';
 };
 
-/* ---------- BOOT ---------- */
+/* ---------- Boot ---------- */
 loadLocations();
 </script>
 </body>
