@@ -1,509 +1,463 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Tattoo Booking Form</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-        content="
-          default-src 'self';
-          script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-          connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co https://hook.us2.make.com;
-          style-src 'self' 'unsafe-inline';
-          object-src 'none';
-        ">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Helvetica Neue',Arial,sans-serif;background:#111;color:#fff;max-width:600px;margin:0 auto;padding:20px}
-    h1,h2{margin-bottom:10px}
-    label{display:block;font-weight:700;margin:8px 0 4px}
-    input,select,textarea,button{width:100%;background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:8px;margin-bottom:10px}
-    button{background:#333;cursor:pointer;border:none}
-    button:hover{background:#555}
-    .form-section{background:#222;border:1px solid #444;border-radius:6px;padding:15px;margin-bottom:20px}
-    .size-container{display:flex;gap:10px}.size-container>div{flex:1}
-    .conditional-section{margin-top:10px;background:#333;border:1px solid #444;border-radius:4px;padding:10px}
-    .list-container{margin-top:6px}
-    .list-item{background:#444;padding:8px;border-radius:4px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-    .list-item:hover{background:#555}
-    .list-item.selected{background:#28a745!important;border:1px solid #4fdf6f}
-    .hidden{display:none}
-  </style>
+<meta charset="UTF-8">
+<title>Calendar</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<!-- ─── CSP ─── -->
+<meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+        connect-src 'self' https://shlvjhipxnslrncczopn.supabase.co wss://shlvjhipxnslrncczopn.supabase.co;
+        style-src 'self' 'unsafe-inline';
+        object-src 'none';
+      ">
+
+<!-- ─── VISUAL THEMES (identical to Manage-Artists) ─── -->
+<style>
+:root{--bg0:#111;--bg1:#222;--bg2:#333;--border:#444;--txt:#fff;--txt-dim:#ccc;--accent:#28a745;--info:#1976d2;--danger:#f44336}
+body.light{--bg0:#f7f7f7;--bg1:#fff;--bg2:#e6e6e6;--border:#b7b7b7;--txt:#000;--txt-dim:#444;--accent:#0d6efd;--info:#0d6efd;--danger:#d32f2f}
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif}
+body{background:var(--bg0);color:var(--txt);max-width:1200px;margin:32px auto;padding:20px;transition:background .25s,color .25s}
+
+header{background:var(--bg1);border-bottom:2px solid var(--border);padding:20px;text-align:center}
+header h1{margin:0;font-size:1.8rem;color:var(--txt)}
+
+button{background:var(--bg2);color:var(--txt);border:none;border-radius:4px;padding:8px 16px;cursor:pointer;transition:background .2s}
+button:hover{background:#555}
+.btn-danger{background:var(--danger)!important;color:#fff}
+.btn-toggle{min-width:110px}
+
+select,
+input[type="date"],input[type="time"],
+input[type="text"],input[type="number"],
+input[type="email"],textarea{
+  background:var(--bg2);color:var(--txt);border:1px solid var(--border);border-radius:4px;padding:6px;width:100%
+}
+select option{color:#000}
+
+.hidden{display:none}
+
+/* ---------- login card ---------- */
+.card{
+  background:var(--bg1);border:1px solid var(--border);
+  border-radius:6px;padding:22px;max-width:420px;width:100%
+}
+.card label{display:block;font-weight:700;margin:10px 0 4px}
+.message{color:var(--danger);margin-top:8px;font-size:.9em}
+
+/* centre login vertically */
+body.show-login{display:flex;align-items:center;justify-content:center;min-height:100vh}
+
+/* ---------- top controls ---------- */
+.top-controls{display:flex;align-items:center;gap:14px;margin:18px 0;flex-wrap:wrap}
+
+/* ---------- scheduler grid ---------- */
+#daily-scheduler{position:relative;height:960px;border:1px solid var(--border);overflow-y:auto;margin-top:10px;background:var(--bg2)}
+.hour-line{position:absolute;left:0;width:100%;border-top:1px dashed var(--border);color:var(--txt-dim);font-size:12px;padding-left:5px}
+.schedule-block{position:absolute;background:rgba(255,255,255,.05);color:var(--txt-dim);padding:2px;font-size:.75em;border-left:4px solid var(--accent);pointer-events:none}
+.schedule-block.vac{background:rgba(128,128,128,.35);border-left-color:#888}
+.schedule-artist-name{display:block;margin-bottom:2px;font-weight:bold;color:var(--txt)}
+.appointment-block{position:absolute;background:var(--accent);color:#fff;border-radius:4px;padding:2px 4px;font-size:.85em;cursor:pointer;box-sizing:border-box}
+
+/* ---------- modal ---------- */
+#appt-modal{display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--border);padding:20px;width:320px;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:999}
+#appt-modal h3{margin:0 0 10px}
+.modal-field{margin-bottom:10px}
+.modal-buttons{text-align:right;margin-top:10px}
+.modal-buttons button{margin-left:8px}
+
+/* ---------- artist filter ---------- */
+#artist-filter-container{margin-top:10px}
+.artist-filter-item{display:inline-block;margin-right:10px}
+.artist-filter-item label{margin-left:4px}
+
+/* ---------- list section ---------- */
+#appointments-list-section{margin-top:24px;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:15px}
+#appointments-list-section h2{margin-bottom:10px}
+.filters-row{display:flex;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}
+.appointments-container{max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px}
+.appt-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:4px;margin-bottom:8px;cursor:pointer}
+.appt-item h4{margin-bottom:3px;font-size:1rem;color:var(--txt)}
+.appt-item p{margin-bottom:2px;font-size:.85rem;color:var(--txt-dim)}
+</style>
 </head>
-<body>
-<h1>Tattoo Booking Form</h1>
+<body class="show-login">
 
-<form id="tattoo-form" enctype="multipart/form-data">
-  <!-- PERSONAL -->
-  <div class="form-section">
-    <h2>Personal Info</h2>
-    <label>Name *</label><input id="name" name="name" required>
-    <label>Phone (include prefix if non-US, e.g. +34) *</label><input id="phone" name="phone" type="tel" required>
-    <label>Email *</label><input id="email" name="email" type="email" required>
+<header><h1>Calendar</h1></header>
+
+<!-- ───── LOGIN ───── -->
+<div id="login-section" class="card">
+  <label>Email</label><input type="email" id="login-email" autocomplete="username">
+  <label>Password</label><input type="password" id="login-password" autocomplete="current-password">
+  <button id="login-btn">Login</button>
+  <div id="login-message" class="message"></div>
+</div>
+
+<!-- ───── MAIN UI ───── -->
+<div id="main-section" class="hidden">
+
+  <div class="top-controls">
+    <button class="btn-danger" id="logout-btn">Logout</button>
+    <button class="btn-toggle"  id="theme-btn">Light mode</button>
+    <button               id="today-btn">Today</button>
+
+    <label>Location:
+      <select id="location-filter"><option value="">-- Select Location --</option></select>
+    </label>
+
+    <label>Date:
+      <input type="date" id="day-input">
+    </label>
   </div>
 
-  <!-- TATTOO -->
-  <div class="form-section">
-    <h2>Tattoo Info</h2>
-    <label>Placement *</label><input id="placement" name="placement" required placeholder="forearm, shoulder…">
+  <div id="artist-filter-container"></div>
+  <div id="daily-scheduler"></div>
 
-    <div class="size-container">
-      <div><label>Height (in)</label><input id="heightInches" name="heightInches" type="number" step="0.5" required></div>
-      <div><label>Width (in)</label><input id="widthInches"  name="widthInches" type="number" step="0.5" required></div>
+  <!-- ---------- APPOINTMENT MODAL ---------- -->
+  <div id="appt-modal">
+    <h3 id="modal-title">New Appointment</h3>
+
+    <div class="modal-field"><label>Start Time (5-min)</label>
+      <input type="time" id="modal-start-time" step="300">
+    </div>
+    <div class="modal-field"><label>End Time (5-min)</label>
+      <input type="time" id="modal-end-time" step="300">
+    </div>
+    <div class="modal-field"><label>Artist</label><select id="modal-artist"></select></div>
+    <div class="modal-field"><label>Client Name</label><input type="text" id="modal-client-name"></div>
+    <div class="modal-field"><label>Client Phone</label><input type="text" id="modal-client-phone"></div>
+    <div class="modal-field"><label>Client Email</label><input type="email" id="modal-email"></div>
+    <div class="modal-field"><label>Tattoo Description</label><textarea id="modal-description"></textarea></div>
+    <div class="modal-field"><label>Deposit</label><input type="number" id="modal-deposit"></div>
+    <div class="modal-field"><label>Price</label><input type="number" id="modal-price"></div>
+    <div class="modal-field"><label>Tip</label><input type="number" id="modal-tip"></div>
+    <div class="modal-field"><label>Appointment Type</label>
+      <select id="modal-appt-type">
+        <option value="walk-in">Walk-in</option>
+        <option value="appointment">Appointment</option>
+        <option value="tentative">Tentative</option>
+      </select>
     </div>
 
-    <label>Colour / Style *</label>
-    <select id="styleSelect" name="colour_style" required>
-      <option value="" disabled selected>-- Select Colour / Style --</option>
-      <option value="Single colour (e.g. black, red)">Single colour (e.g. black, red)</option>
-      <option value="Color (2 + solid colours)">Color (2 + solid colours)</option>
-      <option value="Black & grey (with shading)">Black & grey (with shading)</option>
-      <option value="Blackwork (solid black)">Blackwork (solid black)</option>
-      <option value="Black + single accent colour">Black + single accent colour</option>
-      <option value="Grayscale + colour highlights">Grayscale + colour highlights</option>
-      <option value="Full-colour realism">Full-colour realism</option>
-      <option value="Watercolor">Watercolor</option>
-      <option value="Blended colours">Blended colours</option>
-    </select>
-
-    <label>Description *</label><textarea id="description" name="description" rows="4" required></textarea>
-
-    <label>Reference Image 1</label><input type="file" id="reference-image1" name="image1_urls" accept="image/*">
-    <label>Reference Image 2</label><input type="file" id="reference-image2" name="image2_urls" accept="image/*">
-    <label>Reference Image 3</label><input type="file" id="reference-image3" name="image3_urls" accept="image/*">
-  </div>
-
-  <!-- LOCATION & PRIORITY -->
-  <div class="form-section">
-    <label>Preferred Location *</label>
-    <select id="locationSelect" name="preferred_location" required><option value="">-- Select Location --</option></select>
-
-    <label style="margin-top:10px">Which is more important?</label>
-    <select id="prioritySelect" required>
-      <option value="">-- Choose --</option>
-      <option value="datePriority">I need a specific date</option>
-      <option value="artistPriority">I have a specific artist in mind</option>
-    </select>
-
-    <!-- DATE priority -->
-    <div id="datePrioritySection" class="conditional-section hidden">
-      <label>Which date do you need?</label><input type="date" id="priorityDate">
-      <div class="list-container" id="availableArtistsForDate"></div>
-      <div class="list-container hidden" id="dateTimesContainer"></div>
-    </div>
-
-    <!-- ARTIST priority -->
-    <div id="artistPrioritySection" class="conditional-section hidden">
-      <label>Choose Artist</label><select id="artistPick"><option value="">-- Pick Artist --</option></select>
-      <label>Start Date</label><input type="date" id="rangeStart">
-      <label>End Date</label><input type="date" id="rangeEnd">
-      <div class="list-container" id="availableDaysForArtist"></div>
-      <div class="list-container hidden" id="artistTimesContainer"></div>
+    <div class="modal-buttons">
+      <button id="save-appt-btn">Save</button>
+      <button id="cancel-appt-btn">Cancel</button>
+      <button id="delete-appt-btn"   style="display:none">Delete</button>
+      <button id="complete-appt-btn" style="display:none">Mark Completed</button>
     </div>
   </div>
 
-  <!-- CONSENT -->
-  <div class="form-section">
-    <label><input type="checkbox" id="opt-in-marketing" name="opt_in_marketing" required> I agree to receive emails/SMS about my appointment and marketing.</label>
-    <p style="font-size:.9em">By checking, you consent to be contacted in compliance with ADA & privacy regulations.</p>
+  <!-- ---------- LIST SECTION ---------- -->
+  <div id="appointments-list-section">
+    <h2>Appointments &amp; Walk-ins</h2>
+
+    <div class="filters-row">
+      <label>From <input type="date" id="range-start"></label>
+      <label>To <input type="date" id="range-end"></label>
+      <label>Client search <input type="text" id="client-search" placeholder="name / phone / email"></label>
+      <div>
+        <label><input type="checkbox" id="cb-appointments" checked> Appointments</label>
+        <label><input type="checkbox" id="cb-walkins"      checked> Walk-ins</label>
+      </div>
+    </div>
+
+    <div class="appointments-container" id="appointments-list"></div>
   </div>
+</div><!-- /main-section -->
 
-  <!-- hidden -->
-  <input type="hidden" id="finalArtistId" name="finalArtistId">
-  <input type="hidden" id="finalDate"     name="finalDate">
-  <input type="hidden" id="finalStartTime" name="finalStartTime">
-  <input type="hidden" id="finalEndTime"   name="finalEndTime">
-
-  <button type="submit">Submit</button>
-</form>
-
-<!-- SUPABASE -->
+<!-- ─── SUPABASE ─── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/umd/supabase.min.js"></script>
 <script>
 /* ---------- Supabase init ---------- */
-const supabase=window.supabase.createClient(
+const supabase = window.supabase.createClient(
   'https://shlvjhipxnslrncczopn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobHZqaGlweG5zbHJuY2N6b3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2NDgzNjIsImV4cCI6MjA2MjIyNDM2Mn0.oPrYFyW0IsDnNsDpQ9LI0cOm6Y7OIJbjebp2Zjvv_qQ'
 );
 
-/* ---------- DOM refs ---------- */
-const locSel=document.getElementById('locationSelect');
-const prioSel=document.getElementById('prioritySelect');
-const dateSect=document.getElementById('datePrioritySection');
-const artistSect=document.getElementById('artistPrioritySection');
-const dateInput=document.getElementById('priorityDate');
-const listArtistsDate=document.getElementById('availableArtistsForDate');
-const listSlotsDate=document.getElementById('dateTimesContainer');
-const artistPick=document.getElementById('artistPick');
-const rangeStart=document.getElementById('rangeStart');
-const rangeEnd=document.getElementById('rangeEnd');
-const listDays=document.getElementById('availableDaysForArtist');
-const listSlotsArtist=document.getElementById('artistTimesContainer');
+/* ---------- helpers ---------- */
+const toMinutes = t => {if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m};
+const overlaps  = (a,b)=>a&&b&&(toMinutes(a.start_time)<toMinutes(b.end_time)&&toMinutes(b.start_time)<toMinutes(a.end_time));
+const weekdayIndex = d => {const [y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
+const todayISO = () => new Date().toISOString().split('T')[0];
 
-const hIn=document.getElementById('heightInches');
-const wIn=document.getElementById('widthInches');
-const styleSel=document.getElementById('styleSelect');
+/* ---------- login refs ---------- */
+const loginSec  = document.getElementById('login-section');
+const loginEmail= document.getElementById('login-email');
+const loginPass = document.getElementById('login-password');
+const loginBtn  = document.getElementById('login-btn');
+const loginMsg  = document.getElementById('login-message');
 
-const hidA=document.getElementById('finalArtistId');
-const hidD=document.getElementById('finalDate');
-const hidS=document.getElementById('finalStartTime');
-const hidE=document.getElementById('finalEndTime');
+/* ---------- main refs ---------- */
+const mainSec = document.getElementById('main-section');
+const themeBtn= document.getElementById('theme-btn');
+const logoutBtn= document.getElementById('logout-btn');
+const todayBtn= document.getElementById('today-btn');
+const locationFilter= document.getElementById('location-filter');
+const dayInput= document.getElementById('day-input');
+const artistFilterContainer=document.getElementById('artist-filter-container');
+const dailyScheduler=document.getElementById('daily-scheduler');
 
-/* ---------- Load locations ---------- */
-document.addEventListener('DOMContentLoaded',async()=>{
-  const {data}=await supabase.from('locations').select('id,location_name');
-  data?.forEach(l=>{
-    const o=document.createElement('option');o.value=l.id;o.textContent=l.location_name;
-    locSel.appendChild(o);
-  });
-});
+/* modal refs */
+const apptModal=document.getElementById('appt-modal');
+const modalTitle=document.getElementById('modal-title');
+const modalStart=document.getElementById('modal-start-time');
+const modalEnd=document.getElementById('modal-end-time');
+const modalArtist=document.getElementById('modal-artist');
+const modalClientName=document.getElementById('modal-client-name');
+const modalClientPhone=document.getElementById('modal-client-phone');
+const modalEmail=document.getElementById('modal-email');
+const modalDesc=document.getElementById('modal-description');
+const modalDeposit=document.getElementById('modal-deposit');
+const modalPrice=document.getElementById('modal-price');
+const modalTip=document.getElementById('modal-tip');
+const modalType=document.getElementById('modal-appt-type');
+const saveBtn=document.getElementById('save-appt-btn');
+const cancelBtn=document.getElementById('cancel-appt-btn');
+const deleteBtn=document.getElementById('delete-appt-btn');
+const completeBtn=document.getElementById('complete-appt-btn');
 
-/* ---------- Helpers ---------- */
-const todayISO = () => new Date().toISOString().split('T')[0];  /* today's yyyy-mm-dd */
+/* list refs */
+const rangeStart=document.getElementById('range-start');
+const rangeEnd=document.getElementById('range-end');
+const cbAppt=document.getElementById('cb-appointments');
+const cbWalk=document.getElementById('cb-walkins');
+const appointmentsList=document.getElementById('appointments-list');
+const clientSearch=document.getElementById('client-search');
 
-const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
-function anyToMin(t){
-  if(!t)return 0;
-  t=t.trim();
-  if(/[ap]m$/i.test(t)){
-    let [hm,ampm]=t.split(' ');
-    let [h,m]=hm.split(':').map(Number);
-    ampm=ampm.toLowerCase();
-    if(ampm==='pm'&&h!==12)h+=12;
-    if(ampm==='am'&&h===12)h=0;
-    return h*60+m;
+/* ---------- session ---------- */
+let role='', allowedLocation='', artistMap={}, currentApptId=null;
+
+/* ---------- THEME toggle ---------- */
+(function(){
+  if(localStorage.getItem('ui-theme')==='light'){
+    document.body.classList.add('light');
+    themeBtn.textContent='Dark mode';
   }
-  return toMin(t);
-}
-const minsTo12=m=>{
-  let h=Math.floor(m/60),mm=m%60,am='AM';
-  if(h===0)h=12;else if(h===12)am='PM';else if(h>12){h-=12;am='PM';}
-  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${am}`;
+})();
+themeBtn.onclick=()=>{
+  const light=document.body.classList.toggle('light');
+  themeBtn.textContent=light?'Dark mode':'Light mode';
+  localStorage.setItem('ui-theme',light?'light':'dark');
 };
-function buildFree(sDayStart,sDayEnd,apps){
-  const BUFFER=15;
-  const busy=apps.map(a=>{
-    const st=Math.max(sDayStart,toMin(a.start_time)-BUFFER);
-    const en=Math.min(sDayEnd,toMin(a.end_time)+BUFFER);
-    return {s:st,e:en};
-  }).sort((a,b)=>a.s-b.s);
-  const free=[];let cur=sDayStart;
-  busy.forEach(b=>{
-    if(b.s>cur)free.push({s:cur,e:b.s});
-    if(b.e>cur)cur=b.e;
-  });
-  if(cur<sDayEnd)free.push({s:cur,e:sDayEnd});
-  return free;
-}
-[hIn,wIn].forEach(inp=>{
-  inp.addEventListener('change',()=>{
-    const v=parseFloat(inp.value||'0');
-    inp.value=(Math.ceil(v*2)/2).toFixed(1).replace(/\.0$/,'');
-    clearSel();updateUI();
-  });
-});
-function baseMinutes(){
-  const area=(+hIn.value||0)*(+wIn.value||0);
-  if(area<1)  return 10;
-  if(area<=2) return 15;
-  if(area<=6) return 20;
-  if(area<=9) return 60;
-  if(area<=12)return 90;
-  if(area<=18)return 120;
-  if(area<=25)return 180;
-  if(area<=38)return 300;
-  return 9999;
-}
-const multiMap={
-  'Single colour (e.g. black, red)':1,
-  'Color (2 + solid colours)':1.1,
-  'Black & grey (with shading)':1.25,
-  'Blackwork (solid black)':1.1,
-  'Black + single accent colour':1.1,
-  'Grayscale + colour highlights':1.25,
-  'Full-colour realism':1.4,
-  'Watercolor':1.25,
-  'Blended colours':1.4
+
+/* ---------- Persisted login ---------- */
+(function autoLogin(){
+  const stored=JSON.parse(localStorage.getItem('calendarUser')||'null');
+  if(!stored)return;
+  role=stored.role;allowedLocation=stored.allowedLocation;
+  loginSec.classList.add('hidden');document.body.classList.remove('show-login');
+  mainSec.classList.remove('hidden');
+  startApp();
+})();
+
+/* ---------- LOGIN ---------- */
+loginBtn.onclick=async()=>{
+  loginMsg.textContent='';
+  const e=loginEmail.value.trim(),p=loginPass.value.trim();
+  if(!e||!p){loginMsg.textContent='Email & password required.';return;}
+  const {data,error}=await supabase.from('users').select('*').eq('email',e);
+  if(error||!data.length){loginMsg.textContent='Invalid credentials.';return;}
+  const u=data[0];
+  if(u.password_hash!==p){loginMsg.textContent='Invalid credentials.';return;}
+  role=u.role;allowedLocation=u.location_id||'';
+  if(!['gm','sm','fd'].includes(role)){loginMsg.textContent='Access denied.';return;}
+  localStorage.setItem('calendarUser',JSON.stringify({role,allowedLocation}));
+  loginSec.classList.add('hidden');document.body.classList.remove('show-login');
+  mainSec.classList.remove('hidden');
+  startApp();
 };
-function needMin(){
-  const b=baseMinutes();
-  if(b>=9999)return 9999;
-  const mult=multiMap[styleSel.value]??1;
-  return Math.ceil(b*mult/5)*5;
-}
-const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 
-/* ---------- Watchers ---------- */
-[locSel,prioSel,dateInput,rangeStart,rangeEnd,hIn,wIn,styleSel]
-  .forEach(el=>el.addEventListener('change',()=>{clearSel();updateUI();}));
-artistPick.addEventListener('change',()=>{
-  clearSel();listDays.innerHTML='';listSlotsArtist.innerHTML='';
-  listSlotsArtist.classList.add('hidden');loadDays();
-});
+/* ---------- LOGOUT ---------- */
+logoutBtn.onclick=()=>{
+  localStorage.removeItem('calendarUser');
+  role='';allowedLocation='';artistMap={};currentApptId=null;
+  loginEmail.value='';loginPass.value='';loginMsg.textContent='';
+  mainSec.classList.add('hidden');loginSec.classList.remove('hidden');document.body.classList.add('show-login');
+};
 
-/* ---------- Clear selections ---------- */
-function clearSel(){
-  document.querySelectorAll('.list-item.selected').forEach(li=>li.classList.remove('selected'));
-  hidA.value=hidD.value=hidS.value=hidE.value='';
+/* ---------- kick-off after login ---------- */
+async function startApp(){
+  await loadLocations();
+  dayInput.value=todayISO();
+  await loadArtistsForLocation(locationFilter.value);
+  setDefaultRange();
+  loadDay();loadAppointmentsList();
+  subscribeRealtime();
 }
 
-/* ---------- UI refresh ---------- */
-function updateUI(){
-  listArtistsDate.innerHTML='';listSlotsDate.innerHTML='';
-  listSlotsDate.classList.add('hidden');
-  listDays.innerHTML='';listSlotsArtist.innerHTML='';
-  listSlotsArtist.classList.add('hidden');
-
-  if(prioSel.value==='datePriority'){
-    dateSect.classList.remove('hidden');artistSect.classList.add('hidden');
-    loadArtistsForDate();
-  }else if(prioSel.value==='artistPriority'){
-    artistSect.classList.remove('hidden');dateSect.classList.add('hidden');
-    loadArtistDropdown();
-  }else{
-    dateSect.classList.add('hidden');artistSect.classList.add('hidden');
-  }
+/* ---------- LOCATIONS ---------- */
+async function loadLocations(){
+  locationFilter.innerHTML='<option value="">-- Select Location --</option>';
+  let q=supabase.from('locations').select('*');
+  if(role!=='gm')q=q.eq('id',allowedLocation);
+  const {data}=await q;
+  data.forEach(l=>locationFilter.add(new Option(l.location_name,l.id)));
+  if(role!=='gm'){locationFilter.value=allowedLocation;locationFilter.disabled=true;}else locationFilter.disabled=false;
 }
 
-/* ---------- Helper for walk-in message ---------- */
-async function showWalkInMessage(){
-  listArtistsDate.innerHTML='';
-  listSlotsDate.innerHTML='';
-  listSlotsDate.classList.add('hidden');
-  
-  if(!locSel.value){
-    listArtistsDate.innerHTML='<p>Please select a location first.</p>';
-    return;
-  }
+/* ---------- ARTISTS ---------- */
+async function loadArtistsForLocation(locId){
+  artistMap={};modalArtist.innerHTML='';artistFilterContainer.innerHTML='';
+  if(!locId)return;
+  const {data}=await supabase.from('artists').select('*').eq('location_id',locId);
+  data?.sort((a,b)=>a.artist_name.localeCompare(b.artist_name)).forEach(a=>{
+    artistMap[a.id]=a;
+    modalArtist.add(new Option(a.artist_name,a.id));
+    const wrap=document.createElement('div');
+    wrap.className='artist-filter-item';
+    wrap.innerHTML=`<input type="checkbox" value="${a.id}" checked><label>${a.artist_name}</label>`;
+    artistFilterContainer.appendChild(wrap);
+  });
+}
+const filteredIds=()=>[...artistFilterContainer.querySelectorAll('input[type=checkbox]')].filter(cb=>cb.checked).map(cb=>cb.value);
 
-  const {data,error}=await supabase.from('locations')
-      .select('address,business_hours,phone').eq('id',locSel.value).single();
-
-  if(error||!data){
-    listArtistsDate.innerHTML='<p>We take walk-ins today on a first-come, first-served basis. Feel free to stop by the shop!</p>';
-    return;
-  }
-
-  listArtistsDate.innerHTML=
-    `<p>For same-day tattoos, we accept walk-ins on a <strong>first-come, first-served</strong> basis. Feel free to stop by the shop or call us if you have any questions!</p>
-     <br>
-     <p><strong>Address:</strong> ${data.address||'N/A'}</p>
-     <br>
-     <p><strong>Business Hours:</strong> ${data.business_hours||'N/A'}</p>
-     <br>
-     <p><strong>Phone:</strong> ${data.phone||'N/A'}</p>`;
+/* ---------- VACATION helper ---------- */
+async function artistOnVacation(artistId,date){
+  const {data}=await supabase.from('artist_vacations').select('id').eq('artist_id',artistId).lte('vacation_start',date).gte('vacation_end',date);
+  return !!(data&&data.length);
 }
 
+/* ---------- SCHEDULER (same visuals, plus realtime reload handled elsewhere) ---------- */
+todayBtn.onclick=()=>{dayInput.value=todayISO();loadDay();};
+dayInput.onchange=loadDay;
+locationFilter.onchange=async()=>{await loadArtistsForLocation(locationFilter.value);loadDay();loadAppointmentsList();};
+artistFilterContainer.addEventListener('change',()=>{loadDay();loadAppointmentsList();});
 
-
-
-/* ---------- DATE-priority flow ---------- */
-async function loadArtistsForDate(){
-  if(!locSel.value||!dateInput.value)return;
-
-  /* Walk-in shortcut for today */
-  if(dateInput.value===todayISO()){
-    await showWalkInMessage();
-    return;
+async function loadDay(){
+  dailyScheduler.innerHTML='';
+  const date=dayInput.value;if(!date)return;
+  for(let h=8;h<=24;h++){
+    const div=document.createElement('div');div.className='hour-line';div.style.top=(h-8)*60+'px';
+    const hr=((h+11)%12)+1;div.textContent=`${hr}:00 ${h<12?'AM':'PM'}`;dailyScheduler.appendChild(div);
   }
-
-  const {data:arts}=await supabase.from('artists').select('*').eq('location_id',locSel.value);
-  const artIds=arts.map(a=>a.id);
-  const {data:vac}=await supabase.from('artist_vacations')
-        .select('artist_id')
-        .in('artist_id',artIds)
-        .lte('vacation_start',dateInput.value)
-        .gte('vacation_end',dateInput.value);
+  const ids=filteredIds();if(!ids.length)return;
+  const wIdx=weekdayIndex(date);const cols=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const cStart=cols[wIdx]+'_start',cEnd=cols[wIdx]+'_end';
+  const {data:vac}=await supabase.from('artist_vacations').select('artist_id').in('artist_id',ids).lte('vacation_start',date).gte('vacation_end',date);
   const vacationSet=new Set(vac?.map(v=>v.artist_id)||[]);
-  const {data:apps}=await supabase.from('artist_appointments').select('*').eq('date',dateInput.value);
-  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
-  const need=needMin(), cStart=`${cols[idx]}_start`,cEnd=`${cols[idx]}_end`;
-  const avail=arts.filter(a=>{
-    if(vacationSet.has(a.id))return false;
-    const st=a[cStart],en=a[cEnd];if(!st||!en)return false;
-    if(need>=9999)return !apps.some(ap=>ap.artist_id===a.id);
-    const free=buildFree(toMin(st),toMin(en),apps.filter(ap=>ap.artist_id===a.id));
-    return free.some(f=>f.e-f.s>=need);
+  const artists=ids.map(id=>artistMap[id]).filter(Boolean).sort((a,b)=>a.artist_name.localeCompare(b.artist_name));
+  artists.forEach((a,i)=>{
+    const st=a[cStart],en=a[cEnd];if(!st||!en)return;
+    const div=document.createElement('div');div.className='schedule-block';if(vacationSet.has(a.id))div.classList.add('vac');
+    const top=toMinutes(st)-480,ht=toMinutes(en)-toMinutes(st);
+    div.style.cssText=`left:${80+i*120}px;width:110px;top:${top}px;height:${ht}px;`;div.style.borderLeftColor=a.color||'#888';
+    div.innerHTML=`<span class="schedule-artist-name">${a.artist_name}${vacationSet.has(a.id)?' (vacation)':''}</span>${st}-${en}`;
+    dailyScheduler.appendChild(div);
   });
-  if(!avail.length){
-    listArtistsDate.innerHTML='<p>No artists available for that date.</p>';
-    return;
-  }
-  avail.forEach(a=>{
-    const div=document.createElement('div');
-    div.className='list-item';
-    div.textContent=a.artist_name;
-    div.onclick=()=>{clearSel();div.classList.add('selected');showSlotsDate(a);};
-    listArtistsDate.appendChild(div);
+  const {data:appts}=await supabase.from('artist_appointments').select('*').eq('date',date).in('artist_id',ids);
+  const byA={};artists.forEach(a=>byA[a.id]=[]);appts?.forEach(ap=>byA[ap.artist_id]?.push(ap));
+  artists.forEach((a,col)=>{
+    const list=byA[a.id].sort((x,y)=>toMinutes(x.start_time)-toMinutes(y.start_time));
+    const subs=[];list.forEach(ap=>{let placed=false;for(const s of subs){if(!overlaps(s[s.length-1],ap)){s.push(ap);placed=true;break}}if(!placed)subs.push([ap])});
+    subs.forEach((sub,subIdx)=>sub.forEach(ap=>{
+      const top=toMinutes(ap.start_time)-480,ht=toMinutes(ap.end_time)-toMinutes(ap.start_time),w=110/subs.length,left=80+col*120+subIdx*w;
+      const div=document.createElement('div');div.className='appointment-block';
+      div.style.cssText=`left:${left}px;top:${top}px;width:${w-2}px;height:${ht}px;background:${a.color||'#555'}`;
+      div.textContent=`${a.artist_name} – ${ap.client_name||'N/A'} (${ap.appointment_type})`;div.onclick=e=>{e.stopPropagation();openExistingApptModal(ap.id)};
+      dailyScheduler.appendChild(div);
+    }));
   });
-}
-async function showSlotsDate(artist){
-  listSlotsDate.innerHTML='';listSlotsDate.classList.remove('hidden');
-  const need=needMin();
-  const {data:apps}=await supabase.from('artist_appointments').select('*')
-                                  .eq('artist_id',artist.id).eq('date',dateInput.value);
-  const idx=new Date(`${dateInput.value}T00:00:00Z`).getUTCDay();
-  const st=artist[`${cols[idx]}_start`],en=artist[`${cols[idx]}_end`];
-  if(!st||!en){
-    listSlotsDate.innerHTML='<p>Artist is off that day.</p>';
-    return;
-  }
-  if(need>=9999){
-    if(apps.length){
-      listSlotsDate.innerHTML='<p>No full-day slot available.</p>';
-      return;
-    }
-    slotBtn(`All Day – ${artist.artist_name}`,st,en,artist.id,dateInput.value,listSlotsDate);
-    return;
-  }
-  const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{
-    for(let t=f.s;t<=f.e-need;t+=5){
-      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,dateInput.value,listSlotsDate);
-      made=true;
-    }
-  });
-  if(!made)listSlotsDate.innerHTML='<p>No timeslots fit the requested duration.</p>';
+  dailyScheduler.onclick=e=>{if(['appointment-block','schedule-block','hour-line'].some(c=>e.target.classList.contains(c)))return;
+    const y=e.clientY-dailyScheduler.getBoundingClientRect().top;const mins=Math.floor(y),h=Math.floor(mins/60)+8,m=String(mins%60).padStart(2,'0');
+    openNewApptModal(`${String(h).padStart(2,'0')}:${m}`,date);}
 }
 
-/* ---------- ARTIST-priority flow (unchanged) ---------- */
-async function loadArtistDropdown(){
-  const prev=artistPick.value;
-  artistPick.innerHTML='<option value="">-- Pick Artist --</option>';
-  if(!locSel.value)return;
-  const {data}=await supabase.from('artists').select('id,artist_name').eq('location_id',locSel.value);
-  data?.forEach(a=>{
-    const o=document.createElement('option');o.value=a.id;o.textContent=a.artist_name;artistPick.appendChild(o);
-  });
-  if(prev && artistPick.querySelector(`option[value="${prev}"]`))artistPick.value=prev;
-  loadDays();
+/* ---------- MODAL CRUD ---------- */
+function round5(val){
+  const [h,m]=val.split(':').map(Number);const rounded=Math.round(m/5)*5%60;const carry=Math.floor((m+2.5)/60);
+  return `${String((h+carry)%24).padStart(2,'0')}:${String(rounded).padStart(2,'0')}`;
 }
-async function loadDays(){
-  listDays.innerHTML='';listSlotsArtist.innerHTML='';listSlotsArtist.classList.add('hidden');
-  if(!artistPick.value||!rangeStart.value||!rangeEnd.value)return;
-  const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
-  const {data:apps}=await supabase.from('artist_appointments').select('*')
-                                  .eq('artist_id',artist.id)
-                                  .gte('date',rangeStart.value).lte('date',rangeEnd.value);
-  const {data:vac}=await supabase.from('artist_vacations').select('*')
-                                 .eq('artist_id',artist.id)
-                                 .lte('vacation_start',rangeEnd.value)
-                                 .gte('vacation_end',rangeStart.value);
-  const need=needMin();const days=[];
-  for(let d=new Date(rangeStart.value);d<=new Date(rangeEnd.value);d.setUTCDate(d.getUTCDate()+1)){
-    const iso=d.toISOString().slice(0,10),
-          inVac=vac?.some(v=>v.vacation_start<=iso&&v.vacation_end>=iso);
-    if(inVac)continue;
-    const idx=d.getUTCDay(),
-          st=artist[`${cols[idx]}_start`],
-          en=artist[`${cols[idx]}_end`];
-    if(!st||!en)continue;
-    if(need>=9999){
-      if(!apps.some(a=>a.date===iso))days.push({d:iso,l:`All Day – ${iso}`});
-      continue;
-    }
-    const free=buildFree(toMin(st),toMin(en),apps.filter(a=>a.date===iso));
-    if(free.some(f=>f.e-f.s>=need))days.push({d:iso,l:iso});
-  }
-  if(!days.length){
-    listDays.innerHTML='<p>No available days in that range.</p>';
-    return;
-  }
-  days.forEach(o=>{
-    const div=document.createElement('div');
-    div.className='list-item';div.textContent=o.l;
-    div.onclick=()=>showSlotsArtistDay(o.d);
-    listDays.appendChild(div);
-  });
-}
-async function showSlotsArtistDay(day){
-  listSlotsArtist.innerHTML='';listSlotsArtist.classList.remove('hidden');
-  const {data:artist}=await supabase.from('artists').select('*').eq('id',artistPick.value).single();
-  const {data:vac}=await supabase.from('artist_vacations').select('id')
-                                 .eq('artist_id',artist.id)
-                                 .lte('vacation_start',day).gte('vacation_end',day);
-  if(vac?.length){
-    listSlotsArtist.innerHTML='<p>Artist on vacation that day.</p>';
-    return;
-  }
-  const {data:apps}=await supabase.from('artist_appointments').select('*')
-                                  .eq('artist_id',artistPick.value).eq('date',day);
-  const idx=new Date(`${day}T00:00:00Z`).getUTCDay();
-  const st=artist[`${cols[idx]}_start`],en=artist[`${cols[idx]}_end`];
-  if(!st||!en){
-    listSlotsArtist.innerHTML='<p>Artist off that day.</p>';
-    return;
-  }
-  const need=needMin();
-  if(need>=9999){
-    if(apps.length){
-      listSlotsArtist.innerHTML='<p>No full-day slot available.</p>';
-      return;
-    }
-    slotBtn('All Day',st,en,artist.id,day,listSlotsArtist);
-    return;
-  }
-  const free=buildFree(toMin(st),toMin(en),apps);let made=false;
-  free.forEach(f=>{
-    for(let t=f.s;t<=f.e-need;t+=5){
-      slotBtn(`${minsTo12(t)} – ${minsTo12(t+need)}`,minsTo12(t),minsTo12(t+need),artist.id,day,listSlotsArtist);
-      made=true;
-    }
-  });
-  if(!made)listSlotsArtist.innerHTML='<p>No timeslots fit the requested duration.</p>';
-}
-
-/* ---------- slot button helper ---------- */
-function slotBtn(txt,start,end,artistId,date,container){
-  const div=document.createElement('div');
-  div.className='list-item';div.textContent=txt;
-  div.onclick=()=>{
-    clearSel();
-    div.classList.add('selected');
-    hidA.value=artistId;hidD.value=date;hidS.value=start;hidE.value=end;
-  };
-  container.appendChild(div);
-}
-
-/* ---------- final re-check ---------- */
-async function slotStillAvailable(){
-  const artistId=hidA.value,date=hidD.value;
-  if(!artistId||!date)return false;
-  const startMin=anyToMin(hidS.value), endMin=anyToMin(hidE.value);
-  const {data:vac}=await supabase.from('artist_vacations').select('id')
-                                 .eq('artist_id',artistId)
-                                 .lte('vacation_start',date).gte('vacation_end',date);
-  if(vac?.length)return false;
-  const {data:apps}=await supabase.from('artist_appointments').select('*')
-                                  .eq('artist_id',artistId).eq('date',date);
-  const BUFFER=15;
-  return !apps.some(ap=>{
-    const s=toMin(ap.start_time)-BUFFER, e=toMin(ap.end_time)+BUFFER;
-    return endMin> s && startMin< e;
-  });
-}
-
-/* ---------- Submit ---------- */
-document.getElementById('tattoo-form').addEventListener('submit',async e=>{
-  e.preventDefault();
-  if(!hidA.value&&hidD.value!==todayISO()){alert('Please pick an appointment slot.');return;}
-  const submitBtn=e.submitter||e.target.querySelector('button[type="submit"]');submitBtn.disabled=true;
-
-  if(hidD.value!==todayISO() && !(await slotStillAvailable())){
-    alert('Sorry, that slot has just been taken. Please pick another.');
-    submitBtn.disabled=false;clearSel();updateUI();return;
-  }
-
-  const fd=new FormData(e.target);
-  const r=await fetch('https://hook.us2.make.com/41mjz37swhb5fdu238aqtr26x9by4b5e',{method:'POST',body:fd});
-  if(r.ok){
-    document.open();
-    document.write('<h2 style="text-align:center;margin-top:40px;">Thanks — your request was sent! We’ll text you soon.</h2>');
-    document.close();
-  }else{
-    alert('Submission error – please try again.');submitBtn.disabled=false;
-  }
+['change','blur'].forEach(ev=>{
+  modalStart.addEventListener(ev,()=>{if(modalStart.value)modalStart.value=round5(modalStart.value)});
+  modalEnd  .addEventListener(ev,()=>{if(modalEnd.value)  modalEnd.value  =round5(modalEnd.value)});
 });
+function openNewApptModal(slot,date){
+  currentApptId=null;modalTitle.textContent='New Appointment';
+  modalStart.value=round5(slot);modalEnd.value=round5(slot);modalArtist.value='';
+  [modalClientName,modalClientPhone,modalEmail,modalDesc,modalDeposit,modalPrice,modalTip].forEach(i=>i.value='');
+  modalType.value='walk-in';deleteBtn.style.display=completeBtn.style.display='none';apptModal.style.display='block';
+}
+async function openExistingApptModal(id){
+  currentApptId=id;const {data,error}=await supabase.from('artist_appointments').select('*').eq('id',id);
+  if(error||!data?.length){alert('Error loading');return;}
+  const ap=data[0];modalTitle.textContent='Edit Appointment';
+  modalStart.value=ap.start_time;modalEnd.value=ap.end_time;modalArtist.value=ap.artist_id;modalType.value=ap.appointment_type;
+  modalClientName.value=ap.client_name||'';modalClientPhone.value=ap.client_phone||'';modalEmail.value=ap.email||'';modalDesc.value=ap.notes||'';
+  modalDeposit.value=ap.deposit||'';modalPrice.value=ap.price||'';modalTip.value=ap.tip||'';deleteBtn.style.display=completeBtn.style.display='inline-block';apptModal.style.display='block';
+}
+cancelBtn.onclick=()=>apptModal.style.display='none';
+
+async function slotConflict(artistId,date,s,e,idToSkip){
+  const {data}=await supabase.from('artist_appointments').select('*').eq('artist_id',artistId).eq('date',date);
+  return data.some(ap=>ap.id!==idToSkip&&overlaps({start_time:s,end_time:e},ap));
+}
+saveBtn.onclick=async()=>{
+  const date=dayInput.value;if(!date){alert('Select date first');return;}
+  const s=modalStart.value,e=modalEnd.value;
+  if(!s||!e){alert('Start/End required');return;}
+  const artistId=modalArtist.value;if(!artistId){alert('Pick an artist');return;}
+  if(await artistOnVacation(artistId,date)){alert('Artist is on vacation that day');return;}
+  if(await slotConflict(artistId,date,s,e,currentApptId)){alert('Overlap with another booking');return;}
+
+  const payload={
+    artist_id:artistId,date,start_time:s,end_time:e,appointment_type:modalType.value,
+    client_name:modalClientName.value.trim(),client_phone:modalClientPhone.value.trim(),email:modalEmail.value.trim(),
+    notes:modalDesc.value.trim(),deposit:modalDeposit.value?parseFloat(modalDeposit.value):null,
+    price:modalPrice.value?parseFloat(modalPrice.value):null,tip:modalTip.value?parseFloat(modalTip.value):null
+  };
+  const res=currentApptId
+    ? await supabase.from('artist_appointments').update(payload).eq('id',currentApptId)
+    : await supabase.from('artist_appointments').insert([payload]);
+  if(res.error){alert('Error saving');console.error(res.error);return;}
+  apptModal.style.display='none';
+};
+deleteBtn.onclick=async()=>{
+  if(!currentApptId||!confirm('Delete this appointment?'))return;
+  await supabase.from('artist_appointments').delete().eq('id',currentApptId);
+  apptModal.style.display='none';
+};
+completeBtn.onclick=async()=>{
+  if(!currentApptId)return;
+  await supabase.from('artist_appointments').update({appointment_type:'completed'}).eq('id',currentApptId);
+  apptModal.style.display='none';
+};
+
+/* ---------- LIST ---------- */
+function setDefaultRange(){const n=new Date();rangeStart.value=new Date(n-7*864e5).toISOString().split('T')[0];rangeEnd.value=new Date(n.getTime()+7*864e5).toISOString().split('T')[0]}
+[rangeStart,rangeEnd,cbAppt,cbWalk].forEach(el=>el.addEventListener('change',loadAppointmentsList));
+clientSearch.addEventListener('input',loadAppointmentsList);
+
+async function loadAppointmentsList(){
+  appointmentsList.innerHTML='';
+  const ids=filteredIds();if(!ids.length){appointmentsList.textContent='No artists selected.';return;}
+  if(!rangeStart.value||!rangeEnd.value){appointmentsList.textContent='Select a date range.';return;}
+  const types=[];if(cbAppt.checked)types.push('appointment','tentative');if(cbWalk.checked)types.push('walk-in');
+  if(!types.length){appointmentsList.textContent='No types selected.';return;}
+  let q=supabase.from('artist_appointments').select('*, artists!inner(location_id,artist_name)').gte('date',rangeStart.value).lte('date',rangeEnd.value).in('appointment_type',types).in('artist_id',ids);
+  if(role!=='gm')q=q.eq('artists.location_id',allowedLocation);else if(locationFilter.value)q=q.eq('artists.location_id',locationFilter.value);
+  const term=clientSearch.value.trim();if(term)q=q.or(`client_name.ilike.*${term}*,client_phone.ilike.*${term}*,email.ilike.*${term}*`);
+  const {data,error}=await q;if(error){appointmentsList.textContent='Error.';console.error(error);return;}
+  if(!data?.length){appointmentsList.textContent='No matching records.';return;}
+  data.sort((a,b)=>a.date===b.date?toMinutes(a.start_time)-toMinutes(b.start_time):(a.date<b.date?-1:1));
+  data.forEach(ap=>{
+    const div=document.createElement('div');div.className='appt-item';
+    div.innerHTML=`<h4>${ap.date} ${ap.start_time}-${ap.end_time} [${ap.appointment_type}]</h4>
+      <p>Artist: ${ap.artists?.artist_name||ap.artist_id}</p><p>Client: ${ap.client_name||'N/A'}</p>
+      <p>Price: ${ap.price||0}, Tip: ${ap.tip||0}</p>`;
+    div.onclick=()=>{dayInput.value=ap.date;loadDay();};appointmentsList.appendChild(div);
+  });
+}
+
+/* ---------- realtime refresh ---------- */
+function subscribeRealtime(){
+  supabase.from('artist_appointments').on('*',payload=>{loadDay();loadAppointmentsList();}).subscribe();
+  supabase.from('artist_vacations' ).on('*',payload=>{loadDay();}).subscribe();
+  supabase.from('artists'          ).on('*',payload=>{loadArtistsForLocation(locationFilter.value).then(loadDay)}).subscribe();
+}
 </script>
 </body>
 </html>
